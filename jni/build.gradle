@@ -1,0 +1,20 @@
+import org.gradle.internal.jvm.Jvm
+
+plugins {
+    id 'cpp-library'
+}
+
+group = 'de.hhu.bsinfo'
+version = getProperty('projectVersion')
+
+library {
+    baseName = 'rdma'
+    targetMachines = [machines.linux]
+    
+    source.from "${project(':rdma').file('src/main/cpp')}"
+    
+    publicHeaders.from "${project(':rdma').file('src/main/cpp/include')}"
+                        
+    privateHeaders.from "${Jvm.current().javaHome}/include",
+                        "${Jvm.current().javaHome}/include/linux"
+}
