@@ -37,6 +37,10 @@ public class Device extends Struct {
     private final NativeInteger maxSharedReceiveQueueScatterGatherCount = new NativeInteger(getByteBuffer(), info.getOffset("max_srq_sge"));
     private final NativeByte physicalPortCount = new NativeByte(getByteBuffer(), info.getOffset("phys_port_cnt"));
 
+    public static int getDeviceCount() {
+        return Verbs.getNumDevices();
+    }
+
     public Device() {
         super(SIZE);
     }

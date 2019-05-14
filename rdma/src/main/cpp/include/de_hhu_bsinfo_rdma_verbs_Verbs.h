@@ -39,6 +39,22 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_queryDevice
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_queryPort
   (JNIEnv *, jclass, jlong, jlong, jint, jlong);
 
+/*
+ * Class:     de_hhu_bsinfo_rdma_verbs_Verbs
+ * Method:    allocateProtectionDomain
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_allocateProtectionDomain
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     de_hhu_bsinfo_rdma_verbs_Verbs
+ * Method:    deallocateProtectionDomain
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_deallocateProtectionDomain
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

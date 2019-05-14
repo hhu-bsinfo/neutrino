@@ -21,20 +21,20 @@ public class Context {
 
     @Nullable
     public static Context openDevice(int index) {
-        Result result = new Result();
+        var result = new Result();
         Verbs.openDevice(index, result.getHandle());
         if (result.isError()) {
             LOGGER.error("Could not open device with index {}", index);
             return null;
         }
 
-        return new Context(result.resultHandle.get());
+        return new Context(result.getResultHandle());
     }
 
     @Nullable
     public Device queryDevice() {
-        Result result = new Result();
-        Device device = new Device();
+        var result = new Result();
+        var device = new Device();
         Verbs.queryDevice(handle, device.getHandle(), result.getHandle());
         if (result.isError()) {
             LOGGER.error("Could not query device");
@@ -46,14 +46,26 @@ public class Context {
 
     @Nullable
     public Port queryPort(int portNumber) {
-        Result result = new Result();
-        Port port = new Port();
+        var result = new Result();
+        var port = new Port();
         Verbs.queryPort(handle, port.getHandle(), portNumber, result.getHandle());
         if (result.isError()) {
-            LOGGER.error("Could not query device");
+            LOGGER.error("Could not query port");
             return null;
         }
 
         return port;
+    }
+
+    @Nullable
+    public ProtectionDomain allocateProtectionDomain() {
+        var result = new Result();
+        Verbs.allocateProtectionDomain(handle, result.getHandle());
+        if(result.isError()) {
+            LOGGER.error("Could not allocate protection domain");
+            return null;
+        }
+
+        return new ProtectionDomain(result.getResultHandle());
     }
 }

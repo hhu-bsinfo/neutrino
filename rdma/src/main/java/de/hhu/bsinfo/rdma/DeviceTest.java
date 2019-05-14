@@ -4,25 +4,36 @@ import de.hhu.bsinfo.rdma.verbs.Context;
 import de.hhu.bsinfo.rdma.verbs.Device;
 import de.hhu.bsinfo.rdma.verbs.Port;
 import de.hhu.bsinfo.rdma.verbs.Verbs;
+import java.net.ProtocolException;
 
 public class DeviceTest {
 
     public static void main(String... args) {
-        int numDevices = Verbs.getNumDevices();
+        int numDevices = Device.getDeviceCount();
 
         if(numDevices <= 0) {
             System.out.println("No RDMA devices were found in your system!");
             return;
         }
 
-        Context context = Context.openDevice(0);
-        Device device = context.queryDevice();
+        var context = Context.openDevice(0);
+        var device = context.queryDevice();
 
         System.out.println(device);
 
-        Port port = context.queryPort(1);
+        var port = context.queryPort(1);
 
         System.out.println(port);
+
+        var protectionDomain = context.allocateProtectionDomain();
+
+        System.out.println("Allocated protection domain!");
+
+        if(protectionDomain.deallocate()) {
+            System.out.println("Deallocated protection domain!");
+        } else {
+            System.out.println("Could not deallocate protection domain!");
+        }
     }
 
 }

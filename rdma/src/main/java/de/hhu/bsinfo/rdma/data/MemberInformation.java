@@ -19,7 +19,7 @@ public class MemberInformation extends Struct {
     }
 
     public static List<MemberInformation> wrap(long handle, int length) {
-        List<MemberInformation> result = new ArrayList<>();
+        var result = new ArrayList<MemberInformation>();
         for (long index = 0; index < length; index++) {
             result.add(new MemberInformation(handle + index * SIZE));
         }

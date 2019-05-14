@@ -51,3 +51,19 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_queryPort (JNIEnv *en
     result->status = ibv_query_port(context, portNumber, port);
     result->handle = 0;
 }
+
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_allocateProtectionDomain (JNIEnv *env, jclass clazz, jlong contextHandle, jlong resultHandle) {
+    auto context = castHandle<ibv_context>(contextHandle);
+    auto result = castHandle<Result>(resultHandle);
+
+    result->handle = reinterpret_cast<long>(ibv_alloc_pd(context));
+    result->status = result->handle == 0 ? 1 : 0;
+}
+
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_deallocateProtectionDomain (JNIEnv *env, jclass clazz, jlong protectionDomainHandle, jlong resultHandle) {
+    auto protectionDomain = castHandle<ibv_pd>(protectionDomainHandle);
+    auto result = castHandle<Result>(resultHandle);
+
+    result->status = ibv_dealloc_pd(protectionDomain);
+    result->handle = 0;
+}

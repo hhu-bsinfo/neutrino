@@ -13,14 +13,14 @@ public class StructUtil {
     private static native void getPortAttributes(long resultHandle);
 
     public static StructInformation getDeviceAttribtues() {
-        Result result = new Result();
+        var result = new Result();
         getDeviceAttributes(result.getHandle());
-        return new StructInformation(result.resultHandle.get());
+        return new StructInformation(result.getResultHandle());
     }
 
     public static StructInformation getPortAttributes() {
-        Result result = new Result();
+        var result = new Result();
         getPortAttributes(result.getHandle());
-        return new StructInformation(result.resultHandle.get());
+        return new StructInformation(result.getResultHandle());
     }
 }
