@@ -15,6 +15,14 @@ extern "C" {
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_util_StructUtil_getDeviceAttributes
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     de_hhu_bsinfo_rdma_util_StructUtil
+ * Method:    getPortAttributes
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_util_StructUtil_getPortAttributes
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

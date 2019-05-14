@@ -9,7 +9,8 @@ public class StructUtil {
         System.loadLibrary("rdma");
     }
 
-    public static native void getDeviceAttributes(long resultHandle);
+    private static native void getDeviceAttributes(long resultHandle);
+    private static native void getPortAttributes(long resultHandle);
 
     public static StructInformation getDeviceAttribtues() {
         Result result = new Result();
@@ -17,4 +18,9 @@ public class StructUtil {
         return new StructInformation(result.resultHandle.get());
     }
 
+    public static StructInformation getPortAttributes() {
+        Result result = new Result();
+        getPortAttributes(result.getHandle());
+        return new StructInformation(result.resultHandle.get());
+    }
 }

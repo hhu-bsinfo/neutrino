@@ -31,6 +31,14 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_openDevice
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_queryDevice
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
+/*
+ * Class:     de_hhu_bsinfo_rdma_verbs_Verbs
+ * Method:    queryPort
+ * Signature: (JJIJ)V
+ */
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_queryPort
+  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+
 #ifdef __cplusplus
 }
 #endif

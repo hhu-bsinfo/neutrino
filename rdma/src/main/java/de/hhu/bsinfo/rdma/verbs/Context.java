@@ -43,4 +43,17 @@ public class Context {
 
         return device;
     }
+
+    @Nullable
+    public Port queryPort(int portNumber) {
+        Result result = new Result();
+        Port port = new Port();
+        Verbs.queryPort(handle, port.getHandle(), portNumber, result.getHandle());
+        if (result.isError()) {
+            LOGGER.error("Could not query device");
+            return null;
+        }
+
+        return port;
+    }
 }

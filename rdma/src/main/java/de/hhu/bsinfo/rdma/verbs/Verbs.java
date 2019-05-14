@@ -9,4 +9,5 @@ public class Verbs {
     public static native int getNumDevices();
     public static native void openDevice(int index, long resultHandle);
     public static native void queryDevice(long contextHandle, long deviceHandle, long resultHandle);
+    public static native void queryPort(long contextHandle, long portHandle, int portNumber, long resultHandle);
 }

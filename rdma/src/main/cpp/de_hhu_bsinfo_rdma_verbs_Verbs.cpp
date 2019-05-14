@@ -4,7 +4,7 @@
 #include <vector>
 #include <Util.hpp>
 
-JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_getNumDevices (JNIEnv *, jclass) {
+JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_getNumDevices (JNIEnv *env, jclass clazz) {
     int numDevices = 0;
     ibv_device **devices = ibv_get_device_list(&numDevices);
     if (devices != nullptr) {
@@ -13,7 +13,7 @@ JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_getNumDevices (JNIEnv
     return numDevices;
 }
 
-JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_openDevice (JNIEnv *, jclass, jint index, jlong resultHandle) {
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_openDevice (JNIEnv *env, jclass clazz, jint index, jlong resultHandle) {
     auto result = castHandle<Result>(resultHandle);
     int numDevices = 0;
     ibv_device **devices = ibv_get_device_list(&numDevices);
@@ -43,5 +43,11 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_queryDevice (JNIEnv *
     result->handle = 0;
 }
 
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_queryPort (JNIEnv *env, jclass clazz, jlong contextHandle, jlong portHandle, jint portNumber, jlong resultHandle) {
+    auto context = castHandle<ibv_context>(contextHandle);
+    auto port = castHandle<ibv_port_attr>(portHandle);
+    auto result = castHandle<Result>(resultHandle);
 
-
+    result->status = ibv_query_port(context, portNumber, port);
+    result->handle = 0;
+}

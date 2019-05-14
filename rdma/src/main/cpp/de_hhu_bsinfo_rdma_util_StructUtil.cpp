@@ -47,12 +47,42 @@ MemberInfo ibv_device_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_device_attr, phys_port_cnt)
 };
 
+MemberInfo ibv_port_attr_member_infos[] {
+    GET_MEMBER_INFO(ibv_port_attr, state),
+    GET_MEMBER_INFO(ibv_port_attr, max_mtu),
+    GET_MEMBER_INFO(ibv_port_attr, active_mtu),
+    GET_MEMBER_INFO(ibv_port_attr, gid_tbl_len),
+    GET_MEMBER_INFO(ibv_port_attr, port_cap_flags),
+    GET_MEMBER_INFO(ibv_port_attr, max_msg_sz),
+    GET_MEMBER_INFO(ibv_port_attr, bad_pkey_cntr),
+    GET_MEMBER_INFO(ibv_port_attr, qkey_viol_cntr),
+    GET_MEMBER_INFO(ibv_port_attr, pkey_tbl_len),
+    GET_MEMBER_INFO(ibv_port_attr, lid),
+    GET_MEMBER_INFO(ibv_port_attr, sm_lid),
+    GET_MEMBER_INFO(ibv_port_attr, lmc),
+    GET_MEMBER_INFO(ibv_port_attr, max_vl_num),
+    GET_MEMBER_INFO(ibv_port_attr, sm_sl),
+    GET_MEMBER_INFO(ibv_port_attr, subnet_timeout),
+    GET_MEMBER_INFO(ibv_port_attr, init_type_reply),
+    GET_MEMBER_INFO(ibv_port_attr, active_width),
+    GET_MEMBER_INFO(ibv_port_attr, active_speed),
+    GET_MEMBER_INFO(ibv_port_attr, phys_state),
+    GET_MEMBER_INFO(ibv_port_attr, link_layer),
+    GET_MEMBER_INFO(ibv_port_attr, flags),
+    GET_MEMBER_INFO(ibv_port_attr, port_cap_flags2),
+};
+
 StructInfo ibv_device_attr_struct_info {
     sizeof(ibv_device_attr),
     sizeof(ibv_device_attr_member_infos) / sizeof(MemberInfo),
     ibv_device_attr_member_infos
 };
 
+StructInfo ibv_port_attr_struct_info {
+    sizeof(ibv_port_attr),
+    sizeof(ibv_port_attr_member_infos) / sizeof(MemberInfo),
+    ibv_port_attr_member_infos
+};
 
 
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_util_StructUtil_getDeviceAttributes(JNIEnv *env, jclass clazz, jlong resultHandle) {
@@ -60,6 +90,13 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_util_StructUtil_getDeviceAttribut
 
     result->status = 0;
     result->handle = reinterpret_cast<long>(&ibv_device_attr_struct_info);
+}
+
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_util_StructUtil_getPortAttributes (JNIEnv *env, jclass clazz, jlong resultHandle) {
+    auto result = castHandle<Result>(resultHandle);
+
+    result->status = 0;
+    result->handle = reinterpret_cast<long>(&ibv_port_attr_struct_info);
 }
 
 
