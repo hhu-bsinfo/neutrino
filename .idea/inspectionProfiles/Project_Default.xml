@@ -671,7 +671,7 @@
     </inspection_tool>
     <inspection_tool class="ComponentRegistrationProblems" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="ConditionSignal" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="ConditionalExpression" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="ConditionalExpression" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="ConditionalExpressionJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConditionalExpressionWithIdenticalBranches" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConditionalExpressionWithIdenticalBranchesJS" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -1777,7 +1777,7 @@
       <option name="ignoreObjectMethods" value="true" />
       <option name="ignoreAnonymousClassMethods" value="false" />
     </inspection_tool>
-    <inspection_tool class="MissortedModifiers" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="MissortedModifiers" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="m_requireAnnotationsFirst" value="true" />
     </inspection_tool>
     <inspection_tool class="MisspelledCompareTo" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -1802,7 +1802,7 @@
     <inspection_tool class="MultipleInjectedConstructorsForClass" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="MultipleMethodDesignatorsInspection" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="MultipleRepositoryUrls" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="MultipleReturnPointsPerMethod" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="MultipleReturnPointsPerMethod" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="ignoreGuardClauses" value="false" />
       <option name="ignoreEqualsMethod" value="true" />
       <option name="m_limit" value="1" />
@@ -1815,7 +1815,7 @@
     <inspection_tool class="MysqlParsingInspection" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="NakedNotify" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NativeMethodNamingConvention" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="NativeMethods" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="NativeMethods" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="NegatedConditional" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="m_ignoreNegatedNullComparison" value="true" />
     </inspection_tool>
@@ -2618,7 +2618,7 @@
     <inspection_tool class="TestOnlyProblems" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="TextLabelInSwitchStatement" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="TextLabelInSwitchStatementJS" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="ThisEscapedInConstructor" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="ThisEscapedInConstructor" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="ThisExpressionReferencesGlobalObjectJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ThreadDeathRethrown" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreadDumpStack" enabled="true" level="ERROR" enabled_by_default="true" />
