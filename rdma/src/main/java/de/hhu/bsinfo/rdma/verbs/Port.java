@@ -6,8 +6,79 @@ import de.hhu.bsinfo.rdma.data.NativeShort;
 import de.hhu.bsinfo.rdma.data.Struct;
 import de.hhu.bsinfo.rdma.data.StructInformation;
 import de.hhu.bsinfo.rdma.util.StructUtil;
+import java.util.Arrays;
 
 public class Port extends Struct {
+
+    public enum PortState {
+        IBV_PORT_NOP(0), IBV_PORT_DOWN(1), IBV_PORT_INIT(2), IBV_PORT_ARMED(3),
+        IBV_PORT_ACTIVE(4), IBV_PORT_ACTIVE_DEFER(5);
+
+        private static final PortState[] VALUES;
+
+        static {
+            int arrayLength = Arrays.stream(values()).mapToInt(element -> element.value).max().orElseThrow() + 1;
+
+            VALUES = new PortState[arrayLength];
+
+            for (PortState element : PortState.values()) {
+                VALUES[element.value] = element;
+            }
+        }
+
+        private final int value;
+
+        PortState(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public static PortState valueOf(int state) {
+            if (state < IBV_PORT_NOP.value || state > IBV_PORT_ACTIVE_DEFER.value) {
+                throw new IllegalArgumentException(String.format("Unkown operation code provided %d", state));
+            }
+
+            return VALUES[state];
+        }
+    }
+
+    public enum Mtu {
+        IBV_MTU_256(1), IBV_MTU_512(2), IBV_MTU_1024(3), IBV_MTU_2048(4),
+        IBV_MTU_4096(5);
+
+        private static final Mtu[] VALUES;
+
+        static {
+            int arrayLength = Arrays.stream(values()).mapToInt(element -> element.value).max().orElseThrow() + 1;
+
+            VALUES = new Mtu[arrayLength];
+
+            for (Mtu element : Mtu.values()) {
+                VALUES[element.value] = element;
+            }
+        }
+
+        private final int value;
+
+        Mtu(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public static Mtu valueOf(int mtu) {
+            if (mtu < IBV_MTU_256.value || mtu > IBV_MTU_4096.value) {
+                throw new IllegalArgumentException(String.format("Unkown operation code provided %d", mtu));
+            }
+
+            return VALUES[mtu];
+        }
+    }
 
     private static final StructInformation info = StructUtil.getPortAttributes();
 
@@ -44,16 +115,16 @@ public class Port extends Struct {
         super(handle, SIZE);
     }
 
-    public int getState() {
-        return state.get();
+    public PortState getState() {
+        return PortState.valueOf(state.get());
     }
 
-    public int getMaxMtu() {
-        return maxMtu.get();
+    public Mtu getMaxMtu() {
+        return Mtu.valueOf(maxMtu.get());
     }
 
-    public int getActiveMtu() {
-        return activeMtu.get();
+    public Mtu getActiveMtu() {
+        return Mtu.valueOf(activeMtu.get());
     }
 
     public int getGidTableLength() {
@@ -135,9 +206,9 @@ public class Port extends Struct {
     @Override
     public String toString() {
         return "Port {\n" +
-            "\tstate=" + state +
-            ",\n\tmaxMtu=" + maxMtu +
-            ",\n\tactiveMtu=" + activeMtu +
+            "\tstate=" + getState() +
+            ",\n\tmaxMtu=" + getMaxMtu() +
+            ",\n\tactiveMtu=" + getActiveMtu() +
             ",\n\tgidTableLength=" + gidTableLength +
             ",\n\tportCapabilities=" + portCapabilities +
             ",\n\tmaxMessageSize=" + maxMessageSize +

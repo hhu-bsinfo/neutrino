@@ -3,12 +3,14 @@ package de.hhu.bsinfo.rdma;
 import de.hhu.bsinfo.rdma.verbs.Context;
 import de.hhu.bsinfo.rdma.verbs.Device;
 import de.hhu.bsinfo.rdma.verbs.Port;
+import de.hhu.bsinfo.rdma.verbs.Port.PortState;
 import de.hhu.bsinfo.rdma.verbs.Verbs;
 import java.net.ProtocolException;
 
 public class DeviceTest {
 
     public static void main(String... args) {
+
         int numDevices = Device.getDeviceCount();
 
         if(numDevices <= 0) {
