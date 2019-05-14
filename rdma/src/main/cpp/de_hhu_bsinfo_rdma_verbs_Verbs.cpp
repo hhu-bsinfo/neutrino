@@ -13,6 +13,17 @@ JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_getNumDevices (JNIEnv
     return numDevices;
 }
 
+JNIEXPORT jstring JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_getDeviceName (JNIEnv *env, jclass clazz, jlong contextHandle) {
+    auto context = castHandle<ibv_context>(contextHandle);
+
+    const char *ret = ibv_get_device_name(context->device);
+    if(ret == nullptr) {
+        return env->NewStringUTF("");
+    } else {
+        return env->NewStringUTF(ret);
+    }
+}
+
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_openDevice (JNIEnv *env, jclass clazz, jint index, jlong resultHandle) {
     auto result = castHandle<Result>(resultHandle);
     int numDevices = 0;
@@ -32,6 +43,14 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_openDevice (JNIEnv *e
     result->status = 0;
 
     ibv_free_device_list(devices);
+}
+
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_closeDevice (JNIEnv *env, jclass clazz, jlong contextHandle, jlong resultHandle) {
+    auto context = castHandle<ibv_context>(contextHandle);
+    auto result = castHandle<Result>(resultHandle);
+
+    result->status = ibv_close_device(context);
+    result->handle = 0;
 }
 
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_queryDevice (JNIEnv *env, jclass clazz, jlong contextHandle, jlong deviceHandle, jlong resultHandle) {

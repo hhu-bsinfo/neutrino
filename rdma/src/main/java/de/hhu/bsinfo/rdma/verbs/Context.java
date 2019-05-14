@@ -31,6 +31,22 @@ public class Context {
         return new Context(result.getResultHandle());
     }
 
+    public boolean close() {
+        var result = new Result();
+        Verbs.closeDevice(handle, result.getHandle());
+
+        if(result.isError()) {
+            LOGGER.error("Could not close device");
+            return false;
+        }
+
+        return true;
+    }
+
+    public String getDeviceName() {
+        return Verbs.getDeviceName(handle);
+    }
+
     @Nullable
     public Device queryDevice() {
         var result = new Result();

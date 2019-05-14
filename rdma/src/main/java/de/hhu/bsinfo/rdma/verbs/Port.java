@@ -36,11 +36,11 @@ public class Port extends Struct {
     private final NativeByte flags = new NativeByte(getByteBuffer(), info.getOffset("flags"));
     private final NativeShort portCapabilites2 = new NativeShort(getByteBuffer(), info.getOffset("port_cap_flags2"));
 
-    protected Port() {
+    Port() {
         super(SIZE);
     }
 
-    protected Port(long handle) {
+    Port(long handle) {
         super(handle, SIZE);
     }
 

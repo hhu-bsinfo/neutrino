@@ -17,11 +17,27 @@ JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_getNumDevices
 
 /*
  * Class:     de_hhu_bsinfo_rdma_verbs_Verbs
+ * Method:    getDeviceName
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_getDeviceName
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     de_hhu_bsinfo_rdma_verbs_Verbs
  * Method:    openDevice
  * Signature: (IJ)V
  */
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_openDevice
   (JNIEnv *, jclass, jint, jlong);
+
+/*
+ * Class:     de_hhu_bsinfo_rdma_verbs_Verbs
+ * Method:    closeDevice
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_closeDevice
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     de_hhu_bsinfo_rdma_verbs_Verbs

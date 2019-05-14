@@ -41,11 +41,11 @@ public class Device extends Struct {
         return Verbs.getNumDevices();
     }
 
-    public Device() {
+    Device() {
         super(SIZE);
     }
 
-    public Device(long handle) {
+    Device(long handle) {
         super(handle, SIZE);
     }
 

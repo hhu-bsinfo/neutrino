@@ -17,6 +17,9 @@ public class DeviceTest {
         }
 
         var context = Context.openDevice(0);
+
+        System.out.println("Opened context for device '" + context.getDeviceName() + "'!");
+
         var device = context.queryDevice();
 
         System.out.println(device);
@@ -31,8 +34,10 @@ public class DeviceTest {
 
         if(protectionDomain.deallocate()) {
             System.out.println("Deallocated protection domain!");
-        } else {
-            System.out.println("Could not deallocate protection domain!");
+        }
+
+        if(context.close()) {
+            System.out.println("Closed context!");
         }
     }
 

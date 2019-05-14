@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 public class ProtectionDomain {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Context.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProtectionDomain.class);
 
     private final long handle;
 
@@ -18,6 +18,11 @@ public class ProtectionDomain {
         var result = new Result();
         Verbs.deallocateProtectionDomain(handle, result.getHandle());
 
-        return !result.isError();
+        if(result.isError()) {
+            LOGGER.error("Could not deallocate protection domain");
+            return false;
+        }
+
+        return true;
     }
 }
