@@ -14,28 +14,28 @@ public class Device extends Struct {
 
     private static final int SIZE = info.structSize.get();
 
-    public final NativeString firmwareVersion = new NativeString(getByteBuffer(), info.getOffset("fw_ver"), 64);
-    public final NativeLong nodeGuid = new NativeLong(getByteBuffer(), info.getOffset("node_guid"));
-    public final NativeLong systemImageGuid = new NativeLong(getByteBuffer(), info.getOffset("sys_image_guid"));
-    public final NativeLong maxMemoryRegionSize = new NativeLong(getByteBuffer(), info.getOffset("max_mr_size"));
-    public final NativeLong pageSizeCapabilities = new NativeLong(getByteBuffer(), info.getOffset("page_size_cap"));
-    public final NativeInteger vendorId = new NativeInteger(getByteBuffer(), info.getOffset("vendor_id"));
-    public final NativeInteger vendorPartId = new NativeInteger(getByteBuffer(), info.getOffset("vendor_part_id"));
-    public final NativeInteger hardwareVersion = new NativeInteger(getByteBuffer(), info.getOffset("hw_ver"));
-    public final NativeInteger maxQueuePairCount = new NativeInteger(getByteBuffer(), info.getOffset("max_qp"));
-    public final NativeInteger maxQueuePairSize = new NativeInteger(getByteBuffer(), info.getOffset("max_qp_wr"));
-    public final NativeInteger deviceCapabilities = new NativeInteger(getByteBuffer(), info.getOffset("device_cap_flags"));
-    public final NativeInteger maxScatterGatherCount = new NativeInteger(getByteBuffer(), info.getOffset("max_sge"));
-    public final NativeInteger maxRdScatterGatherCount = new NativeInteger(getByteBuffer(), info.getOffset("max_sge_rd"));
-    public final NativeInteger maxCompletionQueueCount = new NativeInteger(getByteBuffer(), info.getOffset("max_cq"));
-    public final NativeInteger maxCompletionQueueSize = new NativeInteger(getByteBuffer(), info.getOffset("max_cqe"));
-    public final NativeInteger maxMemoryRegionCount = new NativeInteger(getByteBuffer(), info.getOffset("max_mr"));
-    public final NativeInteger maxProtectionDomainCount = new NativeInteger(getByteBuffer(), info.getOffset("max_pd"));
-    public final NativeInteger maxAddressHandles = new NativeInteger(getByteBuffer(), info.getOffset("max_ah"));
-    public final NativeInteger maxSharedReceiveQueueCount = new NativeInteger(getByteBuffer(), info.getOffset("max_srq"));
-    public final NativeInteger maxSharedReceiveQueueSize = new NativeInteger(getByteBuffer(), info.getOffset("max_srq_wr"));
-    public final NativeInteger maxSharedReceiveQueueScatterGatherCount = new NativeInteger(getByteBuffer(), info.getOffset("max_srq_sge"));
-    public final NativeByte physicalPortCount = new NativeByte(getByteBuffer(), info.getOffset("phys_port_cnt"));
+    private final NativeString firmwareVersion = new NativeString(getByteBuffer(), info.getOffset("fw_ver"), 64);
+    private final NativeLong nodeGuid = new NativeLong(getByteBuffer(), info.getOffset("node_guid"));
+    private final NativeLong systemImageGuid = new NativeLong(getByteBuffer(), info.getOffset("sys_image_guid"));
+    private final NativeLong maxMemoryRegionSize = new NativeLong(getByteBuffer(), info.getOffset("max_mr_size"));
+    private final NativeLong pageSizeCapabilities = new NativeLong(getByteBuffer(), info.getOffset("page_size_cap"));
+    private final NativeInteger vendorId = new NativeInteger(getByteBuffer(), info.getOffset("vendor_id"));
+    private final NativeInteger vendorPartId = new NativeInteger(getByteBuffer(), info.getOffset("vendor_part_id"));
+    private final NativeInteger hardwareVersion = new NativeInteger(getByteBuffer(), info.getOffset("hw_ver"));
+    private final NativeInteger maxQueuePairCount = new NativeInteger(getByteBuffer(), info.getOffset("max_qp"));
+    private final NativeInteger maxQueuePairSize = new NativeInteger(getByteBuffer(), info.getOffset("max_qp_wr"));
+    private final NativeInteger deviceCapabilities = new NativeInteger(getByteBuffer(), info.getOffset("device_cap_flags"));
+    private final NativeInteger maxScatterGatherCount = new NativeInteger(getByteBuffer(), info.getOffset("max_sge"));
+    private final NativeInteger maxRdScatterGatherCount = new NativeInteger(getByteBuffer(), info.getOffset("max_sge_rd"));
+    private final NativeInteger maxCompletionQueueCount = new NativeInteger(getByteBuffer(), info.getOffset("max_cq"));
+    private final NativeInteger maxCompletionQueueSize = new NativeInteger(getByteBuffer(), info.getOffset("max_cqe"));
+    private final NativeInteger maxMemoryRegionCount = new NativeInteger(getByteBuffer(), info.getOffset("max_mr"));
+    private final NativeInteger maxProtectionDomainCount = new NativeInteger(getByteBuffer(), info.getOffset("max_pd"));
+    private final NativeInteger maxAddressHandles = new NativeInteger(getByteBuffer(), info.getOffset("max_ah"));
+    private final NativeInteger maxSharedReceiveQueueCount = new NativeInteger(getByteBuffer(), info.getOffset("max_srq"));
+    private final NativeInteger maxSharedReceiveQueueSize = new NativeInteger(getByteBuffer(), info.getOffset("max_srq_wr"));
+    private final NativeInteger maxSharedReceiveQueueScatterGatherCount = new NativeInteger(getByteBuffer(), info.getOffset("max_srq_sge"));
+    private final NativeByte physicalPortCount = new NativeByte(getByteBuffer(), info.getOffset("phys_port_cnt"));
 
     public Device() {
         super(SIZE);
@@ -43,6 +43,94 @@ public class Device extends Struct {
 
     public Device(long handle) {
         super(handle, SIZE);
+    }
+
+    public String getFirmwareVersion() {
+        return firmwareVersion.get();
+    }
+
+    public long getNodeGuid() {
+        return nodeGuid.get();
+    }
+
+    public long getSystemImageGuid() {
+        return systemImageGuid.get();
+    }
+
+    public long getMaxMemoryRegionSize() {
+        return maxMemoryRegionSize.get();
+    }
+
+    public long getPageSizeCapabilities() {
+        return pageSizeCapabilities.get();
+    }
+
+    public int getVendorId() {
+        return vendorId.get();
+    }
+
+    public int getVendorPartId() {
+        return vendorPartId.get();
+    }
+
+    public int getHardwareVersion() {
+        return hardwareVersion.get();
+    }
+
+    public int getMaxQueuePairCount() {
+        return maxQueuePairCount.get();
+    }
+
+    public int getMaxQueuePairSize() {
+        return maxQueuePairSize.get();
+    }
+
+    public int getDeviceCapabilities() {
+        return deviceCapabilities.get();
+    }
+
+    public int getMaxScatterGatherCount() {
+        return maxScatterGatherCount.get();
+    }
+
+    public int getMaxRdScatterGatherCount() {
+        return maxRdScatterGatherCount.get();
+    }
+
+    public int getMaxCompletionQueueCount() {
+        return maxCompletionQueueCount.get();
+    }
+
+    public int getMaxCompletionQueueSize() {
+        return maxCompletionQueueSize.get();
+    }
+
+    public int getMaxMemoryRegionCount() {
+        return maxMemoryRegionCount.get();
+    }
+
+    public int getMaxProtectionDomainCount() {
+        return maxProtectionDomainCount.get();
+    }
+
+    public int getMaxAddressHandles() {
+        return maxAddressHandles.get();
+    }
+
+    public int getMaxSharedReceiveQueueCount() {
+        return maxSharedReceiveQueueCount.get();
+    }
+
+    public int getMaxSharedReceiveQueueSize() {
+        return maxSharedReceiveQueueSize.get();
+    }
+
+    public int getMaxSharedReceiveQueueScatterGatherCount() {
+        return maxSharedReceiveQueueScatterGatherCount.get();
+    }
+
+    public byte getPhysicalPortCount() {
+        return physicalPortCount.get();
     }
 
     @Override
