@@ -14,17 +14,27 @@ public class NativeString extends NativeDataType {
 
     public void set(final String value) {
         byte[] bytes = value.getBytes(StandardCharsets.US_ASCII);
-        getByteBuffer().put(bytes, getOffset(), length > bytes.length ? bytes.length : length);
+
+        getByteBuffer().position(getOffset());
+        getByteBuffer().put(bytes, 0, length > bytes.length ? bytes.length : length);
 
         if (length > bytes.length) {
-            getByteBuffer().put(new byte[length - bytes.length], getOffset() + bytes.length, length - bytes.length);
+            getByteBuffer().put(new byte[length - bytes.length], 0, length - bytes.length);
         }
+
+        getByteBuffer().rewind();
     }
 
     public String get() {
         byte[] bytes = new byte[length];
+
+        getByteBuffer().position(getOffset());
         getByteBuffer().get(bytes, getOffset(), length);
-        return new String(bytes, 0, getLength(bytes), StandardCharsets.US_ASCII);
+
+        String ret = new String(bytes, 0, getLength(bytes), StandardCharsets.US_ASCII);
+        getByteBuffer().rewind();
+
+        return ret;
     }
 
     private int getLength(byte[] bytes) {
