@@ -5,41 +5,46 @@ import java.nio.charset.StandardCharsets;
 
 public class NativeString extends NativeDataType {
 
-    private final int length;
+    private final NativeByte[] bytes;
 
     public NativeString(final ByteBuffer byteBuffer, final int offset, final int length) {
         super(byteBuffer, offset);
-        this.length = length;
+        bytes = new NativeByte[length];
+
+        for(int i = 0; i < bytes.length; i++) {
+            bytes[i] = new NativeByte(byteBuffer, offset + i);
+        }
     }
 
     public void set(final String value) {
-        byte[] bytes = value.getBytes(StandardCharsets.US_ASCII);
+        byte[] valueBytes = value.getBytes(StandardCharsets.US_ASCII);
 
-        getByteBuffer().position(getOffset());
-        getByteBuffer().put(bytes, 0, length > bytes.length ? bytes.length : length);
-
-        if (length > bytes.length) {
-            getByteBuffer().put(new byte[length - bytes.length], 0, length - bytes.length);
+        for(int i = 0; i < size(); i++) {
+            if(i < valueBytes.length) {
+                bytes[i].set(valueBytes[i]);
+            } else {
+                bytes[i].set((byte) 0);
+            }
         }
-
-        getByteBuffer().rewind();
     }
 
     public String get() {
-        byte[] bytes = new byte[length];
+        byte[] ret = new byte[size()];
 
-        getByteBuffer().position(getOffset());
-        getByteBuffer().get(bytes, getOffset(), length);
+        for(int i = 0; i < size(); i++) {
+            ret[i] = bytes[i].get();
+        }
 
-        String ret = new String(bytes, 0, getLength(bytes), StandardCharsets.US_ASCII);
-        getByteBuffer().rewind();
-
-        return ret;
+        return new String(ret, 0, length(), StandardCharsets.US_ASCII);
     }
 
-    private int getLength(byte[] bytes) {
-        for(int i = 0; i < bytes.length; i++) {
-            if (bytes[i] == 0) {
+    public int size() {
+        return bytes.length;
+    }
+
+    private int length() {
+        for(int i = 0; i < size(); i++) {
+            if (bytes[i].get() == 0) {
                 return i;
             }
         }
