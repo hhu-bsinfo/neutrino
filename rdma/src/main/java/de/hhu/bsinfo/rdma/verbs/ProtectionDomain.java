@@ -1,6 +1,13 @@
 package de.hhu.bsinfo.rdma.verbs;
 
+import de.hhu.bsinfo.rdma.data.MemoryUtil;
 import de.hhu.bsinfo.rdma.data.Result;
+import de.hhu.bsinfo.rdma.verbs.MemoryRegion.AccessFlag;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +21,10 @@ public class ProtectionDomain {
         this.handle = handle;
     }
 
+    long getHandle() {
+        return handle;
+    }
+
     public boolean deallocate() {
         var result = new Result();
         Verbs.deallocateProtectionDomain(handle, result.getHandle());
@@ -24,5 +35,23 @@ public class ProtectionDomain {
         }
 
         return true;
+    }
+
+    @Nullable
+    public MemoryRegion registerMemoryRegion(ByteBuffer buffer, AccessFlag... flags) {
+        int access = 0;
+        for(var flag : flags) {
+            access |= flag.getValue();
+        }
+
+        var result = new Result();
+        Verbs.registerMemoryRegion(handle, MemoryUtil.getAddress(buffer), buffer.capacity(), access, result.getHandle());
+
+        if(result.isError()) {
+            LOGGER.error("Could not register memory region");
+            return null;
+        }
+
+        return new MemoryRegion(result.getResultHandle(), buffer);
     }
 }

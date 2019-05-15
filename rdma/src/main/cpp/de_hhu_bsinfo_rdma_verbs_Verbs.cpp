@@ -86,3 +86,19 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_deallocateProtectionD
     result->status = ibv_dealloc_pd(protectionDomain);
     result->handle = 0;
 }
+
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_registerMemoryRegion (JNIEnv *env, jclass clazz, jlong protectionDomainHandle, jlong address, jlong size, jint accessFlags, jlong resultHandle) {
+    auto protectionDomain = castHandle<ibv_pd>(protectionDomainHandle);
+    auto result = castHandle<Result>(resultHandle);
+
+    result->handle = reinterpret_cast<long>(ibv_reg_mr(protectionDomain, reinterpret_cast<void *>(address), size, accessFlags));
+    result->status = result->handle == 0 ? errno : 0;
+}
+
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_deregisterMemoryRegion (JNIEnv *env, jclass clazz, jlong memoryRegionHandle, jlong resultHandle) {
+    auto memoryRegion = castHandle<ibv_mr>(memoryRegionHandle);
+    auto result = castHandle<Result>(resultHandle);
+
+    result->status = ibv_dereg_mr(memoryRegion);
+    result->handle = 0;
+}

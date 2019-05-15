@@ -15,4 +15,6 @@ public class Verbs {
     static native void queryPort(long contextHandle, long portHandle, int portNumber, long resultHandle);
     static native void allocateProtectionDomain(long contextHandle, long resultHandle);
     static native void deallocateProtectionDomain(long protectionDomainHandle, long resultHandle);
+    static native void registerMemoryRegion(long protectionDomainHandle, long address, long size, int accessFlags, long resultHandle);
+    static native void deregisterMemoryRegion(long memoryRegionHandle, long resultHandle);
 }

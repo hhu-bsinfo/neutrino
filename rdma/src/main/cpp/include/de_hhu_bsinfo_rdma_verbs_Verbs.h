@@ -71,6 +71,22 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_allocateProtectionDom
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_deallocateProtectionDomain
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     de_hhu_bsinfo_rdma_verbs_Verbs
+ * Method:    registerMemoryRegion
+ * Signature: (JJJIJ)V
+ */
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_registerMemoryRegion
+  (JNIEnv *, jclass, jlong, jlong, jlong, jint, jlong);
+
+/*
+ * Class:     de_hhu_bsinfo_rdma_verbs_Verbs
+ * Method:    deregisterMemoryRegion
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_de_hhu_bsinfo_rdma_verbs_Verbs_deregisterMemoryRegion
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif
