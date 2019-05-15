@@ -1,5 +1,6 @@
 package de.hhu.bsinfo.neutrino.example;
 
+import de.hhu.bsinfo.neutrino.util.StructUtil;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
 import de.hhu.bsinfo.neutrino.verbs.MemoryRegion.AccessFlag;
@@ -14,6 +15,8 @@ public class App {
     private static final int BUFFER_SIZE = 1024;
 
     public static void main(String... args) {
+
+        var x = StructUtil.getInfo("ibv_device_attr");
 
         int numDevices = Device.getDeviceCount();
 
@@ -39,7 +42,7 @@ public class App {
         LOGGER.info("Allocated protection domain!");
 
         ByteBuffer buffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
-        var memoryRegion = protectionDomain.registerMemoryRegion(buffer, AccessFlag.IBV_ACCESS_LOCAL_WRITE, AccessFlag.IBV_ACCESS_REMOTE_READ, AccessFlag.IBV_ACCESS_REMOTE_WRITE);
+        var memoryRegion = protectionDomain.registerMemoryRegion(buffer, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
 
         LOGGER.info("Registered memory region!");
 
@@ -55,5 +58,4 @@ public class App {
             LOGGER.info("Closed context!");
         }
     }
-
 }
