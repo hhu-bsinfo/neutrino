@@ -16,8 +16,6 @@ public class App {
 
     public static void main(String... args) {
 
-        var x = StructUtil.getInfo("ibv_device_attr");
-
         int numDevices = Device.getDeviceCount();
 
         if(numDevices <= 0) {
