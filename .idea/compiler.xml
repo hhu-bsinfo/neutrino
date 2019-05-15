@@ -6,6 +6,8 @@
       <module name="bsinfo-rdma-rdma_test" target="11" />
       <module name="de.hhu.bsinfo-rdma-rdma_main" target="11" />
       <module name="de.hhu.bsinfo-rdma-rdma_test" target="11" />
+      <module name="example_main" target="11" />
+      <module name="example_test" target="11" />
       <module name="rdma-rdma_main" target="11" />
       <module name="rdma-rdma_test" target="11" />
     </bytecodeTargetLevel>

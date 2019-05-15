@@ -1,5 +1,5 @@
 plugins {
-    id 'application'
+    id 'java-library'
 }
 
 compileJava {
@@ -10,30 +10,6 @@ compileJava {
 
 group = 'de.hhu.bsinfo'
 version = getProperty('projectVersion')
-
-mainClassName = 'de.hhu.bsinfo.rdma.DeviceTest'
-
-applicationDefaultJvmArgs = [
-        "-Djava.library.path=${System.getProperty('java.library.path')}:RDMA_HOME/jni",
-]
-
-run.jvmArgs = [
-        "-Djava.library.path=${System.getProperty('java.library.path')}:RDMA_HOME/jni:${project(':jni').buildDir}/lib/main/debug",
-]
-
-project.startScripts.with {
-    doLast {
-        unixScript.text = unixScript.text.replace('RDMA_HOME', '\$APP_HOME')
-    }
-}
-
-installDist.doLast {
-    project.file("$project.buildDir/install/$project.name/jni").mkdir()
-    project.copy {
-        from file("${project(':jni').buildDir}/lib/main/debug/librdma.so")
-        into file("$project.buildDir/install/$project.name/jni")
-    }
-}
 
 compileJava.dependsOn(':jni:build')
 
@@ -48,7 +24,7 @@ compileJava {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     
-    implementation 'org.slf4j:slf4j-api:1.7.26'
+    api 'org.slf4j:slf4j-api:1.7.26'
     implementation 'org.jetbrains:annotations:17.0.0'
     
     testImplementation 'com.greghaskins:spectrum:1.2.0'

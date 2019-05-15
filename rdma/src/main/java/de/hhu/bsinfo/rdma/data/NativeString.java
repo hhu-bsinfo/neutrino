@@ -5,51 +5,47 @@ import java.nio.charset.StandardCharsets;
 
 public class NativeString extends NativeDataType {
 
-    private final NativeByte[] bytes;
+    private final int length;
+
+    private static final byte ZERO = 0;
 
     public NativeString(final ByteBuffer byteBuffer, final int offset, final int length) {
         super(byteBuffer, offset);
-        bytes = new NativeByte[length];
-
-        for(int i = 0; i < bytes.length; i++) {
-            bytes[i] = new NativeByte(byteBuffer, offset + i);
-        }
+        this.length = length;
     }
 
     public void set(final String value) {
         byte[] valueBytes = value.getBytes(StandardCharsets.US_ASCII);
-
-        for(int i = 0; i < size(); i++) {
-            if(i < valueBytes.length) {
-                bytes[i].set(valueBytes[i]);
+        for(int i = 0; i < length; i++) {
+            if(i < length) {
+                getByteBuffer().put(getOffset() + i, valueBytes[i]);
             } else {
-                bytes[i].set((byte) 0);
+                getByteBuffer().put(getOffset() + i, ZERO);
             }
         }
     }
 
     public String get() {
         byte[] ret = new byte[size()];
-
         for(int i = 0; i < size(); i++) {
-            ret[i] = bytes[i].get();
+            ret[i] = getByteBuffer().get(getOffset() + i);
         }
 
         return new String(ret, 0, length(), StandardCharsets.US_ASCII);
     }
 
     public int size() {
-        return bytes.length;
+        return length;
     }
 
     private int length() {
         for(int i = 0; i < size(); i++) {
-            if (bytes[i].get() == 0) {
+            if (getByteBuffer().get(i) == ZERO) {
                 return i;
             }
         }
 
-        return bytes.length;
+        return length;
     }
 
     @Override

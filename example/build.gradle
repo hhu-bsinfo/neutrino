@@ -1,0 +1,57 @@
+plugins {
+    id 'application'
+}
+
+compileJava {
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+    options.encoding = 'UTF-8'
+}
+
+group = 'de.hhu.bsinfo'
+version = getProperty('projectVersion')
+
+mainClassName = 'de.hhu.bsinfo.rdma.example.App'
+
+applicationDefaultJvmArgs = [
+        "-Djava.library.path=${System.getProperty('java.library.path')}:RDMA_HOME/jni",
+]
+
+run.jvmArgs = [
+        "-Djava.library.path=${System.getProperty('java.library.path')}:RDMA_HOME/jni:${project(':jni').buildDir}/lib/main/debug",
+]
+
+project.startScripts.with {
+    doLast {
+        unixScript.text = unixScript.text.replace('RDMA_HOME', '\$APP_HOME')
+    }
+}
+
+installDist.doLast {
+    project.file("$project.buildDir/install/$project.name/jni").mkdir()
+    project.copy {
+        from file("${project(':jni').buildDir}/lib/main/debug/librdma.so")
+        into file("$project.buildDir/install/$project.name/jni")
+    }
+}
+
+compileJava.dependsOn(':jni:build')
+
+repositories {
+    mavenCentral()
+}
+
+compileJava {
+    options.compilerArgs += ['-h', project.file('src/main/cpp/include')]
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    
+    implementation project(':rdma')
+    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.11.2'
+
+
+    testImplementation 'com.greghaskins:spectrum:1.2.0'
+    testImplementation 'org.assertj:assertj-core:3.12.2'
+}
