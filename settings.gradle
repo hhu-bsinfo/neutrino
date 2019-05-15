@@ -1,1 +1,1 @@
-include ':rdma', ':jni', ':example'
+include ':neutrino', ':jni', ':example'

@@ -9,12 +9,12 @@ group = 'de.hhu.bsinfo'
 version = getProperty('projectVersion')
 
 library {
-    baseName = 'rdma'
+    baseName = 'neutrino'
     targetMachines = [machines.linux]
     
-    source.from "${project(':rdma').file('src/main/cpp')}"
+    source.from "${project(':neutrino').file('src/main/cpp')}"
     
-    publicHeaders.from "${project(':rdma').file('src/main/cpp/include')}"
+    publicHeaders.from "${project(':neutrino').file('src/main/cpp/include')}"
                         
     privateHeaders.from "${Jvm.current().javaHome}/include",
                         "${Jvm.current().javaHome}/include/linux"
