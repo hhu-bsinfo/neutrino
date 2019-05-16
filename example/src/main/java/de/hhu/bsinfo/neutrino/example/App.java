@@ -14,6 +14,8 @@ public class App {
 
     private static final int BUFFER_SIZE = 1024;
 
+    private static final int COMPLETIONQUEUE_SIZE = 100;
+
     public static void main(String... args) {
 
         int numDevices = Device.getDeviceCount();
@@ -43,6 +45,14 @@ public class App {
         var memoryRegion = protectionDomain.registerMemoryRegion(buffer, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
 
         LOGGER.info("Registered memory region!");
+
+        var completionQueue = context.createCompletionQueue(COMPLETIONQUEUE_SIZE);
+
+        LOGGER.info("Created completion queue");
+
+        if (completionQueue.destroy()) {
+            LOGGER.info("Destroyed completion queue");
+        }
 
         if(memoryRegion.deregister()) {
             LOGGER.info("Deregistered memory region!");
