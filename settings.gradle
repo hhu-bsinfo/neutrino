@@ -1,1 +1,1 @@
-include ':neutrino', ':jni', ':example'
+include ':neutrino', ':jni', ':example', ':codegen'

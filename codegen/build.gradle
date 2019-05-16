@@ -1,0 +1,28 @@
+plugins {
+    id 'application'
+}
+
+compileJava {
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+    options.encoding = 'UTF-8'
+}
+
+mainClassName = 'de.hhu.bsinfo.neutrino.code.StructGenerator'
+
+group = 'de.hhu.bsinfo'
+version = getProperty('projectVersion')
+
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'com.squareup:javapoet:1.11.1'
+    
+    testImplementation 'com.greghaskins:spectrum:1.2.0'
+    testImplementation 'org.assertj:assertj-core:3.12.2'
+}

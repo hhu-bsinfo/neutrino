@@ -2,6 +2,8 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
+      <module name="codegen_main" target="11" />
+      <module name="codegen_test" target="11" />
       <module name="example_main" target="11" />
       <module name="example_test" target="11" />
       <module name="neutrino-neutrino_main" target="11" />
