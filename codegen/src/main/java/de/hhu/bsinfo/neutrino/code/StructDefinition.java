@@ -5,6 +5,7 @@ import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
 
@@ -44,14 +45,36 @@ public class StructDefinition {
             .addFields(members.stream().map(StructDefinition::toFieldSpec).collect(Collectors.toList()))
             .addMethod(primaryConstructor)
             .addMethod(secondaryConstructor)
+            .addMethods(members.stream().map(StructDefinition::createGetterMethod).collect(Collectors.toList()))
+            .addMethods(members.stream().map(StructDefinition::createSetterMethod).collect(Collectors.toList()))
             .build();
     }
 
     private static FieldSpec toFieldSpec(StructMember member) {
-        var fieldType = ClassName.get("de.hhu.bsinfo.neutrino.data", "NativeLong");
-        return FieldSpec.builder(fieldType, member.getName())
+        var typeInfo = MemberMappings.resolve(member);
+        return FieldSpec.builder(typeInfo.getWrapperType(), member.getName())
             .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
-            .initializer("new NativeLong(getByteBuffer(), INFO.getOffset($S))", member.getName())
+            .initializer("new $T(getByteBuffer(), INFO.getOffset($S))", typeInfo.getWrapperType(), member.getName())
             .build();
+    }
+
+    private static MethodSpec createGetterMethod(StructMember member) {
+        var typeInfo = MemberMappings.resolve(member);
+        return MethodSpec.methodBuilder(String.format("get" + capitalize(member.getName())))
+            .returns(typeInfo.getActualType())
+            .addStatement("$L.get()", member.getName())
+            .build();
+    }
+
+    private static MethodSpec createSetterMethod(StructMember member) {
+        var typeInfo = MemberMappings.resolve(member);
+        return MethodSpec.methodBuilder(String.format("set" + capitalize(member.getName())))
+            .addParameter(typeInfo.getActualType(), "value", Modifier.FINAL)
+            .addStatement("$L.set(value)", member.getName())
+            .build();
+    }
+
+    private static String capitalize(String input) {
+        return input.substring(0, 1).toUpperCase(Locale.getDefault()) + input.substring(1);
     }
 }

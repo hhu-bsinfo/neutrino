@@ -19,7 +19,7 @@ import javax.lang.model.element.Modifier;
 public class StructGenerator {
 
     private static final Pattern STRUCT_PATTERN = Pattern.compile("struct\\s+(\\w+)\\s+\\{\\s+(.*?)\\s+};", Pattern.MULTILINE | Pattern.DOTALL);
-    private static final Pattern STRUCT_MEMBER_PATTERN = Pattern.compile("(\\w+)\\s+\\**(\\w+)(\\[\\d*])?;", Pattern.MULTILINE);
+    private static final Pattern STRUCT_MEMBER_PATTERN = Pattern.compile("(?<special>enum|struct)?\\s*(?<type>\\w+)\\s+(?<pointer>\\**)(?<name>\\w+)(?<size>\\[\\d*])?;", Pattern.MULTILINE);
 
     public static void main(String... args) throws Exception {
 
@@ -28,7 +28,7 @@ public class StructGenerator {
         var structs = getStructs(content);
 
         structs.forEach((key, value) -> {
-            System.out.println(NativeMapGenerator.generate(key, value));
+            System.out.println(generateClass(key, value));
         });
     }
 
@@ -40,7 +40,12 @@ public class StructGenerator {
             var memberMatcher = STRUCT_MEMBER_PATTERN.matcher(matcher.group(2));
             var memberList = new ArrayList<StructMember>();
             while (memberMatcher.find()) {
-                memberList.add(new StructMember(memberMatcher.group(1), memberMatcher.group(2)));
+                memberList.add(new StructMember(
+                    memberMatcher.group("name"),
+                    memberMatcher.group("type"),
+                    memberMatcher.group("pointer"),
+                    memberMatcher.group("size"),
+                    memberMatcher.group("special")));
             }
             map.put(matcher.group(1), memberList);
         }
@@ -51,7 +56,6 @@ public class StructGenerator {
     private static String generateClass(String structName, List<StructMember> members) {
 
         TypeSpec typeSpec = StructDefinition.generate(structName, members);
-
 
         JavaFile javaFile = JavaFile.builder("de.hhu.bsinfo.neutrino.generated", typeSpec)
             .build();
