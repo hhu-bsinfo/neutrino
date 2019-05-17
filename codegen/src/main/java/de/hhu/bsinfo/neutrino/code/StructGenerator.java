@@ -18,7 +18,7 @@ import javax.lang.model.element.Modifier;
 
 public class StructGenerator {
 
-    private static final Pattern STRUCT_PATTERN = Pattern.compile("struct\\s+(\\w+)\\s+\\{\\s+(.*?)\\s+};", Pattern.MULTILINE | Pattern.DOTALL);
+    private static final Pattern STRUCT_PATTERN = Pattern.compile("struct\\s+(\\w+)\\s+\\{\\s+(.*?)\\s+^};", Pattern.MULTILINE | Pattern.DOTALL);
     private static final Pattern STRUCT_MEMBER_PATTERN = Pattern.compile("(?<special>enum|struct)?\\s*(?<type>\\w+)\\s+(?<pointer>\\**)(?<name>\\w+)(?<size>\\[\\d*])?;", Pattern.MULTILINE);
 
     public static void main(String... args) throws Exception {

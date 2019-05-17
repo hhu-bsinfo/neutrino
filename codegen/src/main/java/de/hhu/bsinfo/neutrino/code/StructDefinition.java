@@ -62,7 +62,7 @@ public class StructDefinition {
         var typeInfo = MemberMappings.resolve(member);
         return MethodSpec.methodBuilder(String.format("get" + capitalize(member.getName())))
             .returns(typeInfo.getActualType())
-            .addStatement("$L.get()", member.getName())
+            .addStatement("return $L.get()", member.getName())
             .build();
     }
 
