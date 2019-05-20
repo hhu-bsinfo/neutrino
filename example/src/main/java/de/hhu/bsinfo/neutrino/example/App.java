@@ -4,6 +4,7 @@ import de.hhu.bsinfo.neutrino.util.StructUtil;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
 import de.hhu.bsinfo.neutrino.verbs.MemoryRegion.AccessFlag;
+import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
 import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,10 @@ public class App {
     private static final int COMPLETIONQUEUE_SIZE = 100;
 
     public static void main(String... args) {
+
+        var send = new SendWorkRequest();
+
+        LOGGER.info(send.toString());
 
         int numDevices = Device.getDeviceCount();
 
