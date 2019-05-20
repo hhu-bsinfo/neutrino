@@ -19,10 +19,6 @@ public class App {
 
     public static void main(String... args) {
 
-        var send = new SendWorkRequest();
-
-        LOGGER.info(send.toString());
-
         int numDevices = Device.getDeviceCount();
 
         if(numDevices <= 0) {
