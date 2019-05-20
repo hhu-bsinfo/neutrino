@@ -29,6 +29,7 @@ public class StructGenerator {
 
         structs.forEach((key, value) -> {
             System.out.println(generateClass(key, value));
+            System.out.println(NativeMapGenerator.generate(key, value));
         });
     }
 
