@@ -1,1 +1,3 @@
 include ':neutrino', ':jni', ':example', ':codegen'
+include 'benchmark'
+
