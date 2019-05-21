@@ -1,7 +1,6 @@
-package de.hhu.bsinfo.neutrino.benchmark.pool;
+package de.hhu.bsinfo.neutrino.util;
 
 import de.hhu.bsinfo.neutrino.struct.Result;
-import de.hhu.bsinfo.neutrino.util.ObjectPool;
 import java.util.Objects;
 
 public class RingBufferResultPool implements ObjectPool<Result> {
@@ -10,6 +9,10 @@ public class RingBufferResultPool implements ObjectPool<Result> {
 
     public RingBufferResultPool(int size) {
         buffer = new RingBuffer<>(size, Result.class);
+
+        for(int i = 0; i < buffer.size(); i++) {
+            buffer.push(new Result());
+        }
     }
 
     @Override

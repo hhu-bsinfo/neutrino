@@ -1,18 +1,11 @@
 package de.hhu.bsinfo.neutrino.benchmark;
 
-import de.hhu.bsinfo.neutrino.benchmark.pool.RingBufferResultPool;
 import de.hhu.bsinfo.neutrino.struct.Result;
 import de.hhu.bsinfo.neutrino.util.ObjectPool;
-import java.util.concurrent.TimeUnit;
+import de.hhu.bsinfo.neutrino.util.RingBufferResultPool;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 
 public class RingBufferResultPoolBenchmark {
 
