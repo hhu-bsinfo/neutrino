@@ -2519,6 +2519,7 @@
     <inspection_tool class="StringEqualsEmptyString" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="StringEqualsIgnoreCase" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="StringLiteralBreaksHTMLJS" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="StringOperationCanBeSimplified" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="StringReplaceableByStringBuffer" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="onlyWarnOnLoop" value="true" />
     </inspection_tool>
@@ -2940,7 +2941,10 @@
     <inspection_tool class="UtilityClassWithPublicConstructor" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="UtilityClassWithoutPrivateConstructor" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignorableAnnotations">
-        <value />
+        <value>
+          <item value="de.hhu.bsinfo.neutrino.benchmark.LinkedQueueResultPoolBenchmark.State" />
+          <item value="org.openjdk.jmh.annotations.State" />
+        </value>
       </option>
       <option name="ignoreClassesWithOnlyMain" value="false" />
     </inspection_tool>
