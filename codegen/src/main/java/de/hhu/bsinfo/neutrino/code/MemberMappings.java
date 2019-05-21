@@ -16,27 +16,27 @@ public class MemberMappings {
     private static final Map<String, TypeInfo> TYPE_MAPPINGS = new HashMap<>();
 
     static {
-        TYPE_MAPPINGS.put("byte", new TypeInfo(NATIVE_BYTE_CLASS, byte.class));
-        TYPE_MAPPINGS.put("uint8_t", new TypeInfo(NATIVE_BYTE_CLASS, byte.class));
-        TYPE_MAPPINGS.put("char", new TypeInfo(NATIVE_BYTE_CLASS, byte.class));
+        TYPE_MAPPINGS.put("byte", new TypeInfo(NATIVE_BYTE_CLASS, byte.class, "byteField"));
+        TYPE_MAPPINGS.put("uint8_t", new TypeInfo(NATIVE_BYTE_CLASS, byte.class, "byteField"));
+        TYPE_MAPPINGS.put("char", new TypeInfo(NATIVE_BYTE_CLASS, byte.class, "byteField"));
 
-        TYPE_MAPPINGS.put("short", new TypeInfo(NATIVE_SHORT_CLASS, short.class));
-        TYPE_MAPPINGS.put("uint16_t", new TypeInfo(NATIVE_SHORT_CLASS, short.class));
-        TYPE_MAPPINGS.put("__be16", new TypeInfo(NATIVE_SHORT_CLASS, short.class));
+        TYPE_MAPPINGS.put("short", new TypeInfo(NATIVE_SHORT_CLASS, short.class, "shortField"));
+        TYPE_MAPPINGS.put("uint16_t", new TypeInfo(NATIVE_SHORT_CLASS, short.class, "shortField"));
+        TYPE_MAPPINGS.put("__be16", new TypeInfo(NATIVE_SHORT_CLASS, short.class, "shortField"));
 
-        TYPE_MAPPINGS.put("int", new TypeInfo(NATIVE_INTEGER_CLASS, int.class));
-        TYPE_MAPPINGS.put("uint32_t", new TypeInfo(NATIVE_INTEGER_CLASS, int.class));
-        TYPE_MAPPINGS.put("__be32", new TypeInfo(NATIVE_INTEGER_CLASS, int.class));
+        TYPE_MAPPINGS.put("int", new TypeInfo(NATIVE_INTEGER_CLASS, int.class, "integerField"));
+        TYPE_MAPPINGS.put("uint32_t", new TypeInfo(NATIVE_INTEGER_CLASS, int.class, "integerField"));
+        TYPE_MAPPINGS.put("__be32", new TypeInfo(NATIVE_INTEGER_CLASS, int.class, "integerField"));
 
-        TYPE_MAPPINGS.put("long", new TypeInfo(NATIVE_LONG_CLASS, long.class));
-        TYPE_MAPPINGS.put("uint64_t", new TypeInfo(NATIVE_LONG_CLASS, long.class));
-        TYPE_MAPPINGS.put("__be64", new TypeInfo(NATIVE_LONG_CLASS, long.class));
-        TYPE_MAPPINGS.put("size_t", new TypeInfo(NATIVE_LONG_CLASS, long.class));
+        TYPE_MAPPINGS.put("long", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
+        TYPE_MAPPINGS.put("uint64_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
+        TYPE_MAPPINGS.put("__be64", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
+        TYPE_MAPPINGS.put("size_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
 
-        TYPE_MAPPINGS.put("pthread_mutex_t", new TypeInfo(NATIVE_LONG_CLASS, long.class));
-        TYPE_MAPPINGS.put("pthread_cond_t", new TypeInfo(NATIVE_LONG_CLASS, long.class));
+        TYPE_MAPPINGS.put("pthread_mutex_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
+        TYPE_MAPPINGS.put("pthread_cond_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
 
-        TYPE_MAPPINGS.put("ibv_gid", new TypeInfo(NATIVE_LONG_CLASS, long.class));
+        TYPE_MAPPINGS.put("ibv_gid", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
     }
 
     public static TypeInfo resolve(StructMember member) {

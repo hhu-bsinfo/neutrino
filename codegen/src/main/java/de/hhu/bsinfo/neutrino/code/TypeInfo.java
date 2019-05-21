@@ -7,10 +7,12 @@ public class TypeInfo {
 
     private final ClassName wrapperType;
     private final Type actualType;
+    private final String initMethod;
 
-    public TypeInfo(ClassName wrapperType, Type actualType) {
+    public TypeInfo(ClassName wrapperType, Type actualType, String initMethod) {
         this.wrapperType = wrapperType;
         this.actualType = actualType;
+        this.initMethod = initMethod;
     }
 
     public ClassName getWrapperType() {
@@ -19,5 +21,9 @@ public class TypeInfo {
 
     public Type getActualType() {
         return actualType;
+    }
+
+    public String getInitMethod() {
+        return initMethod;
     }
 }
