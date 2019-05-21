@@ -1,0 +1,17 @@
+language: java
+dist: xenial
+
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:linux-rdma/rdma-core-daily'
+    packages:
+      - libibverbs-dev
+
+stages:
+  - name: build
+
+jobs:
+  include:
+    - stage: build
+      script: ./gradlew jar
