@@ -14,8 +14,14 @@ compileJava {
 group = 'de.hhu.bsinfo'
 version = getProperty('projectVersion')
 
+jmh.warmupIterations = 2
+jmh.iterations = 10;
+jmh.benchmarkMode = [ org.openjdk.jmh.annotations.Mode.SampleTime.toString() ]
+jmh.timeUnit = 'us'
+jmh.threads = 1
+
 jmh.jvmArgs = [
-        "-Djava.library.path=${System.getProperty('java.library.path')}:/home/fabian/Projekte/neutrino/build/jni/lib/main/debug/".toString()
+        "-Djava.library.path=${System.getProperty('java.library.path')}:${System.getProperty('user.dir')}/build/jni/lib/main/debug/".toString()
 ]
 
 repositories {

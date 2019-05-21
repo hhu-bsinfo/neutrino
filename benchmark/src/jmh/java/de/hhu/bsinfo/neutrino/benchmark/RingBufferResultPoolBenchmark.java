@@ -32,11 +32,6 @@ public class RingBufferResultPoolBenchmark {
     }
 
     @Benchmark
-    @Threads(8)
-    @Warmup(iterations = 2)
-    @Measurement(iterations =  10)
-    @BenchmarkMode(Mode.SampleTime)
-    @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void resultBench(BenchmarkState state) {
         var result = state.getPool().getInstance();
         state.getPool().returnInstance(result);
