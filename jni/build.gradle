@@ -1,5 +1,4 @@
 import org.gradle.internal.jvm.Jvm
-import org.gradle.internal.os.OperatingSystem
 
 plugins {
     id 'cpp-library'
@@ -21,6 +20,8 @@ library {
 
     binaries.configureEach {
         linkTask.get().linkerArgs.add('-libverbs')
+        compileDebugCpp.compilerArgs.add('-std=c++11')
+        compileReleaseCpp.compilerArgs.add('-std=c++11')
     }
 }
 
