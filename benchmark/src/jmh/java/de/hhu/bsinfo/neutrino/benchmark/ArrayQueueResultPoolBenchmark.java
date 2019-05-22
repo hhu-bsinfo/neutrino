@@ -1,9 +1,8 @@
 package de.hhu.bsinfo.neutrino.benchmark;
 
-import de.hhu.bsinfo.neutrino.benchmark.pool.QueueResultPool;
-import de.hhu.bsinfo.neutrino.benchmark.pool.QueueResultPool.QueueType;
+import de.hhu.bsinfo.neutrino.benchmark.pool.QueuePool;
+import de.hhu.bsinfo.neutrino.benchmark.pool.QueueStore.QueueType;
 import de.hhu.bsinfo.neutrino.struct.Result;
-import de.hhu.bsinfo.neutrino.util.ObjectPool;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
@@ -17,17 +16,17 @@ public class ArrayQueueResultPoolBenchmark {
     @State(Scope.Benchmark)
     public static class BenchmarkState {
 
-        private static final ThreadLocal<ObjectPool<Result>> POOL = ThreadLocal.withInitial(
-            () -> new QueueResultPool(QueueType.ARRAY_BLOCKING, 1024));
+        private static final ThreadLocal<QueuePool<Result>> POOL = ThreadLocal.withInitial(
+            () -> new QueuePool<>(QueueType.ARRAY_BLOCKING, 1024, Result::new));
 
-        public ObjectPool<Result> getPool() {
+        public QueuePool<Result> getPool() {
             return POOL.get();
         }
     }
 
     @Benchmark
     public void resultBench(BenchmarkState state) {
-        var result = state.getPool().getInstance();
-        state.getPool().returnInstance(result);
+        var result = state.getPool().newInstance();
+        state.getPool().storeInstance(result);
     }
 }
