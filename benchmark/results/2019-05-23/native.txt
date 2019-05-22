@@ -1,0 +1,37 @@
+Benchmark                                                        Mode        Cnt      Score    Error  Units
+NativeCallBenchmark.nativeCallBench1                           sample   12893455      0,060 ±  0,001  us/op
+NativeCallBenchmark.nativeCallBench1:nativeCallBench1·p0.00    sample                 0,047           us/op
+NativeCallBenchmark.nativeCallBench1:nativeCallBench1·p0.50    sample                 0,054           us/op
+NativeCallBenchmark.nativeCallBench1:nativeCallBench1·p0.90    sample                 0,064           us/op
+NativeCallBenchmark.nativeCallBench1:nativeCallBench1·p0.95    sample                 0,073           us/op
+NativeCallBenchmark.nativeCallBench1:nativeCallBench1·p0.99    sample                 0,088           us/op
+NativeCallBenchmark.nativeCallBench1:nativeCallBench1·p0.999   sample                 0,125           us/op
+NativeCallBenchmark.nativeCallBench1:nativeCallBench1·p0.9999  sample                10,032           us/op
+NativeCallBenchmark.nativeCallBench1:nativeCallBench1·p1.00    sample                65,152           us/op
+NativeCallBenchmark.nativeCallBench2                           sample   26034069      0,059 ±  0,001  us/op
+NativeCallBenchmark.nativeCallBench2:nativeCallBench2·p0.00    sample                 0,048           us/op
+NativeCallBenchmark.nativeCallBench2:nativeCallBench2·p0.50    sample                 0,056           us/op
+NativeCallBenchmark.nativeCallBench2:nativeCallBench2·p0.90    sample                 0,067           us/op
+NativeCallBenchmark.nativeCallBench2:nativeCallBench2·p0.95    sample                 0,074           us/op
+NativeCallBenchmark.nativeCallBench2:nativeCallBench2·p0.99    sample                 0,086           us/op
+NativeCallBenchmark.nativeCallBench2:nativeCallBench2·p0.999   sample                 0,107           us/op
+NativeCallBenchmark.nativeCallBench2:nativeCallBench2·p0.9999  sample                 2,114           us/op
+NativeCallBenchmark.nativeCallBench2:nativeCallBench2·p1.00    sample               290,816           us/op
+NativeCallBenchmark.nativeCallBench4                           sample   51909766      0,058 ±  0,001  us/op
+NativeCallBenchmark.nativeCallBench4:nativeCallBench4·p0.00    sample                 0,046           us/op
+NativeCallBenchmark.nativeCallBench4:nativeCallBench4·p0.50    sample                 0,056           us/op
+NativeCallBenchmark.nativeCallBench4:nativeCallBench4·p0.90    sample                 0,065           us/op
+NativeCallBenchmark.nativeCallBench4:nativeCallBench4·p0.95    sample                 0,074           us/op
+NativeCallBenchmark.nativeCallBench4:nativeCallBench4·p0.99    sample                 0,086           us/op
+NativeCallBenchmark.nativeCallBench4:nativeCallBench4·p0.999   sample                 0,110           us/op
+NativeCallBenchmark.nativeCallBench4:nativeCallBench4·p0.9999  sample                 2,612           us/op
+NativeCallBenchmark.nativeCallBench4:nativeCallBench4·p1.00    sample              3424,256           us/op
+NativeCallBenchmark.nativeCallBench8                           sample  120628367      0,107 ±  0,004  us/op
+NativeCallBenchmark.nativeCallBench8:nativeCallBench8·p0.00    sample                 0,046           us/op
+NativeCallBenchmark.nativeCallBench8:nativeCallBench8·p0.50    sample                 0,086           us/op
+NativeCallBenchmark.nativeCallBench8:nativeCallBench8·p0.90    sample                 0,097           us/op
+NativeCallBenchmark.nativeCallBench8:nativeCallBench8·p0.95    sample                 0,101           us/op
+NativeCallBenchmark.nativeCallBench8:nativeCallBench8·p0.99    sample                 0,109           us/op
+NativeCallBenchmark.nativeCallBench8:nativeCallBench8·p0.999   sample                 0,132           us/op
+NativeCallBenchmark.nativeCallBench8:nativeCallBench8·p0.9999  sample                 7,977           us/op
+NativeCallBenchmark.nativeCallBench8:nativeCallBench8·p1.00    sample             26673,152           us/op
