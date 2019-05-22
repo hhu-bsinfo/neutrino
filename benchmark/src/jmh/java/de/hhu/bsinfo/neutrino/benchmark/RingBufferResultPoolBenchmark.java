@@ -25,7 +25,7 @@ public class RingBufferResultPoolBenchmark {
 
     @Benchmark
     public void resultBench(BenchmarkState state) {
-        var result = state.getPool().newInstance();
-        state.getPool().storeInstance(result);
+        var result = state.getPool().getInstance();
+        state.getPool().returnInstance(result);
     }
 }

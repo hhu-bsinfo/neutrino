@@ -1,20 +1,14 @@
 package de.hhu.bsinfo.neutrino.code;
 
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import javax.lang.model.element.Modifier;
 
 public class StructGenerator {
 

@@ -2,7 +2,6 @@ package de.hhu.bsinfo.neutrino.benchmark;
 
 import de.hhu.bsinfo.neutrino.benchmark.pool.SimplePool;
 import de.hhu.bsinfo.neutrino.struct.Result;
-import de.hhu.bsinfo.neutrino.util.RingBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
@@ -26,7 +25,7 @@ public class SimpleResultPoolBenchmark {
 
     @Benchmark
     public void resultBench(BenchmarkState state) {
-        var result = state.getPool().newInstance();
-        state.getPool().storeInstance(result);
+        var result = state.getPool().getInstance();
+        state.getPool().returnInstance(result);
     }
 }

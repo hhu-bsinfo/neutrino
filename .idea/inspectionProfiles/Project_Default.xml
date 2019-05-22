@@ -2636,6 +2636,7 @@
           <option value="CanBeFinal" />
           <option value="FieldNamingConvention" />
           <option value="BooleanParameter" />
+          <option value="naming-convention" />
         </list>
       </option>
     </inspection_tool>

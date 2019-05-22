@@ -1,24 +1,32 @@
 package de.hhu.bsinfo.neutrino.benchmark.pool;
 
-import de.hhu.bsinfo.neutrino.data.NativeObject;
-import de.hhu.bsinfo.neutrino.util.NativeObjectFactory;
+import de.hhu.bsinfo.neutrino.util.Pool;
+import de.hhu.bsinfo.neutrino.util.Poolable;
 import java.util.Objects;
+import java.util.Stack;
 import java.util.function.Supplier;
 
-public class StackPool<T extends NativeObject> extends StackStore<T> implements NativeObjectFactory<T> {
+public class StackPool<T extends Poolable> extends Pool<T> {
 
-    private final Supplier<T> supplier;
+    private final Stack<T> stack;
 
     public StackPool(final int initialSize, final Supplier<T> supplier) {
-        this.supplier = supplier;
+        super(supplier);
+
+        stack = new Stack<>();
 
         for(int i = 0; i < initialSize; i++) {
-            storeInstance(supplier.get());
+            stack.push(supplier.get());
         }
     }
 
     @Override
-    public T newInstance() {
-        return Objects.requireNonNullElseGet(getInstance(), supplier);
+    public T getInstance() {
+        return Objects.requireNonNullElseGet(stack.pop(), getSupplier());
+    }
+
+    @Override
+    public void returnInstance(T instance) {
+        stack.push(instance);
     }
 }

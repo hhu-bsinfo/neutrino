@@ -1,13 +1,8 @@
 package de.hhu.bsinfo.neutrino.example;
 
-import de.hhu.bsinfo.neutrino.struct.Result;
-import de.hhu.bsinfo.neutrino.util.StructUtil;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
-import de.hhu.bsinfo.neutrino.verbs.QueuePair;
-import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
-import de.hhu.bsinfo.neutrino.verbs.Verbs;
 import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
