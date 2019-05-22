@@ -22,10 +22,6 @@ public class App {
 
     public static void main(String... args) {
 
-        var attributes = new QueuePair.Attributes();
-
-        LOGGER.info(attributes.toString());
-
         int numDevices = Device.getDeviceCount();
 
         if(numDevices <= 0) {
