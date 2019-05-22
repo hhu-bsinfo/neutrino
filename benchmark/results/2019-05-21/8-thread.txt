@@ -1,0 +1,46 @@
+Benchmark                                                         Mode        Cnt         Score    Error  Units
+ArrayQueueResultPoolBenchmark.resultBench                       sample  135659988         0.092 ±  0.001  us/op
+ArrayQueueResultPoolBenchmark.resultBench:resultBench·p0.00     sample                    0.063           us/op
+ArrayQueueResultPoolBenchmark.resultBench:resultBench·p0.50     sample                    0.088           us/op
+ArrayQueueResultPoolBenchmark.resultBench:resultBench·p0.90     sample                    0.120           us/op
+ArrayQueueResultPoolBenchmark.resultBench:resultBench·p0.95     sample                    0.123           us/op
+ArrayQueueResultPoolBenchmark.resultBench:resultBench·p0.99     sample                    0.131           us/op
+ArrayQueueResultPoolBenchmark.resultBench:resultBench·p0.999    sample                    0.139           us/op
+ArrayQueueResultPoolBenchmark.resultBench:resultBench·p0.9999   sample                    1.520           us/op
+ArrayQueueResultPoolBenchmark.resultBench:resultBench·p1.00     sample                20611.072           us/op
+LinkedQueueResultPoolBenchmark.resultBench                      sample  122233640         0.143 ±  0.001  us/op
+LinkedQueueResultPoolBenchmark.resultBench:resultBench·p0.00    sample                    0.094           us/op
+LinkedQueueResultPoolBenchmark.resultBench:resultBench·p0.50    sample                    0.131           us/op
+LinkedQueueResultPoolBenchmark.resultBench:resultBench·p0.90    sample                    0.179           us/op
+LinkedQueueResultPoolBenchmark.resultBench:resultBench·p0.95    sample                    0.184           us/op
+LinkedQueueResultPoolBenchmark.resultBench:resultBench·p0.99    sample                    0.195           us/op
+LinkedQueueResultPoolBenchmark.resultBench:resultBench·p0.999   sample                    0.259           us/op
+LinkedQueueResultPoolBenchmark.resultBench:resultBench·p0.9999  sample                    3.176           us/op
+LinkedQueueResultPoolBenchmark.resultBench:resultBench·p1.00    sample                13352.960           us/op
+RingBufferResultPoolBenchmark.resultBench                       sample  101573234         0.066 ±  0.001  us/op
+RingBufferResultPoolBenchmark.resultBench:resultBench·p0.00     sample                    0.044           us/op
+RingBufferResultPoolBenchmark.resultBench:resultBench·p0.50     sample                    0.062           us/op
+RingBufferResultPoolBenchmark.resultBench:resultBench·p0.90     sample                    0.085           us/op
+RingBufferResultPoolBenchmark.resultBench:resultBench·p0.95     sample                    0.090           us/op
+RingBufferResultPoolBenchmark.resultBench:resultBench·p0.99     sample                    0.099           us/op
+RingBufferResultPoolBenchmark.resultBench:resultBench·p0.999    sample                    0.111           us/op
+RingBufferResultPoolBenchmark.resultBench:resultBench·p0.9999   sample                    1.936           us/op
+RingBufferResultPoolBenchmark.resultBench:resultBench·p1.00     sample                12009.472           us/op
+SimpleResultPoolBenchmark.resultBench                           sample  110377738         9.954 ±  1.699  us/op
+SimpleResultPoolBenchmark.resultBench:resultBench·p0.00         sample                    0.190           us/op
+SimpleResultPoolBenchmark.resultBench:resultBench·p0.50         sample                    0.595           us/op
+SimpleResultPoolBenchmark.resultBench:resultBench·p0.90         sample                    1.354           us/op
+SimpleResultPoolBenchmark.resultBench:resultBench·p0.95         sample                    2.412           us/op
+SimpleResultPoolBenchmark.resultBench:resultBench·p0.99         sample                   43.584           us/op
+SimpleResultPoolBenchmark.resultBench:resultBench·p0.999        sample                   94.976           us/op
+SimpleResultPoolBenchmark.resultBench:resultBench·p0.9999       sample                 5095.424           us/op
+SimpleResultPoolBenchmark.resultBench:resultBench·p1.00         sample             21541945.344           us/op
+StackResultPoolBenchmark.resultBench                            sample  104334751         0.071 ±  0.001  us/op
+StackResultPoolBenchmark.resultBench:resultBench·p0.00          sample                    0.044           us/op
+StackResultPoolBenchmark.resultBench:resultBench·p0.50          sample                    0.068           us/op
+StackResultPoolBenchmark.resultBench:resultBench·p0.90          sample                    0.093           us/op
+StackResultPoolBenchmark.resultBench:resultBench·p0.95          sample                    0.097           us/op
+StackResultPoolBenchmark.resultBench:resultBench·p0.99          sample                    0.103           us/op
+StackResultPoolBenchmark.resultBench:resultBench·p0.999         sample                    0.111           us/op
+StackResultPoolBenchmark.resultBench:resultBench·p0.9999        sample                    1.498           us/op
+StackResultPoolBenchmark.resultBench:resultBench·p1.00          sample                16007.168           us/op
