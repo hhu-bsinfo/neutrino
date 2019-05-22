@@ -6,7 +6,7 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class QueueStore<T extends NativeObject> implements NativeObjectStore<T> {
+public class QueueStore<T extends NativeObject> extends NativeObjectStore<T> {
 
     public enum QueueType {
         LINKED_BLOCKING,

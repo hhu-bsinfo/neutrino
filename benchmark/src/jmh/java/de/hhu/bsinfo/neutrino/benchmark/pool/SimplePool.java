@@ -5,7 +5,7 @@ import de.hhu.bsinfo.neutrino.util.NativeObjectFactory;
 import de.hhu.bsinfo.neutrino.util.NativeObjectStore;
 import java.util.function.Supplier;
 
-public class SimplePool<T extends NativeObject> implements NativeObjectStore<T>, NativeObjectFactory<T> {
+public class SimplePool<T extends NativeObject> extends NativeObjectStore<T> implements NativeObjectFactory<T> {
 
     private final Supplier<T> supplier;
 
@@ -14,10 +14,15 @@ public class SimplePool<T extends NativeObject> implements NativeObjectStore<T>,
     }
 
     @Override
-    public T newInstance() {
-        return supplier.get();
+    public void storeInstance(T instance) {}
+
+    @Override
+    public T getInstance() {
+        return null;
     }
 
     @Override
-    public void storeInstance(T instance) {}
+    public T newInstance() {
+        return supplier.get();
+    }
 }

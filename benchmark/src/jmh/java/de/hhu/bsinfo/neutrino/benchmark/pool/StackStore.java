@@ -4,7 +4,7 @@ import de.hhu.bsinfo.neutrino.data.NativeObject;
 import de.hhu.bsinfo.neutrino.util.NativeObjectStore;
 import java.util.Stack;
 
-public class StackStore<T extends NativeObject> implements NativeObjectStore<T> {
+public class StackStore<T extends NativeObject> extends NativeObjectStore<T> {
 
     private final Stack<T> stack;
 
