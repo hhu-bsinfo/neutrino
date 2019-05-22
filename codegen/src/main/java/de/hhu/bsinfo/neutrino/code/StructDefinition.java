@@ -49,6 +49,7 @@ public class StructDefinition {
     private static MethodSpec createGetterMethod(StructMember member) {
         var typeInfo = MemberMappings.resolve(member);
         return MethodSpec.methodBuilder(String.format("get%s", capitalize(member.getName())))
+            .addModifiers(Modifier.PUBLIC)
             .returns(typeInfo.getActualType())
             .addStatement("return $L.get()", member.getName())
             .build();
@@ -57,6 +58,7 @@ public class StructDefinition {
     private static MethodSpec createSetterMethod(StructMember member) {
         var typeInfo = MemberMappings.resolve(member);
         return MethodSpec.methodBuilder(String.format("set%s", capitalize(member.getName())))
+            .addModifiers(Modifier.PUBLIC)
             .addParameter(typeInfo.getActualType(), "value", Modifier.FINAL)
             .addStatement("$L.set(value)", member.getName())
             .build();

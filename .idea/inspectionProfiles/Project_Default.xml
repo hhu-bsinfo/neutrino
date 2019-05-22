@@ -1883,6 +1883,34 @@
     <inspection_tool class="NestingDepthJS" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="m_limit" value="5" />
     </inspection_tool>
+    <inspection_tool class="NewClassNamingConvention" enabled="false" level="ERROR" enabled_by_default="false">
+      <extension name="AbstractClassNamingConvention" enabled="true">
+        <option name="inheritDefaultSettings" value="false" />
+        <option name="m_regex" value="[A-Z][A-Za-z\d]*|Check" />
+        <option name="m_minLength" value="5" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="AnnotationNamingConvention" enabled="true" />
+      <extension name="ClassNamingConvention" enabled="true">
+        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
+        <option name="m_minLength" value="3" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="EnumeratedClassNamingConvention" enabled="true">
+        <option name="inheritDefaultSettings" value="false" />
+        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
+        <option name="m_minLength" value="4" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="InterfaceNamingConvention" enabled="true">
+        <option name="inheritDefaultSettings" value="false" />
+        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
+        <option name="m_minLength" value="6" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="JUnitAbstractTestClassNamingConvention" enabled="true" />
+      <extension name="TypeParameterNamingConvention" enabled="true" />
+    </inspection_tool>
     <inspection_tool class="NewExceptionWithoutArguments" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NewGroovyClassNamingConvention" enabled="false" level="ERROR" enabled_by_default="false">
       <extension name="GroovyAnnotationNamingConvention" enabled="true" />
@@ -1892,6 +1920,26 @@
       <extension name="JUnitAbstractTestClassNamingConvention" enabled="true" />
     </inspection_tool>
     <inspection_tool class="NewInstanceOfSingleton" enabled="false" level="ERROR" enabled_by_default="false" />
+    <inspection_tool class="NewMethodNamingConvention" enabled="false" level="ERROR" enabled_by_default="false">
+      <extension name="InstanceMethodNamingConvention" enabled="true">
+        <option name="m_regex" value="[a-z][A-Za-z\d]*" />
+        <option name="m_minLength" value="3" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="JUnit3MethodNamingConvention" enabled="true" />
+      <extension name="JUnit4MethodNamingConvention" enabled="true">
+        <option name="m_regex" value="[a-z][A-Za-z_\d]*" />
+        <option name="m_minLength" value="4" />
+        <option name="m_maxLength" value="80" />
+      </extension>
+      <extension name="NativeMethodNamingConvention" enabled="true" />
+      <extension name="StaticMethodNamingConvention" enabled="true">
+        <option name="m_regex" value="[a-z][A-Za-z\d]*" />
+        <option name="m_minLength" value="4" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="TestNGMethodNamingConvention" enabled="true" />
+    </inspection_tool>
     <inspection_tool class="NewStringBufferWithCharArgument" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="NoExplicitFinalizeCalls" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="NonBlockStatementBodyJS" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -2587,6 +2635,7 @@
           <option value="JUnitTestClassNamingConvention" />
           <option value="CanBeFinal" />
           <option value="FieldNamingConvention" />
+          <option value="BooleanParameter" />
         </list>
       </option>
     </inspection_tool>

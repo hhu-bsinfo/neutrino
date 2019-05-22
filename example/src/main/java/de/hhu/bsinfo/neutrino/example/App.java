@@ -2,9 +2,10 @@ package de.hhu.bsinfo.neutrino.example;
 
 import de.hhu.bsinfo.neutrino.struct.Result;
 import de.hhu.bsinfo.neutrino.util.StructUtil;
+import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
-import de.hhu.bsinfo.neutrino.verbs.MemoryRegion.AccessFlag;
+import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
 import de.hhu.bsinfo.neutrino.verbs.Verbs;
 import java.nio.ByteBuffer;
@@ -20,6 +21,10 @@ public class App {
     private static final int COMPLETIONQUEUE_SIZE = 100;
 
     public static void main(String... args) {
+
+        var attributes = new QueuePair.Attributes();
+
+        LOGGER.info(attributes.toString());
 
         int numDevices = Device.getDeviceCount();
 
