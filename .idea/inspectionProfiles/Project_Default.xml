@@ -392,7 +392,7 @@
     <inspection_tool class="AutoBoxing" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="ignoreAddedToCollection" value="false" />
     </inspection_tool>
-    <inspection_tool class="AutoCloseableResource" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="AutoCloseableResource" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="ignoredTypes" value="java.io.ByteArrayOutputStream,         ,java.util.stream.Stream,         ,java.util.stream.IntStream,         ,java.util.stream.LongStream,         ,java.util.stream.DoubleStream,         ,com.puppycrawl.tools.checkstyle.internal.utils.CloseAndFlushTestByteArrayOutputStream" />
       <option name="METHOD_MATCHER_CONFIG" value="java.util.Formatter,format, ,                         ,java.io.Writer,append, ,                         ,com.google.common.base.Preconditions,checkNotNull, ,                         ,org.hibernate.Session,close, ,                         ,java.io.PrintWriter,printf, ,                         ,org.mockito.Mockito,mock|verify, ,                         ,org.mockito.stubbing.Stubber,when" />
     </inspection_tool>
