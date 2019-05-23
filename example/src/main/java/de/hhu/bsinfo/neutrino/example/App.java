@@ -1,9 +1,14 @@
 package de.hhu.bsinfo.neutrino.example;
 
+import de.hhu.bsinfo.neutrino.data.NativeArray;
+import de.hhu.bsinfo.neutrino.util.StructUtil;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
+import de.hhu.bsinfo.neutrino.verbs.Port;
+import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +21,14 @@ public class App {
     private static final int COMPLETIONQUEUE_SIZE = 100;
 
     public static void main(String... args) {
+
+        var array = new NativeArray<>(WorkCompletion::new, WorkCompletion.class, 10);
+
+        array.forEach(workCompletion -> {
+            workCompletion.setByteCount(ThreadLocalRandom.current().nextInt());
+        });
+
+        LOGGER.info(array.toString());
 
         int numDevices = Device.getDeviceCount();
 
