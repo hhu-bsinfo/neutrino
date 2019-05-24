@@ -1,7 +1,10 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
+import de.hhu.bsinfo.neutrino.data.NativeArray;
+import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
+import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
 import de.hhu.bsinfo.neutrino.verbs.MemoryRegion;
@@ -13,6 +16,11 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeMask;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
+import de.hhu.bsinfo.neutrino.verbs.ReceiveWorkRequest;
+import de.hhu.bsinfo.neutrino.verbs.ScatterGatherElement;
+import de.hhu.bsinfo.neutrino.verbs.SendFlag;
+import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
+import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest.OpCode;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -43,6 +51,7 @@ public class Start implements Runnable {
     private ByteBuffer buffer;
     private MemoryRegion memoryRegion;
     private CompletionQueue completionQueue;
+    private QueuePair queuePair;
 
     @CommandLine.Option(
         names = "--server",
@@ -102,11 +111,20 @@ public class Start implements Runnable {
         try {
             if (isServer) {
                 startServer();
+                send();
+                poll();
             } else {
                 startClient();
+                receive();
+                poll();
+                LOGGER.info("{}", buffer.getLong(0));
             }
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
+        }
+
+        if (queuePair.destroy()) {
+            LOGGER.info("Destroyed queue pair");
         }
 
         if (completionQueue.destroy()) {
@@ -129,15 +147,18 @@ public class Start implements Runnable {
     private void startClient() throws IOException {
         var socket = new Socket(connection.getAddress(), connection.getPort());
 
-        var queuePair = createQueuePair(socket);
+        queuePair = createQueuePair(socket);
 
     }
 
     private void startServer() throws IOException {
+
+        buffer.putLong(0, 0xC0FFEFEFEL);
+
         var serverSocket = new ServerSocket(portNumber);
         var socket = serverSocket.accept();
 
-        var queuePair = createQueuePair(socket);
+        queuePair = createQueuePair(socket);
     }
 
     private QueuePair createQueuePair(Socket socket) throws IOException {
@@ -151,7 +172,7 @@ public class Start implements Runnable {
             config.capabilities.setMaxSendScatterGatherElements(1);
         });
 
-        var queuePair = protectionDomain.createQueuePair(initialAttributes);
+        queuePair = protectionDomain.createQueuePair(initialAttributes);
 
         LOGGER.info("Created queue pair!");
 
@@ -202,6 +223,57 @@ public class Start implements Runnable {
         LOGGER.info("Queue pair transitioned to RTS state");
 
         return queuePair;
+    }
+
+    private void send() {
+
+        var scatterGatherElements = new NativeArray<>(ScatterGatherElement::new, ScatterGatherElement.class, 1);
+        scatterGatherElements.apply(0, scatterGatherElement -> {
+            scatterGatherElement.setAddress(memoryRegion.getAddress());
+            scatterGatherElement.setLength((int) memoryRegion.getLength());
+            scatterGatherElement.setLocalKey(memoryRegion.getLocalKey());
+        });
+
+        var sendWorkRequest = new SendWorkRequest(request -> {
+           request.setOpCode(OpCode.SEND);
+           request.setFlags(SendFlag.SIGNALED);
+           request.setListHandle(scatterGatherElements.getHandle());
+           request.setListLength(scatterGatherElements.getCapacity());
+        });
+
+        var list = new NativeLinkedList<>(SendWorkRequest.LINKER);
+        list.add(sendWorkRequest);
+
+        queuePair.postSend(list);
+    }
+
+    private void receive() {
+
+        var scatterGatherElements = new NativeArray<>(ScatterGatherElement::new, ScatterGatherElement.class, 1);
+        scatterGatherElements.apply(0, scatterGatherElement -> {
+            scatterGatherElement.setAddress(memoryRegion.getAddress());
+            scatterGatherElement.setLength((int) memoryRegion.getLength());
+            scatterGatherElement.setLocalKey(memoryRegion.getLocalKey());
+        });
+
+        var receiveWorkRequest = new ReceiveWorkRequest(request -> {
+            request.setListHandle(scatterGatherElements.getHandle());
+            request.setListLength(scatterGatherElements.getCapacity());
+        });
+
+        var list = new NativeLinkedList<>(ReceiveWorkRequest.LINKER);
+        list.add(receiveWorkRequest);
+
+        queuePair.postReceive(list);
+    }
+
+    private void poll() {
+
+        var completionArray = new WorkCompletionArray(DEFAULT_QUEUE_SIZE);
+
+        while (completionArray.getLength() == 0) {
+            completionQueue.poll(completionArray);
+        }
     }
 
     private static ConnectionInfo exchangeInfo(Socket socket, ConnectionInfo localInfo) throws IOException {
