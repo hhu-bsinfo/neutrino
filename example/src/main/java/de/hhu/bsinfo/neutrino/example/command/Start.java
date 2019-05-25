@@ -44,6 +44,10 @@ public class Start implements Runnable {
     private static final int DEFAULT_BUFFER_SIZE = 1024;
     private static final int DEFAULT_SERVER_PORT = 2998;
 
+    private enum Transport {
+        MESSAGE, RDMA
+    }
+
     private Context context;
     private Device device;
     private Port port;
@@ -52,6 +56,8 @@ public class Start implements Runnable {
     private MemoryRegion memoryRegion;
     private CompletionQueue completionQueue;
     private QueuePair queuePair;
+
+    private ConnectionInfo remoteInfo;
 
     @CommandLine.Option(
         names = "--server",
@@ -69,10 +75,14 @@ public class Start implements Runnable {
     private int bufferSize = DEFAULT_BUFFER_SIZE;
 
     @CommandLine.Option(
-        names = "--connect",
+        names = {"-c", "--connect"},
         description = "The server to connect to.")
     private InetSocketAddress connection;
 
+    @CommandLine.Option(
+        names = {"-t", "--transport"},
+        description = "The transport mode (MESSAGE, RDMA")
+    private Transport transport = Transport.MESSAGE;
 
     @Override
     public void run() {
@@ -187,23 +197,22 @@ public class Start implements Runnable {
 
         LOGGER.info("Queue pair transitioned to INIT state!");
 
-        var connectionInfo = exchangeInfo(socket, new ConnectionInfo(port.getLocalId(), queuePair.getQueuePairNumber()));
+        remoteInfo = exchangeInfo(socket, new ConnectionInfo(port.getLocalId(),
+            queuePair.getQueuePairNumber(), memoryRegion.getRemoteKey(), memoryRegion.getAddress()));
 
         attributes = new Attributes(config -> {
             config.setState(State.RTR);
             config.setPathMtu(Mtu.IBV_MTU_4096);
-            config.setDestination(connectionInfo.getQueuePairNumber());
+            config.setDestination(remoteInfo.getQueuePairNumber());
             config.setReceivePacketNumber(0);
             config.setMaxDestinationAtomicReads((byte) 1);
             config.setMinRnrTimer((byte) 12);
-            config.addressVector.setDestination(connectionInfo.getLocalId());
+            config.addressVector.setDestination(remoteInfo.getLocalId());
             config.addressVector.setServiceLevel((byte) 1);
             config.addressVector.setSourcePathBits((byte) 0);
             config.addressVector.setPortNumber((byte) 1);
             config.addressVector.setIsGlobal(false);
         });
-
-        LOGGER.info(attributes.toString());
 
         queuePair.modify(attributes, AttributeMask.STATE, AttributeMask.PATH_MTU, AttributeMask.DEST_QPN, AttributeMask.RQ_PSN, AttributeMask.AV, AttributeMask.MAX_DEST_RD_ATOMIC, AttributeMask.MIN_RNR_TIMER);
 
@@ -235,10 +244,17 @@ public class Start implements Runnable {
         });
 
         var sendWorkRequest = new SendWorkRequest(request -> {
-           request.setOpCode(OpCode.SEND);
-           request.setFlags(SendFlag.SIGNALED);
-           request.setListHandle(scatterGatherElements.getHandle());
-           request.setListLength(scatterGatherElements.getCapacity());
+            if(transport == Transport.MESSAGE) {
+                request.setOpCode(OpCode.SEND);
+            } else if(transport == Transport.RDMA) {
+                request.setOpCode(OpCode.RDMA_WRITE_WITH_IMM);
+                request.rdma.setRemoteKey(remoteInfo.getRemoteKey());
+                request.rdma.setRemoteAddress(remoteInfo.getRemoteAddress());
+            }
+
+            request.setFlags(SendFlag.SIGNALED);
+            request.setListHandle(scatterGatherElements.getHandle());
+            request.setListLength(scatterGatherElements.getCapacity());
         });
 
         var list = new NativeLinkedList<>(SendWorkRequest.LINKER);
@@ -279,15 +295,18 @@ public class Start implements Runnable {
     private static ConnectionInfo exchangeInfo(Socket socket, ConnectionInfo localInfo) throws IOException {
 
         LOGGER.info("Sending connection info {}", localInfo);
-        socket.getOutputStream().write(ByteBuffer.allocate(Short.BYTES + Integer.BYTES)
+        socket.getOutputStream().write(ByteBuffer.allocate(Short.BYTES + 2 * Integer.BYTES + Long.BYTES)
             .putShort(localInfo.getLocalId())
             .putInt(localInfo.getQueuePairNumber())
+            .putInt(localInfo.getRemoteKey())
+            .putLong(localInfo.getRemoteAddress())
             .array());
 
         LOGGER.info("Waiting for remote connection info");
-        var byteBuffer = ByteBuffer.wrap(socket.getInputStream().readNBytes(Short.BYTES + Integer.BYTES));
+        var byteBuffer = ByteBuffer.wrap(socket.getInputStream().readNBytes(Short.BYTES + 2 * Integer.BYTES + Long.BYTES));
 
-        var remoteInfo = new ConnectionInfo(byteBuffer.getShort(), byteBuffer.getInt());
+        var remoteInfo = new ConnectionInfo(byteBuffer.getShort(), byteBuffer.getInt(),
+            byteBuffer.getInt(), byteBuffer.getLong());
 
         LOGGER.info("Received connection info {}", remoteInfo);
 
@@ -297,10 +316,14 @@ public class Start implements Runnable {
     private static class ConnectionInfo {
         private final short localId;
         private final int queuePairNumber;
+        private final int remoteKey;
+        private final long remoteAddress;
 
-        public ConnectionInfo(short localId, int queuePairNumber) {
+        public ConnectionInfo(short localId, int queuePairNumber, int remoteKey, long remoteAddress) {
             this.localId = localId;
             this.queuePairNumber = queuePairNumber;
+            this.remoteKey = remoteKey;
+            this.remoteAddress = remoteAddress;
         }
 
         public short getLocalId() {
@@ -311,11 +334,21 @@ public class Start implements Runnable {
             return queuePairNumber;
         }
 
+        public int getRemoteKey() {
+            return remoteKey;
+        }
+
+        public long getRemoteAddress() {
+            return remoteAddress;
+        }
+
         @Override
         public String toString() {
             return new StringJoiner(", ", ConnectionInfo.class.getSimpleName() + "[", "]")
                 .add("localId=" + localId)
                 .add("queuePairNumber=" + queuePairNumber)
+                .add("remoteKey=" + remoteKey)
+                .add("remoteAddress=" + remoteAddress)
                 .toString();
         }
     }
