@@ -1,5 +1,7 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
+import de.hhu.bsinfo.neutrino.buffer.LocalByteBuffer;
+import de.hhu.bsinfo.neutrino.buffer.RemoteByteBuffer;
 import de.hhu.bsinfo.neutrino.data.NativeArray;
 import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
@@ -27,6 +29,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.StringJoiner;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -36,13 +40,16 @@ import picocli.CommandLine;
     description = "Starts a new neutrino instance.%n",
     showDefaultValues = true,
     separator = " ")
-public class Start implements Runnable {
+public class Start implements Callable<Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Start.class);
 
     private static final int DEFAULT_QUEUE_SIZE = 100;
     private static final int DEFAULT_BUFFER_SIZE = 1024;
     private static final int DEFAULT_SERVER_PORT = 2998;
+
+    private static final long MAGIC_NUMBER = 0xC0FEFE;
+    private static final int INTERVAL = 1000;
 
     private enum Transport {
         MESSAGE, RDMA
@@ -52,8 +59,10 @@ public class Start implements Runnable {
     private Device device;
     private Port port;
     private ProtectionDomain protectionDomain;
-    private ByteBuffer buffer;
-    private MemoryRegion memoryRegion;
+
+    private LocalByteBuffer localBuffer;
+    private RemoteByteBuffer remoteBuffer;
+
     private CompletionQueue completionQueue;
     private QueuePair queuePair;
 
@@ -85,21 +94,21 @@ public class Start implements Runnable {
     private Transport transport = Transport.MESSAGE;
 
     @Override
-    public void run() {
+    public Void call() throws Exception {
         if (!isServer && connection == null) {
             LOGGER.error("Please specify the server address");
-            return;
+            return null;
         }
 
         int numDevices = Device.getDeviceCount();
 
         if(numDevices <= 0) {
-            LOGGER.error("No RDMA devices were found in your system!");
-            return;
+            LOGGER.error("No RDMA devices were found in your system");
+            return null;
         }
 
         context = Context.openDevice(0);
-        LOGGER.info("Opened context for device {}!", context.getDeviceName());
+        LOGGER.info("Opened context for device {}", context.getDeviceName());
 
         device = context.queryDevice();
         LOGGER.info(device.toString());
@@ -108,62 +117,44 @@ public class Start implements Runnable {
         LOGGER.info(port.toString());
 
         protectionDomain = context.allocateProtectionDomain();
-        LOGGER.info("Allocated protection domain!");
+        LOGGER.info("Allocated protection domain");
 
-        buffer = ByteBuffer.allocateDirect(bufferSize);
-        memoryRegion = protectionDomain.registerMemoryRegion(buffer, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
+        localBuffer = LocalByteBuffer.allocate(protectionDomain, DEFAULT_BUFFER_SIZE);
+        LOGGER.info(localBuffer.toString());
 
-        LOGGER.info("Registered memory region!");
+        LOGGER.info("Registered local buffer");
 
         completionQueue = context.createCompletionQueue(DEFAULT_QUEUE_SIZE);
-        LOGGER.info("Created completion queue!");
+        LOGGER.info("Created completion queue");
 
-        try {
-            if (isServer) {
-                startServer();
-                send();
-                poll();
-            } else {
-                startClient();
-                receive();
-                poll();
-                LOGGER.info("{}", buffer.getLong(0));
-            }
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage());
+        if (isServer) {
+            startServer();
+            send();
+            poll();
+        } else {
+            startClient();
+            receive();
+            poll();
+            LOGGER.info("{}", localBuffer.getLong(0));
         }
 
-        if (queuePair.destroy()) {
-            LOGGER.info("Destroyed queue pair");
-        }
+        queuePair.close();
+        completionQueue.close();
+        localBuffer.free();
+        protectionDomain.close();
+        context.close();
 
-        if (completionQueue.destroy()) {
-            LOGGER.info("Destroyed completion queue");
-        }
-
-        if(memoryRegion.deregister()) {
-            LOGGER.info("Deregistered memory region!");
-        }
-
-        if(protectionDomain.deallocate()) {
-            LOGGER.info("Deallocated protection domain!");
-        }
-
-        if(context.close()) {
-            LOGGER.info("Closed context!");
-        }
+        return null;
     }
 
     private void startClient() throws IOException {
         var socket = new Socket(connection.getAddress(), connection.getPort());
 
         queuePair = createQueuePair(socket);
-
     }
 
     private void startServer() throws IOException {
-
-        buffer.putLong(0, 0xC0FFEFEFEL);
+        localBuffer.putLong(0, MAGIC_NUMBER);
 
         var serverSocket = new ServerSocket(portNumber);
         var socket = serverSocket.accept();
@@ -198,7 +189,11 @@ public class Start implements Runnable {
         LOGGER.info("Queue pair transitioned to INIT state!");
 
         remoteInfo = exchangeInfo(socket, new ConnectionInfo(port.getLocalId(),
-            queuePair.getQueuePairNumber(), memoryRegion.getRemoteKey(), memoryRegion.getAddress()));
+            queuePair.getQueuePairNumber(), localBuffer.getRemoteKey(), localBuffer.getHandle()));
+
+        remoteBuffer = new RemoteByteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getRemoteKey());
+
+        LOGGER.info(remoteBuffer.toString());
 
         attributes = new Attributes(config -> {
             config.setState(State.RTR);
@@ -234,57 +229,24 @@ public class Start implements Runnable {
         return queuePair;
     }
 
-    private void send() {
-
-        var scatterGatherElements = new NativeArray<>(ScatterGatherElement::new, ScatterGatherElement.class, 1);
-        scatterGatherElements.apply(0, scatterGatherElement -> {
-            scatterGatherElement.setAddress(memoryRegion.getAddress());
-            scatterGatherElement.setLength((int) memoryRegion.getLength());
-            scatterGatherElement.setLocalKey(memoryRegion.getLocalKey());
-        });
-
-        var sendWorkRequest = new SendWorkRequest(request -> {
-            if(transport == Transport.MESSAGE) {
-                request.setOpCode(OpCode.SEND);
-            } else if(transport == Transport.RDMA) {
-                request.setOpCode(OpCode.RDMA_WRITE_WITH_IMM);
-                request.rdma.setRemoteKey(remoteInfo.getRemoteKey());
-                request.rdma.setRemoteAddress(remoteInfo.getRemoteAddress());
-            }
-
-            request.setFlags(SendFlag.SIGNALED);
-            request.setListHandle(scatterGatherElements.getHandle());
-            request.setListLength(scatterGatherElements.getCapacity());
-        });
-
-        var list = new NativeLinkedList<>(SendWorkRequest.LINKER);
-        list.add(sendWorkRequest);
-
-        queuePair.postSend(list);
+    private void send() throws InterruptedException {
+        while (true) {
+            localBuffer.putLong(0, ThreadLocalRandom.current().nextLong());
+            LOGGER.info("localBuffer[0] = {}", localBuffer.getLong(0));
+            remoteBuffer.write(localBuffer);
+            poll();
+            Thread.sleep(INTERVAL);
+        }
     }
 
-    private void receive() {
-
-        var scatterGatherElements = new NativeArray<>(ScatterGatherElement::new, ScatterGatherElement.class, 1);
-        scatterGatherElements.apply(0, scatterGatherElement -> {
-            scatterGatherElement.setAddress(memoryRegion.getAddress());
-            scatterGatherElement.setLength((int) memoryRegion.getLength());
-            scatterGatherElement.setLocalKey(memoryRegion.getLocalKey());
-        });
-
-        var receiveWorkRequest = new ReceiveWorkRequest(request -> {
-            request.setListHandle(scatterGatherElements.getHandle());
-            request.setListLength(scatterGatherElements.getCapacity());
-        });
-
-        var list = new NativeLinkedList<>(ReceiveWorkRequest.LINKER);
-        list.add(receiveWorkRequest);
-
-        queuePair.postReceive(list);
+    private void receive() throws InterruptedException {
+        while (true) {
+            LOGGER.info("localBuffer[0] = {}", localBuffer.getLong(0));
+            Thread.sleep(INTERVAL);
+        }
     }
 
     private void poll() {
-
         var completionArray = new WorkCompletionArray(DEFAULT_QUEUE_SIZE);
 
         while (completionArray.getLength() == 0) {
