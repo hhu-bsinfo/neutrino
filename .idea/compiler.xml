@@ -2,13 +2,8 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
-      <module name="benchmark_jmh" target="11" />
-      <module name="benchmark_main" target="11" />
-      <module name="benchmark_test" target="11" />
       <module name="bsinfo-neutrino-neutrino_main" target="11" />
       <module name="bsinfo-neutrino-neutrino_test" target="11" />
-      <module name="codegen_main" target="11" />
-      <module name="codegen_test" target="11" />
       <module name="de.hhu.bsinfo-benchmark_jmh" target="11" />
       <module name="de.hhu.bsinfo-benchmark_main" target="11" />
       <module name="de.hhu.bsinfo-benchmark_test" target="11" />
@@ -18,8 +13,6 @@
       <module name="de.hhu.bsinfo-example_test" target="11" />
       <module name="de.hhu.bsinfo-neutrino-neutrino_main" target="11" />
       <module name="de.hhu.bsinfo-neutrino-neutrino_test" target="11" />
-      <module name="example_main" target="11" />
-      <module name="example_test" target="11" />
       <module name="neutrino-benchmark_jmh" target="11" />
       <module name="neutrino-benchmark_main" target="11" />
       <module name="neutrino-benchmark_test" target="11" />
@@ -27,8 +20,6 @@
       <module name="neutrino-codegen_test" target="11" />
       <module name="neutrino-example_main" target="11" />
       <module name="neutrino-example_test" target="11" />
-      <module name="neutrino-neutrino_main" target="11" />
-      <module name="neutrino-neutrino_test" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>

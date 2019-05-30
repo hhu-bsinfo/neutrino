@@ -2637,6 +2637,9 @@
           <option value="FieldNamingConvention" />
           <option value="BooleanParameter" />
           <option value="naming-convention" />
+          <option value="UseOfSunClasses" />
+          <option value="sunapi" />
+          <option value="FieldCanBeLocal" />
         </list>
       </option>
     </inspection_tool>
