@@ -1,15 +1,12 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.buffer.LocalByteBuffer;
-import de.hhu.bsinfo.neutrino.buffer.RemoteByteBuffer;
-import de.hhu.bsinfo.neutrino.data.NativeArray;
-import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
+import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
+import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
-import de.hhu.bsinfo.neutrino.verbs.MemoryRegion;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
 import de.hhu.bsinfo.neutrino.verbs.Port;
 import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
@@ -18,11 +15,6 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeMask;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
-import de.hhu.bsinfo.neutrino.verbs.ReceiveWorkRequest;
-import de.hhu.bsinfo.neutrino.verbs.ScatterGatherElement;
-import de.hhu.bsinfo.neutrino.verbs.SendFlag;
-import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
-import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest.OpCode;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -60,8 +52,8 @@ public class Start implements Callable<Void> {
     private Port port;
     private ProtectionDomain protectionDomain;
 
-    private LocalByteBuffer localBuffer;
-    private RemoteByteBuffer remoteBuffer;
+    private RegisteredBuffer localBuffer;
+    private RemoteBuffer remoteBuffer;
 
     private CompletionQueue completionQueue;
     private QueuePair queuePair;
@@ -119,7 +111,7 @@ public class Start implements Callable<Void> {
         protectionDomain = context.allocateProtectionDomain();
         LOGGER.info("Allocated protection domain");
 
-        localBuffer = LocalByteBuffer.allocate(protectionDomain, DEFAULT_BUFFER_SIZE);
+        localBuffer = protectionDomain.allocateMemory(DEFAULT_BUFFER_SIZE, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
         LOGGER.info(localBuffer.toString());
 
         LOGGER.info("Registered local buffer");
@@ -129,37 +121,33 @@ public class Start implements Callable<Void> {
 
         if (isServer) {
             startServer();
-            send();
-            poll();
         } else {
             startClient();
-            receive();
-            poll();
-            LOGGER.info("{}", localBuffer.getLong(0));
         }
 
         queuePair.close();
         completionQueue.close();
-        localBuffer.free();
+        localBuffer.close();
         protectionDomain.close();
         context.close();
 
         return null;
     }
 
-    private void startClient() throws IOException {
+    private void startClient() throws IOException, InterruptedException {
         var socket = new Socket(connection.getAddress(), connection.getPort());
-
         queuePair = createQueuePair(socket);
+        receive();
     }
 
-    private void startServer() throws IOException {
+    private void startServer() throws IOException, InterruptedException {
         localBuffer.putLong(0, MAGIC_NUMBER);
 
         var serverSocket = new ServerSocket(portNumber);
         var socket = serverSocket.accept();
 
         queuePair = createQueuePair(socket);
+        send();
     }
 
     private QueuePair createQueuePair(Socket socket) throws IOException {
@@ -191,7 +179,7 @@ public class Start implements Callable<Void> {
         remoteInfo = exchangeInfo(socket, new ConnectionInfo(port.getLocalId(),
             queuePair.getQueuePairNumber(), localBuffer.getRemoteKey(), localBuffer.getHandle()));
 
-        remoteBuffer = new RemoteByteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getRemoteKey());
+        remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getRemoteKey());
 
         LOGGER.info(remoteBuffer.toString());
 
