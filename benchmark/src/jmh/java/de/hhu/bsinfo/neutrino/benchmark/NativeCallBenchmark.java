@@ -11,11 +11,16 @@ public class NativeCallBenchmark {
     }
 
     @Benchmark
-    public void nativeCallBench() {
+    public long nativeCallResultBench() {
         var result = (Result) Verbs.getPoolableInstance(Result.class);
 
-        Verbs.benchmarkDummyMethod(result.getHandle());
+        Verbs.benchmarkDummyMethod1(result.getHandle());
 
-        result.releaseInstance();
+        return result.getLongAndRelease();
+    }
+
+    @Benchmark
+    public long nativeCallReturnBench() {
+        return Verbs.benchmarkDummyMethod2();
     }
 }
