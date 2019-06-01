@@ -10,6 +10,7 @@ import de.hhu.bsinfo.neutrino.verbs.Device;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.InitialAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.PollAttributes;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.WorkCompletionCapability;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
 import de.hhu.bsinfo.neutrino.verbs.Port;
 import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
@@ -122,6 +123,7 @@ public class Start implements Callable<Void> {
         if(useExtendedApi) {
             InitialAttributes attributes = new InitialAttributes(config -> {
                 config.setMaxElements(DEFAULT_QUEUE_SIZE);
+                config.setWorkCompletionFlags(WorkCompletionCapability.WITH_COMPLETION_TIMESTAMP);
             });
 
             extendedCompletionQueue = context.createExtendedCompletionQueue(attributes);
@@ -254,7 +256,9 @@ public class Start implements Callable<Void> {
 
             // Poll all work completions from the completion queue
             do {
-                LOGGER.debug("WorkCompletion.Status = {}", extendedCompletionQueue.getStatus());
+                LOGGER.debug("Status = {}", extendedCompletionQueue.getStatus());
+                LOGGER.debug("OpCode = {}", extendedCompletionQueue.readOpCode());
+                LOGGER.debug("Timestamp = {}", extendedCompletionQueue.readCompletionTimestamp());
             } while(extendedCompletionQueue.pollNext());
 
             // Stop polling the completion queue
