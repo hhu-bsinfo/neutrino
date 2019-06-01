@@ -7,6 +7,9 @@ import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.InitialAttributes;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.PollAttributes;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
 import de.hhu.bsinfo.neutrino.verbs.Port;
 import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
@@ -20,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,10 +47,6 @@ public class Start implements Callable<Void> {
     private static final long MAGIC_NUMBER = 0xC0FEFE;
     private static final int INTERVAL = 1000;
 
-    private enum Transport {
-        MESSAGE, RDMA
-    }
-
     private Context context;
     private Device device;
     private Port port;
@@ -54,6 +54,9 @@ public class Start implements Callable<Void> {
 
     private RegisteredBuffer localBuffer;
     private RemoteBuffer remoteBuffer;
+
+    private ExtendedCompletionQueue extendedCompletionQueue;
+    private PollAttributes pollAttributes = new PollAttributes();
 
     private CompletionQueue completionQueue;
     private QueuePair queuePair;
@@ -76,14 +79,14 @@ public class Start implements Callable<Void> {
     private int bufferSize = DEFAULT_BUFFER_SIZE;
 
     @CommandLine.Option(
+        names = {"--use-extended-api", "-e"},
+        description = "Set to true to enable the extended verbs api.")
+    private boolean useExtendedApi = false;
+
+    @CommandLine.Option(
         names = {"-c", "--connect"},
         description = "The server to connect to.")
     private InetSocketAddress connection;
-
-    @CommandLine.Option(
-        names = {"-t", "--transport"},
-        description = "The transport mode (MESSAGE, RDMA")
-    private Transport transport = Transport.MESSAGE;
 
     @Override
     public Void call() throws Exception {
@@ -116,8 +119,18 @@ public class Start implements Callable<Void> {
 
         LOGGER.info("Registered local buffer");
 
-        completionQueue = context.createCompletionQueue(DEFAULT_QUEUE_SIZE);
-        LOGGER.info("Created completion queue");
+        if(useExtendedApi) {
+            InitialAttributes attributes = new InitialAttributes(config -> {
+                config.setMaxElements(DEFAULT_QUEUE_SIZE);
+            });
+
+            extendedCompletionQueue = context.createExtendedCompletionQueue(attributes);
+            completionQueue = Objects.requireNonNull(extendedCompletionQueue).toCompletionQueue();
+            LOGGER.info("Created extended completion queue");
+        } else {
+            completionQueue = context.createCompletionQueue(DEFAULT_QUEUE_SIZE);
+            LOGGER.info("Created completion queue");
+        }
 
         if (isServer) {
             startServer();
@@ -235,10 +248,23 @@ public class Start implements Callable<Void> {
     }
 
     private void poll() {
-        var completionArray = new WorkCompletionArray(DEFAULT_QUEUE_SIZE);
+        if(useExtendedApi) {
+            // Poll the completion queue until a work completion is available
+            while(!extendedCompletionQueue.startPolling(pollAttributes));
 
-        while (completionArray.getLength() == 0) {
-            completionQueue.poll(completionArray);
+            // Poll all work completions from the completion queue
+            do {
+                LOGGER.debug("WorkCompletion.Status = {}", extendedCompletionQueue.getStatus());
+            } while(extendedCompletionQueue.pollNext());
+
+            // Stop polling the completion queue
+            extendedCompletionQueue.stopPolling();
+        } else {
+            var completionArray = new WorkCompletionArray(DEFAULT_QUEUE_SIZE);
+
+            while (completionArray.getLength() == 0) {
+                completionQueue.poll(completionArray);
+            }
         }
     }
 
@@ -269,26 +295,26 @@ public class Start implements Callable<Void> {
         private final int remoteKey;
         private final long remoteAddress;
 
-        public ConnectionInfo(short localId, int queuePairNumber, int remoteKey, long remoteAddress) {
+        ConnectionInfo(short localId, int queuePairNumber, int remoteKey, long remoteAddress) {
             this.localId = localId;
             this.queuePairNumber = queuePairNumber;
             this.remoteKey = remoteKey;
             this.remoteAddress = remoteAddress;
         }
 
-        public short getLocalId() {
+        short getLocalId() {
             return localId;
         }
 
-        public int getQueuePairNumber() {
+        int getQueuePairNumber() {
             return queuePairNumber;
         }
 
-        public int getRemoteKey() {
+        int getRemoteKey() {
             return remoteKey;
         }
 
-        public long getRemoteAddress() {
+        long getRemoteAddress() {
             return remoteAddress;
         }
 
