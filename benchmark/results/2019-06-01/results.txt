@@ -1,0 +1,19 @@
+Benchmark                                                                  Mode       Cnt       Score   Error  Units
+NativeCallBenchmark.nativeCallResultBench                                sample  13995555      91.852 ± 0.118  ns/op
+NativeCallBenchmark.nativeCallResultBench:nativeCallResultBench·p0.00    sample                75.000          ns/op
+NativeCallBenchmark.nativeCallResultBench:nativeCallResultBench·p0.50    sample                89.000          ns/op
+NativeCallBenchmark.nativeCallResultBench:nativeCallResultBench·p0.90    sample               103.000          ns/op
+NativeCallBenchmark.nativeCallResultBench:nativeCallResultBench·p0.95    sample               107.000          ns/op
+NativeCallBenchmark.nativeCallResultBench:nativeCallResultBench·p0.99    sample               114.000          ns/op
+NativeCallBenchmark.nativeCallResultBench:nativeCallResultBench·p0.999   sample               167.000          ns/op
+NativeCallBenchmark.nativeCallResultBench:nativeCallResultBench·p0.9999  sample              2513.778          ns/op
+NativeCallBenchmark.nativeCallResultBench:nativeCallResultBench·p1.00    sample            101248.000          ns/op
+NativeCallBenchmark.nativeCallReturnBench                                sample  14474742      44.513 ± 0.043  ns/op
+NativeCallBenchmark.nativeCallReturnBench:nativeCallReturnBench·p0.00    sample                29.000          ns/op
+NativeCallBenchmark.nativeCallReturnBench:nativeCallReturnBench·p0.50    sample                48.000          ns/op
+NativeCallBenchmark.nativeCallReturnBench:nativeCallReturnBench·p0.90    sample                54.000          ns/op
+NativeCallBenchmark.nativeCallReturnBench:nativeCallReturnBench·p0.95    sample                54.000          ns/op
+NativeCallBenchmark.nativeCallReturnBench:nativeCallReturnBench·p0.99    sample                55.000          ns/op
+NativeCallBenchmark.nativeCallReturnBench:nativeCallReturnBench·p0.999   sample                59.000          ns/op
+NativeCallBenchmark.nativeCallReturnBench:nativeCallReturnBench·p0.9999  sample               151.000          ns/op
+NativeCallBenchmark.nativeCallReturnBench:nativeCallReturnBench·p1.00    sample            103296.000          ns/op
