@@ -11,6 +11,15 @@
       <module name="example_test" target="11" />
       <module name="neutrino-neutrino_main" target="11" />
       <module name="neutrino-neutrino_test" target="11" />
+      <module name="neutrino.benchmark.jmh" target="11" />
+      <module name="neutrino.benchmark.main" target="11" />
+      <module name="neutrino.benchmark.test" target="11" />
+      <module name="neutrino.codegen.main" target="11" />
+      <module name="neutrino.codegen.test" target="11" />
+      <module name="neutrino.example.main" target="11" />
+      <module name="neutrino.example.test" target="11" />
+      <module name="neutrino.neutrino.main" target="11" />
+      <module name="neutrino.neutrino.test" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>
