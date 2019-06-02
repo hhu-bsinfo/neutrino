@@ -2,7 +2,9 @@ package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
+import de.hhu.bsinfo.neutrino.util.IndexedConsumer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
+import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
 import de.hhu.bsinfo.neutrino.verbs.Context;
@@ -19,6 +21,7 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeMask;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
+import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -56,6 +59,8 @@ public class Start implements Callable<Void> {
     private RegisteredBuffer localBuffer;
     private RemoteBuffer remoteBuffer;
 
+    private CompletionChannel completionChannel = null;
+
     private ExtendedCompletionQueue extendedCompletionQueue;
     private PollAttributes pollAttributes = new PollAttributes();
 
@@ -83,6 +88,12 @@ public class Start implements Callable<Void> {
         names = {"--use-extended-api", "-e"},
         description = "Set to true to enable the extended verbs api.")
     private boolean useExtendedApi = false;
+
+    @CommandLine.Option(
+        names = {"--use-completion-channel", "-ch"},
+        description = "Set to true to wait for completion events using a completion channel,"
+            + "instead of constantly polling the completion queue.")
+    private boolean useCompletionChannel = false;
 
     @CommandLine.Option(
         names = {"-c", "--connect"},
@@ -117,20 +128,25 @@ public class Start implements Callable<Void> {
 
         localBuffer = protectionDomain.allocateMemory(DEFAULT_BUFFER_SIZE, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
         LOGGER.info(localBuffer.toString());
-
         LOGGER.info("Registered local buffer");
+
+        if(useCompletionChannel) {
+            completionChannel = context.createCompletionChannel();
+            LOGGER.info("Created completion channel");
+        }
 
         if(useExtendedApi) {
             InitialAttributes attributes = new InitialAttributes(config -> {
                 config.setMaxElements(DEFAULT_QUEUE_SIZE);
                 config.setWorkCompletionFlags(WorkCompletionCapability.WITH_COMPLETION_TIMESTAMP);
+                config.setCompletionChannel(completionChannel);
             });
 
             extendedCompletionQueue = context.createExtendedCompletionQueue(attributes);
             completionQueue = Objects.requireNonNull(extendedCompletionQueue).toCompletionQueue();
             LOGGER.info("Created extended completion queue");
         } else {
-            completionQueue = context.createCompletionQueue(DEFAULT_QUEUE_SIZE);
+            completionQueue = context.createCompletionQueue(DEFAULT_QUEUE_SIZE, completionChannel);
             LOGGER.info("Created completion queue");
         }
 
@@ -142,6 +158,7 @@ public class Start implements Callable<Void> {
 
         queuePair.close();
         completionQueue.close();
+        completionChannel.close();
         localBuffer.close();
         protectionDomain.close();
         context.close();
@@ -250,24 +267,45 @@ public class Start implements Callable<Void> {
     }
 
     private void poll() {
-        if(useExtendedApi) {
-            // Poll the completion queue until a work completion is available
-            while(!extendedCompletionQueue.startPolling(pollAttributes));
+        if(useCompletionChannel) {
+            completionQueue.requestNotification(false);
+            CompletionQueue eventQueue = completionChannel.getCompletionEvent();
 
-            // Poll all work completions from the completion queue
-            do {
-                LOGGER.debug("Status = {}", extendedCompletionQueue.getStatus());
-                LOGGER.debug("OpCode = {}", extendedCompletionQueue.readOpCode());
-                LOGGER.debug("Timestamp = {}", extendedCompletionQueue.readCompletionTimestamp());
-            } while(extendedCompletionQueue.pollNext());
-
-            // Stop polling the completion queue
-            extendedCompletionQueue.stopPolling();
-        } else {
             var completionArray = new WorkCompletionArray(DEFAULT_QUEUE_SIZE);
 
-            while (completionArray.getLength() == 0) {
-                completionQueue.poll(completionArray);
+            Objects.requireNonNull(eventQueue).poll(completionArray);
+
+            for(int i = 0; i < completionArray.getLength(); i++) {
+                LOGGER.debug("Status = {}", completionArray.get(i).getStatus());
+                LOGGER.debug("OpCode = {}", completionArray.get(i).getOpCode());
+            }
+
+            completionQueue.acknowledgeEvents(1);
+        } else {
+            if (useExtendedApi) {
+                // Poll the completion queue until a work completion is available
+                while (!extendedCompletionQueue.startPolling(pollAttributes));
+
+                // Poll all work completions from the completion queue
+                do {
+                    LOGGER.debug("Status = {}", extendedCompletionQueue.getStatus());
+                    LOGGER.debug("OpCode = {}", extendedCompletionQueue.readOpCode());
+                    LOGGER.debug("Timestamp = {}", extendedCompletionQueue.readCompletionTimestamp());
+                } while (extendedCompletionQueue.pollNext());
+
+                // Stop polling the completion queue
+                extendedCompletionQueue.stopPolling();
+            } else {
+                var completionArray = new WorkCompletionArray(DEFAULT_QUEUE_SIZE);
+
+                while (completionArray.getLength() == 0) {
+                    completionQueue.poll(completionArray);
+                }
+
+                for(int i = 0; i < completionArray.getLength(); i++) {
+                    LOGGER.debug("Status = {}", completionArray.get(i).getStatus());
+                    LOGGER.debug("OpCode = {}", completionArray.get(i).getOpCode());
+                }
             }
         }
     }
