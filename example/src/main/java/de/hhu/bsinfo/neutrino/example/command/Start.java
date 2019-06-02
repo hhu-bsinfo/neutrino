@@ -3,8 +3,8 @@ package de.hhu.bsinfo.neutrino.example.command;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
 import de.hhu.bsinfo.neutrino.example.util.ContextMonitorThread;
-import de.hhu.bsinfo.neutrino.util.IndexedConsumer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
+import de.hhu.bsinfo.neutrino.verbs.AddressHandle;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
@@ -217,6 +217,14 @@ public class Start implements Callable<Void> {
         remoteInfo = exchangeInfo(socket, new ConnectionInfo(port.getLocalId(),
             queuePair.getQueuePairNumber(), localBuffer.getRemoteKey(), localBuffer.getHandle()));
 
+        AddressHandle.Attributes ahAttributes = new AddressHandle.Attributes(config -> {
+            config.setDestination(remoteInfo.getLocalId());
+            config.setServiceLevel((byte) 1);
+            config.setSourcePathBits((byte) 0);
+            config.setPortNumber((byte) 1);
+            config.setIsGlobal(false);
+        });
+
         remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getRemoteKey());
 
         LOGGER.info(remoteBuffer.toString());
@@ -228,11 +236,11 @@ public class Start implements Callable<Void> {
             config.setReceivePacketNumber(0);
             config.setMaxDestinationAtomicReads((byte) 1);
             config.setMinRnrTimer((byte) 12);
-            config.addressVector.setDestination(remoteInfo.getLocalId());
-            config.addressVector.setServiceLevel((byte) 1);
-            config.addressVector.setSourcePathBits((byte) 0);
-            config.addressVector.setPortNumber((byte) 1);
-            config.addressVector.setIsGlobal(false);
+            config.addressHandle.setDestination(remoteInfo.getLocalId());
+            config.addressHandle.setServiceLevel((byte) 1);
+            config.addressHandle.setSourcePathBits((byte) 0);
+            config.addressHandle.setPortNumber((byte) 1);
+            config.addressHandle.setIsGlobal(false);
         });
 
         queuePair.modify(attributes, AttributeMask.STATE, AttributeMask.PATH_MTU, AttributeMask.DEST_QPN, AttributeMask.RQ_PSN, AttributeMask.AV, AttributeMask.MAX_DEST_RD_ATOMIC, AttributeMask.MIN_RNR_TIMER);
