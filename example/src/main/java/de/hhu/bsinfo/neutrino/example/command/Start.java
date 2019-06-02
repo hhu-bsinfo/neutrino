@@ -9,12 +9,13 @@ import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
 import de.hhu.bsinfo.neutrino.verbs.Context;
-import de.hhu.bsinfo.neutrino.verbs.Device;
-import de.hhu.bsinfo.neutrino.verbs.DeviceMemory.AllocationAttributes;
+import de.hhu.bsinfo.neutrino.verbs.DeviceAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.InitialAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.PollAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.WorkCompletionCapability;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedDeviceAttributes;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedDeviceAttributes.QueryExtendedDeviceInput;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
 import de.hhu.bsinfo.neutrino.verbs.Port;
 import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
@@ -52,10 +53,6 @@ public class Start implements Callable<Void> {
     private static final long MAGIC_NUMBER = 0xC0FEFE;
     private static final int INTERVAL = 1000;
 
-    private ContextMonitorThread contextMonitor;
-
-    private Context context;
-    private Device device;
     private Port port;
     private ProtectionDomain protectionDomain;
 
@@ -110,21 +107,26 @@ public class Start implements Callable<Void> {
             return null;
         }
 
-        int numDevices = Device.getDeviceCount();
+        int numDevices = DeviceAttributes.getDeviceCount();
 
         if(numDevices <= 0) {
             LOGGER.error("No RDMA devices were found in your system");
             return null;
         }
 
-        context = Context.openDevice(0);
-        LOGGER.info("Opened context for device {}", context.getDeviceName());
+        Context context = Context.openDevice(0);
+        LOGGER.info("Opened context for deviceAttributes {}", context.getDeviceName());
 
-        contextMonitor = new ContextMonitorThread(context);
+        ContextMonitorThread contextMonitor = new ContextMonitorThread(context);
         contextMonitor.start();
 
-        device = context.queryDevice();
-        LOGGER.info(device.toString());
+        if(useExtendedApi) {
+            ExtendedDeviceAttributes device = context.queryExtendedDevice(new QueryExtendedDeviceInput());
+            LOGGER.info(device.toString());
+        } else {
+            DeviceAttributes device = context.queryDevice();
+            LOGGER.info(device.toString());
+        }
 
         port = context.queryPort(1);
         LOGGER.info(port.toString());
