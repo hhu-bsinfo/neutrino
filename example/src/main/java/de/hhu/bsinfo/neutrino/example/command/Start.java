@@ -2,6 +2,7 @@ package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
+import de.hhu.bsinfo.neutrino.example.util.ContextMonitorThread;
 import de.hhu.bsinfo.neutrino.util.IndexedConsumer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
@@ -21,7 +22,6 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeMask;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
-import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -50,6 +50,8 @@ public class Start implements Callable<Void> {
 
     private static final long MAGIC_NUMBER = 0xC0FEFE;
     private static final int INTERVAL = 1000;
+
+    private ContextMonitorThread contextMonitor;
 
     private Context context;
     private Device device;
@@ -117,6 +119,9 @@ public class Start implements Callable<Void> {
         context = Context.openDevice(0);
         LOGGER.info("Opened context for device {}", context.getDeviceName());
 
+        contextMonitor = new ContextMonitorThread(context);
+        contextMonitor.start();
+
         device = context.queryDevice();
         LOGGER.info(device.toString());
 
@@ -161,6 +166,7 @@ public class Start implements Callable<Void> {
         completionChannel.close();
         localBuffer.close();
         protectionDomain.close();
+        contextMonitor.finish();
         context.close();
 
         return null;
