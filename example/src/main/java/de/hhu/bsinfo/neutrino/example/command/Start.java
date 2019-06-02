@@ -10,6 +10,7 @@ import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
 import de.hhu.bsinfo.neutrino.verbs.Context;
 import de.hhu.bsinfo.neutrino.verbs.Device;
+import de.hhu.bsinfo.neutrino.verbs.DeviceMemory.AllocationAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.InitialAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.PollAttributes;
