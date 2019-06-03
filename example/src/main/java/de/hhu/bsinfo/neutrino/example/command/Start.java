@@ -217,8 +217,8 @@ public class Start implements Callable<Void> {
 
         LOGGER.info("Queue pair transitioned to INIT state!");
 
-        remoteInfo = exchangeInfo(socket, new ConnectionInfo(port.getLocalId(),
-            queuePair.getQueuePairNumber(), localBuffer.getRemoteKey(), localBuffer.getHandle()));
+        var localInfo = new ConnectionInfo(port.getLocalId(), queuePair.getQueuePairNumber(), localBuffer);
+        remoteInfo = exchangeInfo(socket, localInfo);
 
         AddressHandle.Attributes ahAttributes = new AddressHandle.Attributes(config -> {
             config.setDestination(remoteInfo.getLocalId());
@@ -228,7 +228,7 @@ public class Start implements Callable<Void> {
             config.setIsGlobal(false);
         });
 
-        remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getRemoteKey());
+        remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getCapacity(), remoteInfo.getRemoteKey());
 
         LOGGER.info(remoteBuffer.toString());
 
@@ -330,18 +330,18 @@ public class Start implements Callable<Void> {
     private static ConnectionInfo exchangeInfo(Socket socket, ConnectionInfo localInfo) throws IOException {
 
         LOGGER.info("Sending connection info {}", localInfo);
-        socket.getOutputStream().write(ByteBuffer.allocate(Short.BYTES + 2 * Integer.BYTES + Long.BYTES)
+        socket.getOutputStream().write(ByteBuffer.allocate(Short.BYTES + 2 * Integer.BYTES + 2 * Long.BYTES)
             .putShort(localInfo.getLocalId())
             .putInt(localInfo.getQueuePairNumber())
             .putInt(localInfo.getRemoteKey())
             .putLong(localInfo.getRemoteAddress())
+            .putLong(localInfo.getCapacity())
             .array());
 
         LOGGER.info("Waiting for remote connection info");
-        var byteBuffer = ByteBuffer.wrap(socket.getInputStream().readNBytes(Short.BYTES + 2 * Integer.BYTES + Long.BYTES));
+        var byteBuffer = ByteBuffer.wrap(socket.getInputStream().readNBytes(Short.BYTES + 2 * Integer.BYTES + 2 *Long.BYTES));
 
-        var remoteInfo = new ConnectionInfo(byteBuffer.getShort(), byteBuffer.getInt(),
-            byteBuffer.getInt(), byteBuffer.getLong());
+        var remoteInfo = new ConnectionInfo(byteBuffer);
 
         LOGGER.info("Received connection info {}", remoteInfo);
 
@@ -353,12 +353,22 @@ public class Start implements Callable<Void> {
         private final int queuePairNumber;
         private final int remoteKey;
         private final long remoteAddress;
+        private final long capacity;
 
-        ConnectionInfo(short localId, int queuePairNumber, int remoteKey, long remoteAddress) {
+        ConnectionInfo(short localId, int queuePairNumber, RegisteredBuffer buffer) {
             this.localId = localId;
             this.queuePairNumber = queuePairNumber;
-            this.remoteKey = remoteKey;
-            this.remoteAddress = remoteAddress;
+            remoteKey = buffer.getRemoteKey();
+            remoteAddress = buffer.getHandle();
+            capacity = buffer.capacity();
+        }
+
+        ConnectionInfo(ByteBuffer buffer) {
+            localId = buffer.getShort();
+            queuePairNumber = buffer.getInt();
+            remoteKey = buffer.getInt();
+            remoteAddress = buffer.getLong();
+            capacity = buffer.getLong();
         }
 
         short getLocalId() {
@@ -377,6 +387,10 @@ public class Start implements Callable<Void> {
             return remoteAddress;
         }
 
+        public long getCapacity() {
+            return capacity;
+        }
+
         @Override
         public String toString() {
             return new StringJoiner(", ", ConnectionInfo.class.getSimpleName() + "[", "]")
@@ -384,6 +398,7 @@ public class Start implements Callable<Void> {
                 .add("queuePairNumber=" + queuePairNumber)
                 .add("remoteKey=" + remoteKey)
                 .add("remoteAddress=" + remoteAddress)
+                .add("capacity=" + capacity)
                 .toString();
         }
     }
