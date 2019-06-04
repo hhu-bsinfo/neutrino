@@ -24,6 +24,8 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeMask;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
+import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
+import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.AttributesFlag;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -65,6 +67,7 @@ public class Start implements Callable<Void> {
     private PollAttributes pollAttributes = new PollAttributes();
 
     private CompletionQueue completionQueue;
+    private SharedReceiveQueue sharedReceiveQueue;
     private QueuePair queuePair;
 
     private ConnectionInfo remoteInfo;
@@ -158,6 +161,12 @@ public class Start implements Callable<Void> {
             LOGGER.info("Created completion queue");
         }
 
+        sharedReceiveQueue = protectionDomain.createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes(config -> {
+            config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
+            config.attributes.setMaxScatterGatherElements(1);
+        }));
+        LOGGER.info("Created shared receive queue");
+
         if (isServer) {
             startServer();
         } else {
@@ -166,6 +175,7 @@ public class Start implements Callable<Void> {
 
         queuePair.close();
         completionQueue.close();
+        sharedReceiveQueue.close();
         completionChannel.close();
         localBuffer.close();
         protectionDomain.close();
@@ -195,6 +205,7 @@ public class Start implements Callable<Void> {
         var initialAttributes = new QueuePair.InitialAttributes(config -> {
             config.setReceiveCompletionQueue(completionQueue);
             config.setSendCompletionQueue(completionQueue);
+            config.setSharedReceiveQueue(sharedReceiveQueue);
             config.setType(Type.RC);
             config.capabilities.setMaxSendWorkRequests(DEFAULT_QUEUE_SIZE);
             config.capabilities.setMaxReceiveWorkRequests(DEFAULT_QUEUE_SIZE);
@@ -219,14 +230,6 @@ public class Start implements Callable<Void> {
 
         var localInfo = new ConnectionInfo(port.getLocalId(), queuePair.getQueuePairNumber(), localBuffer);
         remoteInfo = exchangeInfo(socket, localInfo);
-
-        AddressHandle.Attributes ahAttributes = new AddressHandle.Attributes(config -> {
-            config.setDestination(remoteInfo.getLocalId());
-            config.setServiceLevel((byte) 1);
-            config.setSourcePathBits((byte) 0);
-            config.setPortNumber((byte) 1);
-            config.setIsGlobal(false);
-        });
 
         remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getCapacity(), remoteInfo.getRemoteKey());
 
