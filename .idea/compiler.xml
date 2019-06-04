@@ -7,6 +7,15 @@
       <module name="benchmark_test" target="11" />
       <module name="codegen_main" target="11" />
       <module name="codegen_test" target="11" />
+      <module name="de.hhu.bsinfo-benchmark_jmh" target="11" />
+      <module name="de.hhu.bsinfo-benchmark_main" target="11" />
+      <module name="de.hhu.bsinfo-benchmark_test" target="11" />
+      <module name="de.hhu.bsinfo-codegen_main" target="11" />
+      <module name="de.hhu.bsinfo-codegen_test" target="11" />
+      <module name="de.hhu.bsinfo-example_main" target="11" />
+      <module name="de.hhu.bsinfo-example_test" target="11" />
+      <module name="de.hhu.bsinfo-neutrino-neutrino_main" target="11" />
+      <module name="de.hhu.bsinfo-neutrino-neutrino_test" target="11" />
       <module name="example_main" target="11" />
       <module name="example_test" target="11" />
       <module name="neutrino-neutrino_main" target="11" />

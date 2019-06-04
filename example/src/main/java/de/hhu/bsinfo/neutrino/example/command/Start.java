@@ -1,10 +1,10 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
+import de.hhu.bsinfo.neutrino.buffer.RegisteredBufferWindow;
 import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
 import de.hhu.bsinfo.neutrino.example.util.ContextMonitorThread;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.AddressHandle;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
@@ -25,7 +25,6 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.AttributesFlag;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -137,7 +136,7 @@ public class Start implements Callable<Void> {
         protectionDomain = context.allocateProtectionDomain();
         LOGGER.info("Allocated protection domain");
 
-        localBuffer = protectionDomain.allocateMemory(DEFAULT_BUFFER_SIZE, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
+        localBuffer = protectionDomain.allocateMemory(DEFAULT_BUFFER_SIZE, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE, AccessFlag.MW_BIND);
         LOGGER.info(localBuffer.toString());
         LOGGER.info("Registered local buffer");
 
@@ -185,9 +184,23 @@ public class Start implements Callable<Void> {
         return null;
     }
 
+    private void testMemoryWindow() {
+        RegisteredBufferWindow window = localBuffer.allocateAndBindMemoryWindow(queuePair, 0, 4, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
+        poll();
+        LOGGER.info("Allocated and bound memory window");
+        LOGGER.info(window.toString());
+
+        window.close();
+        LOGGER.info("Deallocated memory window");
+    }
+
     private void startClient() throws IOException, InterruptedException {
         var socket = new Socket(connection.getAddress(), connection.getPort());
+
         queuePair = createQueuePair(socket);
+
+        testMemoryWindow();
+
         receive();
     }
 
@@ -198,6 +211,9 @@ public class Start implements Callable<Void> {
         var socket = serverSocket.accept();
 
         queuePair = createQueuePair(socket);
+
+        testMemoryWindow();
+
         send();
     }
 
