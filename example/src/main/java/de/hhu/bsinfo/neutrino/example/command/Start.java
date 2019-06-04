@@ -25,6 +25,7 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
+import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.ExtendedInitialAttributes;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -160,11 +161,23 @@ public class Start implements Callable<Void> {
             LOGGER.info("Created completion queue");
         }
 
-        sharedReceiveQueue = protectionDomain.createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes(config -> {
-            config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
-            config.attributes.setMaxScatterGatherElements(1);
-        }));
-        LOGGER.info("Created shared receive queue");
+        if(useExtendedApi) {
+            sharedReceiveQueue = context.createExtendedSharedReceiveQueue(new ExtendedInitialAttributes(config -> {
+                config.setType(SharedReceiveQueue.Type.BASIC);
+                config.setProtectionDomain(protectionDomain);
+                config.setCompletionQueue(completionQueue);
+
+                config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
+                config.attributes.setMaxScatterGatherElements(1);
+            }));
+            LOGGER.info("Created extended shared receive queue");
+        } else {
+            sharedReceiveQueue = protectionDomain.createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes(config -> {
+                config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
+                config.attributes.setMaxScatterGatherElements(1);
+            }));
+            LOGGER.info("Created shared receive queue");
+        }
 
         if (isServer) {
             startServer();
@@ -255,7 +268,7 @@ public class Start implements Callable<Void> {
 
         attributes = new Attributes(config -> {
             config.setState(State.RTR);
-            config.setPathMtu(Mtu.IBV_MTU_4096);
+            config.setPathMtu(Mtu.MTU_4096);
             config.setDestination(remoteInfo.getQueuePairNumber());
             config.setReceivePacketNumber(0);
             config.setMaxDestinationAtomicReads((byte) 1);
