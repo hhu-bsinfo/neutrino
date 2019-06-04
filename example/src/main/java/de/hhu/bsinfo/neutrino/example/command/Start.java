@@ -186,6 +186,10 @@ public class Start implements Callable<Void> {
 
     private void testMemoryWindow() {
         RegisteredBufferWindow window = localBuffer.allocateAndBindMemoryWindow(queuePair, 0, 4, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
+        if (window == null) {
+            return;
+        }
+
         poll();
         LOGGER.info("Allocated and bound memory window");
         LOGGER.info(window.toString());
@@ -205,8 +209,6 @@ public class Start implements Callable<Void> {
     }
 
     private void startServer() throws IOException, InterruptedException {
-        localBuffer.putLong(0, MAGIC_NUMBER);
-
         var serverSocket = new ServerSocket(portNumber);
         var socket = serverSocket.accept();
 
@@ -289,7 +291,7 @@ public class Start implements Callable<Void> {
         while (true) {
             localBuffer.putLong(0, ThreadLocalRandom.current().nextLong());
             LOGGER.info("localBuffer[0] = {}", localBuffer.getLong(0));
-            remoteBuffer.write(localBuffer);
+            localBuffer.write(0, remoteBuffer, 0 , Long.BYTES);
             poll();
             Thread.sleep(INTERVAL);
         }
