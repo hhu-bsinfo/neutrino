@@ -118,7 +118,7 @@ public class Start implements Callable<Void> {
         }
 
         Context context = Context.openDevice(0);
-        LOGGER.info("Opened context for deviceAttributes {}", context.getDeviceName());
+        LOGGER.info("Opened context for device {}", context.getDeviceName());
 
         ContextMonitorThread contextMonitor = new ContextMonitorThread(context);
         contextMonitor.start();
