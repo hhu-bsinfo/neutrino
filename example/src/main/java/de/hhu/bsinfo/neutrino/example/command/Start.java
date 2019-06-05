@@ -138,7 +138,7 @@ public class Start implements Callable<Void> {
             });
 
             extendedConnectionDomain = context.openExtendedConnectionDomain(attributes);
-            LOGGER.info("Opened extended connetion domain {}", extendedConnectionDomain);
+            LOGGER.info("Opened extended connection domain {}", extendedConnectionDomain);
         }
 
         ContextMonitorThread contextMonitor = new ContextMonitorThread(context);
@@ -240,7 +240,7 @@ public class Start implements Callable<Void> {
 
         testMemoryWindow();
 
-        receive();
+        startMonitoring();
     }
 
     private void startServer() throws IOException, InterruptedException {
@@ -251,7 +251,7 @@ public class Start implements Callable<Void> {
 
         testMemoryWindow();
 
-        send();
+        readMonitoringData();
     }
 
     private QueuePair createQueuePair(Socket socket) throws IOException {
@@ -322,21 +322,21 @@ public class Start implements Callable<Void> {
         return queuePair;
     }
 
-    private void send() throws InterruptedException {
+    private void readMonitoringData() throws InterruptedException {
+        while (true) {
+            localBuffer.read(0, remoteBuffer, 0, monitoringData.getNativeSize());
+            poll();
+            LOGGER.info(monitoringData.toString());
+            Thread.sleep(INTERVAL);
+        }
+    }
+
+    private void startMonitoring() throws InterruptedException {
         monitoringData.clear();
         while (true) {
             monitoringData.setCpuUsage((byte) Math.abs(ThreadLocalRandom.current().nextInt() % 100));
             monitoringData.setTimestamp(System.currentTimeMillis());
             monitoringData.setWriteCount(monitoringData.getWriteCount() + 1);
-            localBuffer.write(0, remoteBuffer, 0 , monitoringData.getNativeSize());
-            poll();
-            Thread.sleep(INTERVAL);
-        }
-    }
-
-    private void receive() throws InterruptedException {
-        while (true) {
-            LOGGER.info(monitoringData.toString());
             Thread.sleep(INTERVAL);
         }
     }
@@ -346,16 +346,33 @@ public class Start implements Callable<Void> {
             completionQueue.requestNotification(false);
             CompletionQueue eventQueue = completionChannel.getCompletionEvent();
 
-            var completionArray = new WorkCompletionArray(DEFAULT_QUEUE_SIZE);
+            if(useExtendedApi) {
+                // Poll the completion queue
+                extendedCompletionQueue.startPolling(pollAttributes);
 
-            Objects.requireNonNull(eventQueue).poll(completionArray);
+                // Poll all work completions from the completion queue
+                do {
+                    LOGGER.debug("Status = {}", extendedCompletionQueue.getStatus());
+                    LOGGER.debug("OpCode = {}", extendedCompletionQueue.readOpCode());
+                    LOGGER.debug("Timestamp = {}", extendedCompletionQueue.readCompletionTimestamp());
+                } while (extendedCompletionQueue.pollNext());
 
-            for(int i = 0; i < completionArray.getLength(); i++) {
-                LOGGER.debug("Status = {}", completionArray.get(i).getStatus());
-                LOGGER.debug("OpCode = {}", completionArray.get(i).getOpCode());
+                // Stop polling the completion queue
+                extendedCompletionQueue.stopPolling();
+
+                Objects.requireNonNull(eventQueue).acknowledgeEvents(1);
+            } else {
+                var completionArray = new WorkCompletionArray(DEFAULT_QUEUE_SIZE);
+
+                Objects.requireNonNull(eventQueue).poll(completionArray);
+
+                for (int i = 0; i < completionArray.getLength(); i++) {
+                    LOGGER.debug("Status = {}", completionArray.get(i).getStatus());
+                    LOGGER.debug("OpCode = {}", completionArray.get(i).getOpCode());
+                }
+
+                completionQueue.acknowledgeEvents(1);
             }
-
-            completionQueue.acknowledgeEvents(1);
         } else {
             if (useExtendedApi) {
                 // Poll the completion queue until a work completion is available
