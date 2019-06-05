@@ -14,6 +14,10 @@ import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.InitialAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.PollAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.WorkCompletionCapability;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.AttributeFlag;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.InitalAttributes;
+import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.OperationFlag;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedDeviceAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedDeviceAttributes.QueryExtendedDeviceInput;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
@@ -25,6 +29,7 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
+import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.ExtendedAttributeFlag;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.ExtendedInitialAttributes;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -56,12 +61,13 @@ public class Start implements Callable<Void> {
     private static final int INTERVAL = 1000;
 
     private Port port;
+    private ExtendedConnectionDomain extendedConnectionDomain;
     private ProtectionDomain protectionDomain;
 
     private RegisteredBuffer localBuffer;
     private RemoteBuffer remoteBuffer;
 
-    private CompletionChannel completionChannel = null;
+    private CompletionChannel completionChannel;
 
     private ExtendedCompletionQueue extendedCompletionQueue;
     private PollAttributes pollAttributes = new PollAttributes();
@@ -120,6 +126,16 @@ public class Start implements Callable<Void> {
         Context context = Context.openDevice(0);
         LOGGER.info("Opened context for device {}", context.getDeviceName());
 
+        if(useExtendedApi) {
+            InitalAttributes attributes = new InitalAttributes(config -> {
+                config.setAttributesMask(AttributeFlag.OFLAGS, AttributeFlag.FD);
+                config.setOperationFlags(OperationFlag.O_CREAT);
+            });
+
+            extendedConnectionDomain = context.openExtendedConnectionDomain(attributes);
+            LOGGER.info("Opened extended connetion domain {}", extendedConnectionDomain);
+        }
+
         ContextMonitorThread contextMonitor = new ContextMonitorThread(context);
         contextMonitor.start();
 
@@ -163,9 +179,8 @@ public class Start implements Callable<Void> {
 
         if(useExtendedApi) {
             sharedReceiveQueue = context.createExtendedSharedReceiveQueue(new ExtendedInitialAttributes(config -> {
-                config.setType(SharedReceiveQueue.Type.BASIC);
+                config.setAttributesMask(ExtendedAttributeFlag.PD);
                 config.setProtectionDomain(protectionDomain);
-                config.setCompletionQueue(completionQueue);
 
                 config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
                 config.attributes.setMaxScatterGatherElements(1);
