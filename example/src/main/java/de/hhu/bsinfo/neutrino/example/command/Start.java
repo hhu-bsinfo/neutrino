@@ -3,7 +3,11 @@ package de.hhu.bsinfo.neutrino.example.command;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBufferWindow;
 import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
+import de.hhu.bsinfo.neutrino.data.NativeByte;
+import de.hhu.bsinfo.neutrino.data.NativeLong;
 import de.hhu.bsinfo.neutrino.example.util.ContextMonitorThread;
+import de.hhu.bsinfo.neutrino.struct.Struct;
+import de.hhu.bsinfo.neutrino.util.CustomStruct;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
@@ -64,6 +68,7 @@ public class Start implements Callable<Void> {
     private ExtendedConnectionDomain extendedConnectionDomain;
     private ProtectionDomain protectionDomain;
 
+    private MonitoringData monitoringData;
     private RegisteredBuffer localBuffer;
     private RemoteBuffer remoteBuffer;
 
@@ -156,6 +161,8 @@ public class Start implements Callable<Void> {
         localBuffer = protectionDomain.allocateMemory(DEFAULT_BUFFER_SIZE, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE, AccessFlag.MW_BIND);
         LOGGER.info(localBuffer.toString());
         LOGGER.info("Registered local buffer");
+
+        monitoringData = localBuffer.getObject(0, MonitoringData::new);
 
         if(useCompletionChannel) {
             completionChannel = context.createCompletionChannel();
@@ -316,10 +323,12 @@ public class Start implements Callable<Void> {
     }
 
     private void send() throws InterruptedException {
+        monitoringData.clear();
         while (true) {
-            localBuffer.putLong(0, ThreadLocalRandom.current().nextLong());
-            LOGGER.info("localBuffer[0] = {}", localBuffer.getLong(0));
-            localBuffer.write(0, remoteBuffer, 0 , Long.BYTES);
+            monitoringData.setCpuUsage((byte) Math.abs(ThreadLocalRandom.current().nextInt() % 100));
+            monitoringData.setTimestamp(System.currentTimeMillis());
+            monitoringData.setWriteCount(monitoringData.getWriteCount() + 1);
+            localBuffer.write(0, remoteBuffer, 0 , monitoringData.getNativeSize());
             poll();
             Thread.sleep(INTERVAL);
         }
@@ -327,7 +336,7 @@ public class Start implements Callable<Void> {
 
     private void receive() throws InterruptedException {
         while (true) {
-            LOGGER.info("localBuffer[0] = {}", localBuffer.getLong(0));
+            LOGGER.info(monitoringData.toString());
             Thread.sleep(INTERVAL);
         }
     }
@@ -449,6 +458,50 @@ public class Start implements Callable<Void> {
                 .add("remoteAddress=" + remoteAddress)
                 .add("capacity=" + capacity)
                 .toString();
+        }
+    }
+
+    @CustomStruct(Byte.BYTES + 2 * Long.BYTES)
+    private static class MonitoringData extends Struct {
+        private  NativeByte cpuUsage = byteField();
+        private  NativeLong timestamp = longField();
+        private  NativeLong writeCount = longField();
+
+        public MonitoringData(long handle) {
+            super(handle);
+        }
+
+        public byte getCpuUsage() {
+            return cpuUsage.get();
+        }
+
+        public void setCpuUsage(byte cpuUsage) {
+            this.cpuUsage.set(cpuUsage);
+        }
+
+        public long getTimestamp() {
+            return timestamp.get();
+        }
+
+        public void setTimestamp(long timestamp) {
+            this.timestamp.set(timestamp);
+        }
+
+        public long getWriteCount() {
+            return writeCount.get();
+        }
+
+        public void setWriteCount(long writeCount) {
+            this.writeCount.set(writeCount);
+        }
+
+        @Override
+        public String toString() {
+            return "MonitoringData {" +
+                    "\n\tcpuUsage=" + cpuUsage +
+                    ",\n\ttimestamp=" + timestamp +
+                    ",\n\twriteCount=" + writeCount +
+                    "\n}";
         }
     }
 }
