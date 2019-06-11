@@ -8,33 +8,19 @@ import de.hhu.bsinfo.neutrino.data.NativeLong;
 import de.hhu.bsinfo.neutrino.example.util.ContextMonitorThread;
 import de.hhu.bsinfo.neutrino.struct.Struct;
 import de.hhu.bsinfo.neutrino.util.CustomStruct;
-import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
-import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
+import de.hhu.bsinfo.neutrino.verbs.*;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
-import de.hhu.bsinfo.neutrino.verbs.Context;
-import de.hhu.bsinfo.neutrino.verbs.DeviceAttributes;
-import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.InitialAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.PollAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.WorkCompletionCapability;
-import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.AttributeFlag;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.InitalAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.OperationFlag;
-import de.hhu.bsinfo.neutrino.verbs.ExtendedDeviceAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedDeviceAttributes.QueryExtendedDeviceInput;
-import de.hhu.bsinfo.neutrino.verbs.Mtu;
-import de.hhu.bsinfo.neutrino.verbs.Port;
-import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
-import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeMask;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.ExtendedAttributeFlag;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.ExtendedInitialAttributes;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -182,23 +168,6 @@ public class Start implements Callable<Void> {
         } else {
             completionQueue = context.createCompletionQueue(DEFAULT_QUEUE_SIZE, completionChannel);
             LOGGER.info("Created completion queue");
-        }
-
-        if(useExtendedApi) {
-            sharedReceiveQueue = context.createExtendedSharedReceiveQueue(new ExtendedInitialAttributes(config -> {
-                config.setAttributesMask(ExtendedAttributeFlag.PD);
-                config.setProtectionDomain(protectionDomain);
-
-                config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
-                config.attributes.setMaxScatterGatherElements(1);
-            }));
-            LOGGER.info("Created extended shared receive queue");
-        } else {
-            sharedReceiveQueue = protectionDomain.createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes(config -> {
-                config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
-                config.attributes.setMaxScatterGatherElements(1);
-            }));
-            LOGGER.info("Created shared receive queue");
         }
 
         if (isServer) {
