@@ -6,6 +6,7 @@ import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
 import de.hhu.bsinfo.neutrino.data.NativeByte;
 import de.hhu.bsinfo.neutrino.data.NativeLong;
 import de.hhu.bsinfo.neutrino.example.util.ContextMonitorThread;
+import de.hhu.bsinfo.neutrino.request.CompletionManager;
 import de.hhu.bsinfo.neutrino.struct.Struct;
 import de.hhu.bsinfo.neutrino.util.CustomStruct;
 import de.hhu.bsinfo.neutrino.verbs.*;
@@ -21,6 +22,10 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeMask;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -30,9 +35,6 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
 
 @CommandLine.Command(
     name = "start",
@@ -68,6 +70,8 @@ public class Start implements Callable<Void> {
     private QueuePair queuePair;
 
     private ConnectionInfo remoteInfo;
+
+    private CompletionManager completionManager;
 
     @CommandLine.Option(
         names = "--server",
@@ -170,6 +174,8 @@ public class Start implements Callable<Void> {
             LOGGER.info("Created completion queue");
         }
 
+        completionManager = new CompletionManager(completionQueue);
+
         if (isServer) {
             startServer();
         } else {
@@ -207,7 +213,7 @@ public class Start implements Callable<Void> {
 
         queuePair = createQueuePair(socket);
 
-        testMemoryWindow();
+        //testMemoryWindow();
 
         startMonitoring();
     }
@@ -218,7 +224,7 @@ public class Start implements Callable<Void> {
 
         queuePair = createQueuePair(socket);
 
-        testMemoryWindow();
+        //testMemoryWindow();
 
         readMonitoringData();
     }
@@ -253,7 +259,7 @@ public class Start implements Callable<Void> {
         var localInfo = new ConnectionInfo(port.getLocalId(), queuePair.getQueuePairNumber(), localBuffer);
         remoteInfo = exchangeInfo(socket, localInfo);
 
-        remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getCapacity(), remoteInfo.getRemoteKey());
+        remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getCapacity(), remoteInfo.getRemoteKey(), completionManager);
 
         LOGGER.info(remoteBuffer.toString());
 
@@ -293,8 +299,8 @@ public class Start implements Callable<Void> {
 
     private void readMonitoringData() throws InterruptedException {
         while (true) {
-            localBuffer.read(0, remoteBuffer, 0, monitoringData.getNativeSize());
-            poll();
+            long workRequestId = localBuffer.read(0, remoteBuffer, 0, monitoringData.getNativeSize());
+            completionManager.await(workRequestId);
             LOGGER.info(monitoringData.toString());
             Thread.sleep(INTERVAL);
         }
