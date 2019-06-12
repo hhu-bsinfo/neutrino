@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
+import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.ExtendedAttributeFlag;
+import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue.ExtendedInitialAttributes;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -174,7 +176,26 @@ public class Start implements Callable<Void> {
             LOGGER.info("Created completion queue");
         }
 
+        testWorkQueue(context);
+
         completionManager = new CompletionManager(completionQueue);
+
+        if(useExtendedApi) {
+            sharedReceiveQueue = context.createExtendedSharedReceiveQueue(new ExtendedInitialAttributes(config -> {
+                config.setAttributesMask(ExtendedAttributeFlag.PD);
+                config.setProtectionDomain(protectionDomain);
+
+                config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
+                config.attributes.setMaxScatterGatherElements(1);
+            }));
+            LOGGER.info("Created extended shared receive queue");
+        } else {
+            sharedReceiveQueue = protectionDomain.createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes(config -> {
+                config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
+                config.attributes.setMaxScatterGatherElements(1);
+            }));
+            LOGGER.info("Created shared receive queue");
+        }
 
         if (isServer) {
             startServer();
@@ -201,11 +222,53 @@ public class Start implements Callable<Void> {
         }
 
         poll();
-        LOGGER.info("Allocated and bound memory window");
-        LOGGER.info(window.toString());
+        LOGGER.debug("Allocated and bound memory window");
+        LOGGER.debug(window.toString());
 
         window.close();
-        LOGGER.info("Deallocated memory window");
+        LOGGER.debug("Deallocated memory window");
+    }
+
+    private void testWorkQueue(final Context context) {
+        WorkQueue workQueue = context.createWorkQueue(new WorkQueue.InitialAttributes(config -> {
+            config.setMaxWorkRequests(DEFAULT_QUEUE_SIZE);
+            config.setMaxScatterGatherElements(1);
+            config.setType(WorkQueue.Type.RQ);
+            config.setProtectionDomain(protectionDomain);
+            config.setCompletionQueue(completionQueue);
+        }));
+
+        if(workQueue == null) {
+            return;
+        }
+
+        LOGGER.debug("Created Work queue");
+
+        workQueue.modify(new WorkQueue.Attributes(config -> {
+            config.setCurrentState(WorkQueue.State.RESET);
+            config.setState(WorkQueue.State.READY);
+            config.setAttributesMask( WorkQueue.AttributeFlag.CURRENT_STATE, WorkQueue.AttributeFlag.STATE);
+        }));
+
+        LOGGER.debug("Modified Work queue");
+
+        ReceiveWorkQueueIndirectionTable indirectionTable = context.createReceiveWorkQueueIndirectionTable(
+                new ReceiveWorkQueueIndirectionTable.InitialAttributes(0,
+                        config -> config.setWorkQueue(0, workQueue)));
+
+        if(indirectionTable == null) {
+            return;
+        }
+
+        LOGGER.debug("Created receive work queue indirection table");
+
+        indirectionTable.close();
+
+        LOGGER.debug("Destroyed receive work queue indirection table");
+
+        workQueue.close();
+
+        LOGGER.debug("Destroyed work queue");
     }
 
     private void startClient() throws IOException, InterruptedException {
