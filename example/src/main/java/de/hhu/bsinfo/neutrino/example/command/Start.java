@@ -1,12 +1,14 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
+import de.hhu.bsinfo.neutrino.api.connection.Connection;
+import de.hhu.bsinfo.neutrino.api.connection.ConnectionManager;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBufferWindow;
 import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
 import de.hhu.bsinfo.neutrino.data.NativeByte;
 import de.hhu.bsinfo.neutrino.data.NativeLong;
 import de.hhu.bsinfo.neutrino.example.util.ContextMonitorThread;
-import de.hhu.bsinfo.neutrino.request.CompletionManager;
+import de.hhu.bsinfo.neutrino.api.request.CompletionManager;
 import de.hhu.bsinfo.neutrino.struct.Struct;
 import de.hhu.bsinfo.neutrino.util.CustomStruct;
 import de.hhu.bsinfo.neutrino.verbs.*;
@@ -104,11 +106,16 @@ public class Start implements Callable<Void> {
     @CommandLine.Option(
         names = {"-c", "--connect"},
         description = "The server to connect to.")
-    private InetSocketAddress connection;
+    private InetSocketAddress serverAddress;
+
+    @CommandLine.Option(
+            names = {"--bind"},
+            description = "The servers bind address.")
+    private InetSocketAddress bindAddress = new InetSocketAddress(DEFAULT_SERVER_PORT);
 
     @Override
     public Void call() throws Exception {
-        if (!isServer && connection == null) {
+        if (!isServer && serverAddress == null) {
             LOGGER.error("Please specify the server address");
             return null;
         }
@@ -272,7 +279,7 @@ public class Start implements Callable<Void> {
     }
 
     private void startClient() throws IOException, InterruptedException {
-        var socket = new Socket(connection.getAddress(), connection.getPort());
+        var socket = new Socket(serverAddress.getAddress(), serverAddress.getPort());
 
         queuePair = createQueuePair(socket);
 
