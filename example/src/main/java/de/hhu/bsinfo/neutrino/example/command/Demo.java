@@ -13,11 +13,6 @@ import java.util.concurrent.Callable;
         separator = " ")
 public class Demo implements Callable<Void> {
 
-    private static final int DEMO_BUFFER_SIZE = 1024;
-    private static final int DEMO_PORT = 2998;
-
-    private static final InetSocketAddress DEMO_BIND_ADDR = new InetSocketAddress(DEMO_PORT);
-
     @CommandLine.Option(
             names = "--server",
             description = "Runs this instance in server mode.")
@@ -28,7 +23,7 @@ public class Demo implements Callable<Void> {
             description = "The server to connect to.")
     private InetSocketAddress serverAddress;
 
-    private Neutrino neutrino;
+    private final Neutrino neutrino = Neutrino.newInstance();
 
     @Override
     public Void call() throws Exception {
