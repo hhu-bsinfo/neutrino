@@ -6,7 +6,6 @@ import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
 import de.hhu.bsinfo.neutrino.data.NativeByte;
 import de.hhu.bsinfo.neutrino.data.NativeLong;
 import de.hhu.bsinfo.neutrino.example.util.ContextMonitorThread;
-import de.hhu.bsinfo.neutrino.api.request.CompletionManager;
 import de.hhu.bsinfo.neutrino.struct.Struct;
 import de.hhu.bsinfo.neutrino.util.CustomStruct;
 import de.hhu.bsinfo.neutrino.verbs.*;
@@ -70,8 +69,6 @@ public class Start implements Callable<Void> {
     private QueuePair queuePair;
 
     private ConnectionInfo remoteInfo;
-
-    private CompletionManager completionManager;
 
     @CommandLine.Option(
         names = "--server",
@@ -174,8 +171,6 @@ public class Start implements Callable<Void> {
             completionQueue = context.createCompletionQueue(DEFAULT_QUEUE_SIZE, completionChannel);
             LOGGER.info("Created completion queue");
         }
-
-        completionManager = new CompletionManager(completionQueue);
 
         if(useExtendedApi) {
             sharedReceiveQueue = context.createExtendedSharedReceiveQueue(
@@ -321,7 +316,7 @@ public class Start implements Callable<Void> {
     private void readMonitoringData() throws InterruptedException {
         while (true) {
             long workRequestId = localBuffer.read(0, remoteBuffer, 0, monitoringData.getNativeSize());
-            completionManager.await(workRequestId);
+            poll();
             LOGGER.info(monitoringData.toString());
             Thread.sleep(INTERVAL);
         }
