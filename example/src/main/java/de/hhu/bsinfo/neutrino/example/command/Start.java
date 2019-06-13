@@ -1,7 +1,5 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.api.connection.Connection;
-import de.hhu.bsinfo.neutrino.api.connection.ConnectionManager;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBufferWindow;
 import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
@@ -137,7 +135,7 @@ public class Start implements Callable<Void> {
             });
 
             extendedConnectionDomain = context.openExtendedConnectionDomain(attributes);
-            LOGGER.info("Opened extended connection domain {}", extendedConnectionDomain);
+            LOGGER.info("Opened extended connection domain");
         }
 
         ContextMonitorThread contextMonitor = new ContextMonitorThread(context);
@@ -183,8 +181,6 @@ public class Start implements Callable<Void> {
             LOGGER.info("Created completion queue");
         }
 
-        testWorkQueue(context);
-
         completionManager = new CompletionManager(completionQueue);
 
         if(useExtendedApi) {
@@ -203,6 +199,9 @@ public class Start implements Callable<Void> {
             }));
             LOGGER.info("Created shared receive queue");
         }
+
+        testMemoryWindow();
+        testWorkQueue(context);
 
         if (isServer) {
             startServer();
@@ -283,8 +282,6 @@ public class Start implements Callable<Void> {
 
         queuePair = createQueuePair(socket);
 
-        //testMemoryWindow();
-
         startMonitoring();
     }
 
@@ -293,8 +290,6 @@ public class Start implements Callable<Void> {
         var socket = serverSocket.accept();
 
         queuePair = createQueuePair(socket);
-
-        //testMemoryWindow();
 
         readMonitoringData();
     }
