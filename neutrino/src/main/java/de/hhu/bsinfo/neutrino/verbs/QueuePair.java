@@ -104,6 +104,10 @@ public class QueuePair extends Struct implements AutoCloseable {
         return postReceive(receiveWorkRequests.getHandle());
     }
 
+    public boolean modify(final Consumer<Attributes> configurator, final AttributeMask... flags) {
+        return modify(new Attributes(configurator), flags);
+    }
+
     private boolean modify(final Attributes attributes, final AttributeFlag... flags) {
         var result = (Result) Verbs.getPoolableInstance(Result.class);
 
@@ -707,16 +711,16 @@ public class QueuePair extends Struct implements AutoCloseable {
                 this.userContext = userContext;
                 return this;
             }
-            
+
             public OpenAttributes build() {
                 var ret = new OpenAttributes();
-                
+
                 ret.setAttributeMask(attributeFlags.toArray(new OpenAttributeFlag[0]));
                 ret.setQueuePairNumber(queuePairNumber);
                 ret.setUserContext(userContext);
                 ret.setType(type);
                 ret.setExtendedConnectionDomain(extendedConnectionDomain);
-                
+
                 return ret;
             }
         }
@@ -1190,7 +1194,7 @@ public class QueuePair extends Struct implements AutoCloseable {
                 attributeFlags.add(AttributeFlag.TIMEOUT);
                 return this;
             }
-            
+
             public Builder withRetryCount(final byte retryCount) {
                 this.retryCount = retryCount;
                 attributeFlags.add(AttributeFlag.RETRY_CNT);
@@ -1382,16 +1386,16 @@ public class QueuePair extends Struct implements AutoCloseable {
                 attributeFlags.add(AttributeFlag.ALT_PATH);
                 return this;
             }
-            
+
             public Attributes build() {
                 var ret = new Attributes();
-                
+
                 if(state != null) ret.setState(state);
-                if(currentState != null) ret.setCurrentState(currentState); 
+                if(currentState != null) ret.setCurrentState(currentState);
                 if(pathMtu != null) ret.setPathMtu(pathMtu);
                 if(pathMigrationState != null) ret.setPathMigrationState(pathMigrationState);
                 if(accessFlags != null) ret.setAccessFlags(accessFlags);
-                
+
                 ret.setQkey(qkey);
                 ret.setReceivePacketNumber(receivePacketNumber);
                 ret.setSendPacketNumber(sendPacketNumber);

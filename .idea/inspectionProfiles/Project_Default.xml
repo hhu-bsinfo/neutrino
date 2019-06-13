@@ -1802,7 +1802,7 @@
     <inspection_tool class="MultipleInjectedConstructorsForClass" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="MultipleMethodDesignatorsInspection" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="MultipleRepositoryUrls" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="MultipleReturnPointsPerMethod" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="MultipleReturnPointsPerMethod" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="ignoreGuardClauses" value="false" />
       <option name="ignoreEqualsMethod" value="true" />
       <option name="m_limit" value="1" />
@@ -1848,6 +1848,34 @@
     </inspection_tool>
     <inspection_tool class="NestingDepthJS" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="m_limit" value="5" />
+    </inspection_tool>
+    <inspection_tool class="NewClassNamingConvention" enabled="true" level="ERROR" enabled_by_default="true">
+      <extension name="AbstractClassNamingConvention" enabled="true">
+        <option name="inheritDefaultSettings" value="false" />
+        <option name="m_regex" value="[A-Z][A-Za-z\d]*|Check" />
+        <option name="m_minLength" value="5" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="AnnotationNamingConvention" enabled="true" />
+      <extension name="ClassNamingConvention" enabled="true">
+        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
+        <option name="m_minLength" value="3" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="EnumeratedClassNamingConvention" enabled="true">
+        <option name="inheritDefaultSettings" value="false" />
+        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
+        <option name="m_minLength" value="4" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="InterfaceNamingConvention" enabled="true">
+        <option name="inheritDefaultSettings" value="false" />
+        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
+        <option name="m_minLength" value="6" />
+        <option name="m_maxLength" value="64" />
+      </extension>
+      <extension name="JUnitAbstractTestClassNamingConvention" enabled="true" />
+      <extension name="TypeParameterNamingConvention" enabled="true" />
     </inspection_tool>
     <inspection_tool class="NewExceptionWithoutArguments" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NewGroovyClassNamingConvention" enabled="false" level="ERROR" enabled_by_default="false">
@@ -1975,7 +2003,7 @@
     <inspection_tool class="PackageInMultipleModules" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="PackageInfoWithoutPackage" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="PackageName" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
-    <inspection_tool class="PackageNamingConvention" enabled="true" level="WARNING" enabled_by_default="true">
+    <inspection_tool class="PackageNamingConvention" enabled="false" level="WARNING" enabled_by_default="false">
       <option name="m_regex" value="[a-z0-9\.]*" />
       <option name="m_minLength" value="3" />
       <option name="m_maxLength" value="100" />
@@ -2242,7 +2270,7 @@
     <inspection_tool class="SerialPersistentFieldsWithWrongSignature" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="SerialVersionUIDNotStaticFinal" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="SerializableClassInSecureContext" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="SerializableHasSerialVersionUIDField" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="SerializableHasSerialVersionUIDField" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="ignoreAnonymousInnerClasses" value="false" />
       <option name="superClassString" value="" />
     </inspection_tool>
@@ -2535,6 +2563,9 @@
           <option value="NewClassNamingConvention" />
           <option value="JUnitTestClassNamingConvention" />
           <option value="CanBeFinal" />
+          <option value="NestedTryStatement" />
+          <option value="SerializableHasSerializationMethods" />
+          <option value="FieldMayBeFinal" />
         </list>
       </option>
     </inspection_tool>
