@@ -7,7 +7,7 @@ import de.hhu.bsinfo.neutrino.verbs.Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CoreServiceImpl extends CoreService {
+public class CoreServiceImpl extends CoreService<CoreServiceOptions> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CoreService.class);
 
