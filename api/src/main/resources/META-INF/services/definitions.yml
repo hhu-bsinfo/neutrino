@@ -1,0 +1,11 @@
+- interface: de.hhu.bsinfo.neutrino.api.core.CoreService
+  implementation: de.hhu.bsinfo.neutrino.api.core.impl.CoreServiceImpl
+
+- interface: de.hhu.bsinfo.neutrino.api.memory.MemoryService
+  implementation: de.hhu.bsinfo.neutrino.api.memory.impl.MemoryServiceImpl
+
+- interface: de.hhu.bsinfo.neutrino.api.message.MessageService
+  implementation: de.hhu.bsinfo.neutrino.api.message.impl.MessageServiceImpl
+
+- interface: de.hhu.bsinfo.neutrino.api.connection.ConnectionService
+  implementation: de.hhu.bsinfo.neutrino.api.connection.impl.ConnectionServiceImpl

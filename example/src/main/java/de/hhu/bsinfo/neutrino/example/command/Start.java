@@ -297,7 +297,7 @@ public class Start implements Callable<Void> {
         var localInfo = new ConnectionInfo(port.getLocalId(), queuePair.getQueuePairNumber(), localBuffer);
         remoteInfo = exchangeInfo(socket, localInfo);
 
-        remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getCapacity(), remoteInfo.getRemoteKey(), completionManager);
+        remoteBuffer = new RemoteBuffer(queuePair, remoteInfo.getRemoteAddress(), remoteInfo.getCapacity(), remoteInfo.getRemoteKey());
 
         LOGGER.info(remoteBuffer.toString());
 
