@@ -2,10 +2,11 @@ package de.hhu.bsinfo.neutrino.api.memory.impl;
 
 import de.hhu.bsinfo.neutrino.api.core.CoreService;
 import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
+import de.hhu.bsinfo.neutrino.api.util.NullOptions;
 
 import javax.inject.Inject;
 
-public class MemoryServiceImpl extends MemoryService {
+public class MemoryServiceImpl extends MemoryService<NullOptions> {
 
     @Inject
     private CoreService core;
