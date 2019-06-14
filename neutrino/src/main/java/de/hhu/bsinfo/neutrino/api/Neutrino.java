@@ -1,9 +1,9 @@
 package de.hhu.bsinfo.neutrino.api;
 
-import de.hhu.bsinfo.neutrino.api.connection.ConnectionModule;
-import de.hhu.bsinfo.neutrino.api.message.MessageModule;
-import de.hhu.bsinfo.neutrino.api.module.Module;
-import de.hhu.bsinfo.neutrino.api.module.ModuleManager;
+import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
+import de.hhu.bsinfo.neutrino.api.message.MessageService;
+import de.hhu.bsinfo.neutrino.api.util.service.Service;
+import de.hhu.bsinfo.neutrino.api.util.service.ServiceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +11,7 @@ public final class Neutrino {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Neutrino.class);
 
-    private final ModuleManager moduleManager = new ModuleManager();
+    private final ServiceManager serviceManager = new ServiceManager();
 
     private Neutrino() {}
 
@@ -27,15 +27,15 @@ public final class Neutrino {
     }
 
     private void registerModules() {
-        moduleManager.register(ConnectionModule.class);
-        moduleManager.register(MessageModule.class);
+        serviceManager.register(ConnectionService.class);
+        serviceManager.register(MessageService.class);
     }
 
     private void initializeModules() {
-        moduleManager.initialize();
+        serviceManager.initialize();
     }
 
-    public <T extends Module<?>> T getModule(final Class<T> module) {
-        return moduleManager.get(module);
+    public <T extends Service<?>> T getModule(final Class<T> module) {
+        return serviceManager.get(module);
     }
 }
