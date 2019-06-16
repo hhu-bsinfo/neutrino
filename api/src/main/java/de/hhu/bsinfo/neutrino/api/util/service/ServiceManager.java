@@ -28,8 +28,8 @@ public class ServiceManager implements ServiceProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceManager.class);
 
-    private final Map<Class<? extends Service<?>>, ServiceContainer> services = new HashMap<>();
-    private final DependencyManager<Service<?>> dependencyManager = new DependencyManager<>();
+    private final Map<Class<?>, ServiceContainer> services = new HashMap<>();
+    private final DependencyManager dependencyManager = new DependencyManager();
     private final ServiceInjector injector;
 
     public ServiceManager() {
@@ -37,49 +37,58 @@ public class ServiceManager implements ServiceProvider {
     }
 
     public void initialize() {
+        loadServices();
+        initializeServices();
+    }
+
+    private void loadServices() {
         for (var definition : ServiceLoader.load()) {
             var container = new ServiceContainer(definition);
             services.put(definition.getInterfaceClass(), container);
             dependencyManager.register(definition.getInterfaceClass(), definition.getImplementationClass());
         }
+    }
 
+    private void initializeServices() {
         for (var service : dependencyManager.getOrderedDependencies()) {
             var container = services.get(service);
-            var instance = container.newInstance(container.newOptionsInstance());
+            var config = container.newConfigInstance();
+            var instance = container.newServiceInstance(config);
             injector.inject(instance);
-            instance.onInit();
+            instance.onInit(config);
         }
     }
 
     @Override
-    public <T extends Service<?>> T get(Class<T> service) {
+    public <T> T get(Class<T> service) {
         return service.cast(services.get(service).getInstance());
     }
 
     public static class ServiceContainer {
 
         private final ServiceDefinition serviceDefinition;
-        private Service<?> instance;
+
+        private Service<ServiceConfig> instance;
 
         ServiceContainer(final ServiceDefinition serviceDefinition) {
             this.serviceDefinition = serviceDefinition;
         }
 
-        ServiceOptions newOptionsInstance() {
+        ServiceConfig newConfigInstance() {
             try {
-                return serviceDefinition.getOptionsClass().getConstructor().newInstance();
+                return serviceDefinition.getConfigClass().getConstructor().newInstance();
             } catch (final Exception e) {
-                throw new ServiceInstantiationException("Creating options for {} failed", e, serviceDefinition.getOptionsClass().getSimpleName());
+                throw new ServiceInstantiationException("Creating config for {} failed", e, serviceDefinition.getConfigClass().getSimpleName());
             }
         }
 
-        Service<?> newInstance(final ServiceOptions options) {
+        Service<ServiceConfig> newServiceInstance(final ServiceConfig config) {
             if (instance != null) {
                 throw new ServiceInstantiationException("An instance of {} was already created: ", instance.getClass().getSimpleName());
             }
 
             instance = serviceDefinition.createInstance();
-            instance.setOptions(options);
+            instance.setConfig(config);
             return instance;
         }
 

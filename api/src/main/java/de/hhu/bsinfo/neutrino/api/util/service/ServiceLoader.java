@@ -49,25 +49,18 @@ public final class ServiceLoader {
             throw new LoaderException("Service definition contains unknown class(es)", e);
         }
 
-        if (!Modifier.isAbstract(interfaceClass.getModifiers())) {
-            throw new LoaderException("{} must be declared abstract", interfaceClass.getName());
+        if (!Modifier.isInterface(interfaceClass.getModifiers())) {
+            throw new LoaderException("{} must be an interface", interfaceClass.getName());
         }
 
         if (!interfaceClass.isAssignableFrom(implementationClass)) {
-            throw new LoaderException("{} must extend {}", implementationClass.getName(), interfaceClass.getName());
-        }
-
-        if (!interfaceClass.getSuperclass().equals(Service.class)) {
-            throw new LoaderException("{} must extend {} directly", interfaceClass.getName(), Service.class.getName());
+            throw new LoaderException("{} must implement {}", implementationClass.getName(), interfaceClass.getName());
         }
 
         if (!Service.class.isAssignableFrom(implementationClass)) {
             throw new LoaderException("{} must extend {}", implementationClass.getName(), Service.class.getName());
         }
 
-        return new ServiceDefinition(
-                (Class<? extends Service<?>>) interfaceClass,
-                (Class<? extends Service<?>>) implementationClass
-        );
+        return new ServiceDefinition(interfaceClass, (Class<? extends Service<ServiceConfig>>) implementationClass);
     }
 }

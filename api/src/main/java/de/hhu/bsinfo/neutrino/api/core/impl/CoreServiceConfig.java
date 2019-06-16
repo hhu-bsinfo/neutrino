@@ -1,9 +1,9 @@
 package de.hhu.bsinfo.neutrino.api.core.impl;
 
-import de.hhu.bsinfo.neutrino.api.util.service.ServiceOptions;
+import de.hhu.bsinfo.neutrino.api.util.service.ServiceConfig;
 
 @SuppressWarnings("FieldMayBeFinal")
-public class CoreServiceOptions extends ServiceOptions {
+public class CoreServiceConfig extends ServiceConfig {
 
     private int deviceNumber = 0;
 

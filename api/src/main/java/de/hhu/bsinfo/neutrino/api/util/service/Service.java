@@ -1,19 +1,19 @@
 package de.hhu.bsinfo.neutrino.api.util.service;
 
-public abstract class Service<T extends ServiceOptions> {
+public abstract class Service<T extends ServiceConfig> {
 
-    private T options;
+    private T config;
 
-    protected abstract void onInit();
+    protected abstract void onInit(final T config);
 
     protected abstract void onShutdown();
 
     @SuppressWarnings("unchecked")
-    void setOptions(ServiceOptions options) {
-        this.options = (T) options;
+    void setConfig(ServiceConfig config) {
+        this.config = (T) config;
     }
 
-    protected T getOptions() {
-        return options;
+    protected T getConfig() {
+        return config;
     }
 }

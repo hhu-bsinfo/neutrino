@@ -7,51 +7,25 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class DependencyManager<T> {
+public class DependencyManager {
 
-    private final DependencyGraph<Class<? extends T>> graph = new DependencyGraph<>();
-    private final Predicate<Class<? extends T>> defaultPredicate = in -> true;
+    private final DependencyGraph<Class<?>> graph = new DependencyGraph<>();
 
-    @SuppressWarnings("unchecked")
-    public void register(final Class<? extends T> interfaceClass, final Class<? extends T> implementationClass) {
-        var dependencies = getDependencies(implementationClass).toArray(new Class[0]);
-        graph.add(interfaceClass, dependencies);
+    public void register(final Class<?> interfaceClass, final Class<?> implementationClass) {
+        graph.add(interfaceClass, getDependencies(implementationClass).toArray(new Class[0]));
     }
 
-    public List<Class<? extends T>> getOrderedDependencies() {
-        return getOrderedDependencies(defaultPredicate);
-    }
-
-    public List<Class<? extends T>> getOrderedDependencies(Class<? extends T> superClass) {
-        return getOrderedDependencies(new ClassPredicate<>(superClass));
-    }
-
-    public List<Class<? extends T>> getOrderedDependencies(Predicate<Class<? extends T>> filter) {
+    public List<Class<?>> getOrderedDependencies() {
         return graph.values().stream()
                 .flatMap(dependency -> graph.resolve(dependency).stream())
-                .filter(filter)
                 .distinct()
                 .collect(Collectors.toList());
     }
 
-    static List<Class<?>> getDependencies(final Class<?> target) {
+    private static List<Class<?>> getDependencies(final Class<?> target) {
         return Arrays.stream(target.getDeclaredFields())
                 .filter(field -> field.getAnnotation(Inject.class) != null)
                 .map(Field::getType)
                 .collect(Collectors.toList());
-    }
-
-    private static class ClassPredicate<T> implements Predicate<Class<? extends T>> {
-
-        private final Class<?> superClass;
-
-        ClassPredicate(Class<?> superClass) {
-            this.superClass = superClass;
-        }
-
-        @Override
-        public boolean test(Class<? extends T> target) {
-            return superClass.isAssignableFrom(target);
-        }
     }
 }
