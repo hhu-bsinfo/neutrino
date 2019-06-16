@@ -22,7 +22,6 @@ public class ServiceInjector implements Injector {
         this.provider = provider;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void inject(final Object target) {
         for (Field injectableField : getInjectableFields(target.getClass())) {
@@ -30,11 +29,7 @@ public class ServiceInjector implements Injector {
                 throw new InjectionException("Injecting final fields is not supported");
             }
 
-            if (!Service.class.isAssignableFrom(injectableField.getType())) {
-                throw new InjectionException("Injection is only supported for services");
-            }
-
-            var type = (Class<? extends Service<?>>) injectableField.getType();
+            var type = injectableField.getType();
             var service = provider.get(type);
 
             if (service == null) {

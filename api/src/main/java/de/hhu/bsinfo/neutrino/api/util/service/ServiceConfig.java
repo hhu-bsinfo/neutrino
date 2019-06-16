@@ -1,3 +1,3 @@
 package de.hhu.bsinfo.neutrino.api.util.service;
 
-public class ServiceOptions {}
+public class ServiceConfig {}
