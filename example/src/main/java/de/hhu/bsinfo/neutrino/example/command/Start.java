@@ -54,7 +54,7 @@ public class Start implements Callable<Void> {
     private static final long MAGIC_NUMBER = 0xC0FEFE;
     private static final int INTERVAL = 1000;
 
-    private Port port;
+    private PortAttributes port;
     private ExtendedConnectionDomain extendedConnectionDomain;
     private ProtectionDomain protectionDomain;
 
@@ -200,8 +200,8 @@ public class Start implements Callable<Void> {
             LOGGER.info("Created shared receive queue");
         }
 
-        testMemoryWindow();
-        testWorkQueue(context);
+        //testMemoryWindow();
+        //testWorkQueue(context);
 
         if (isServer) {
             startServer();
