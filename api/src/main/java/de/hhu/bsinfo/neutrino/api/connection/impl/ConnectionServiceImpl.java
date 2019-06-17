@@ -86,10 +86,10 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
             configurator.setPartitionKeyIndex((short) 0);
             configurator.setPortNumber(getConfig().getPortNumber());
             configurator.setAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ);
-        },  QueuePair.AttributeMask.STATE,
-            QueuePair.AttributeMask.PKEY_INDEX,
-            QueuePair.AttributeMask.PORT,
-            QueuePair.AttributeMask.ACCESS_FLAGS);
+        },  QueuePair.AttributeFlag.STATE,
+            QueuePair.AttributeFlag.PKEY_INDEX,
+            QueuePair.AttributeFlag.PORT,
+            QueuePair.AttributeFlag.ACCESS_FLAGS);
 
         return new Connection(queuePair, core.getLocalId(), getConfig().getPortNumber());
     }
@@ -107,13 +107,13 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
             configurator.addressHandle.setPortNumber(remote.getPortNumber());
             configurator.addressHandle.setSourcePathBits((byte) 0);
             configurator.addressHandle.setIsGlobal(false);
-        },  QueuePair.AttributeMask.STATE,
-            QueuePair.AttributeMask.PATH_MTU,
-            QueuePair.AttributeMask.RQ_PSN,
-            QueuePair.AttributeMask.DEST_QPN,
-            QueuePair.AttributeMask.AV,
-            QueuePair.AttributeMask.MAX_DEST_RD_ATOMIC,
-            QueuePair.AttributeMask.MIN_RNR_TIMER);
+        },  QueuePair.AttributeFlag.STATE,
+            QueuePair.AttributeFlag.PATH_MTU,
+            QueuePair.AttributeFlag.RQ_PSN,
+            QueuePair.AttributeFlag.DEST_QPN,
+            QueuePair.AttributeFlag.AV,
+            QueuePair.AttributeFlag.MAX_DEST_RD_ATOMIC,
+            QueuePair.AttributeFlag.MIN_RNR_TIMER);
 
         queuePair.modify(configurator -> {
             configurator.setState(QueuePair.State.RTS);
@@ -122,11 +122,11 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
             configurator.setRetryCount(getConfig().getRetryCount());
             configurator.setRnrRetryCount(getConfig().getRnrRetryCount());
             configurator.setMaxInitiatorAtomicReads((byte) 1);
-        },  QueuePair.AttributeMask.STATE,
-            QueuePair.AttributeMask.TIMEOUT,
-            QueuePair.AttributeMask.RETRY_CNT,
-            QueuePair.AttributeMask.RNR_RETRY,
-            QueuePair.AttributeMask.SQ_PSN,
-            QueuePair.AttributeMask.MAX_QP_RD_ATOMIC);
+        },  QueuePair.AttributeFlag.STATE,
+            QueuePair.AttributeFlag.TIMEOUT,
+            QueuePair.AttributeFlag.RETRY_CNT,
+            QueuePair.AttributeFlag.RNR_RETRY,
+            QueuePair.AttributeFlag.SQ_PSN,
+            QueuePair.AttributeFlag.MAX_QP_RD_ATOMIC);
     }
 }

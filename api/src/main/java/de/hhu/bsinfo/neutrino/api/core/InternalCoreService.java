@@ -1,6 +1,5 @@
 package de.hhu.bsinfo.neutrino.api.core;
 
-import de.hhu.bsinfo.neutrino.api.util.Expose;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.*;
 
@@ -10,7 +9,7 @@ public interface InternalCoreService extends CoreService {
 
     Context getContext();
 
-    Port getPort();
+    PortAttributes getPortAttributes();
 
     ProtectionDomain getProtectionDomain();
 

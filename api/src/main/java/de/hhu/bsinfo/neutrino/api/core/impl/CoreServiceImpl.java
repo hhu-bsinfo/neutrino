@@ -1,8 +1,6 @@
 package de.hhu.bsinfo.neutrino.api.core.impl;
 
-import de.hhu.bsinfo.neutrino.api.core.CoreService;
 import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
-import de.hhu.bsinfo.neutrino.api.util.InitializationException;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.*;
@@ -14,7 +12,7 @@ import static de.hhu.bsinfo.neutrino.api.util.Assert.assertNotNull;
 public class CoreServiceImpl extends Service<CoreServiceConfig> implements InternalCoreService {
 
     private Context context;
-    private Port port;
+    private PortAttributes port;
     private ProtectionDomain protectionDomain;
     private DeviceAttributes deviceAttributes;
 
@@ -37,7 +35,7 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     }
 
     @Override
-    public Port getPort() {
+    public PortAttributes getPortAttributes() {
         return port;
     }
 
