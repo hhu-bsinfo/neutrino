@@ -14,7 +14,6 @@ import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.InitialAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.PollAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.WorkCompletionCapability;
-import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.InitalAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.OperationFlag;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedDeviceAttributes.QueryExtendedDeviceInput;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeFlag;
@@ -128,10 +127,7 @@ public class Start implements Callable<Void> {
         LOGGER.info("Opened context for device {}", context.getDeviceName());
 
         if(useExtendedApi) {
-            InitalAttributes attributes = new InitalAttributes(config -> {
-                config.setAttributesMask(ExtendedConnectionDomain.AttributeFlag.OFLAGS, ExtendedConnectionDomain.AttributeFlag.FD);
-                config.setOperationFlags(OperationFlag.O_CREAT);
-            });
+            var attributes = new ExtendedConnectionDomain.InitialAttributes.Builder(OperationFlag.O_CREAT).build();
 
             extendedConnectionDomain = context.openExtendedConnectionDomain(attributes);
             LOGGER.info("Opened extended connection domain");
@@ -166,11 +162,10 @@ public class Start implements Callable<Void> {
         }
 
         if(useExtendedApi) {
-            InitialAttributes attributes = new InitialAttributes(config -> {
-                config.setMaxElements(DEFAULT_QUEUE_SIZE);
-                config.setWorkCompletionFlags(WorkCompletionCapability.WITH_COMPLETION_TIMESTAMP);
-                config.setCompletionChannel(completionChannel);
-            });
+            InitialAttributes attributes = new InitialAttributes.Builder(DEFAULT_QUEUE_SIZE)
+                    .withCompletionChannel(completionChannel)
+                    .withWorkCompletionCapabilities(WorkCompletionCapability.WITH_COMPLETION_TIMESTAMP)
+                    .build();
 
             extendedCompletionQueue = context.createExtendedCompletionQueue(attributes);
             completionQueue = Objects.requireNonNull(extendedCompletionQueue).toCompletionQueue();
@@ -183,23 +178,17 @@ public class Start implements Callable<Void> {
         completionManager = new CompletionManager(completionQueue);
 
         if(useExtendedApi) {
-            sharedReceiveQueue = context.createExtendedSharedReceiveQueue(new ExtendedInitialAttributes(config -> {
-                config.setAttributesMask(ExtendedAttributeFlag.PD);
-                config.setProtectionDomain(protectionDomain);
+            sharedReceiveQueue = context.createExtendedSharedReceiveQueue(
+                    new ExtendedInitialAttributes.Builder(protectionDomain, DEFAULT_QUEUE_SIZE, 1).build());
 
-                config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
-                config.attributes.setMaxScatterGatherElements(1);
-            }));
             LOGGER.info("Created extended shared receive queue");
         } else {
-            sharedReceiveQueue = protectionDomain.createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes(config -> {
-                config.attributes.setMaxWorkRequest(DEFAULT_QUEUE_SIZE);
-                config.attributes.setMaxScatterGatherElements(1);
-            }));
+            sharedReceiveQueue = protectionDomain.createSharedReceiveQueue(
+                    new SharedReceiveQueue.InitialAttributes.Builder(DEFAULT_QUEUE_SIZE, 1).build());
+
             LOGGER.info("Created shared receive queue");
         }
 
-        //testMemoryWindow();
         //testWorkQueue(context);
 
         if (isServer) {
@@ -235,13 +224,8 @@ public class Start implements Callable<Void> {
     }
 
     private void testWorkQueue(final Context context) {
-        WorkQueue workQueue = context.createWorkQueue(new WorkQueue.InitialAttributes(config -> {
-            config.setMaxWorkRequests(DEFAULT_QUEUE_SIZE);
-            config.setMaxScatterGatherElements(1);
-            config.setType(WorkQueue.Type.RQ);
-            config.setProtectionDomain(protectionDomain);
-            config.setCompletionQueue(completionQueue);
-        }));
+        var workQueue = context.createWorkQueue(
+                new WorkQueue.InitialAttributes.Builder(DEFAULT_QUEUE_SIZE, 1, WorkQueue.Type.RQ, protectionDomain, completionQueue).build());
 
         if(workQueue == null) {
             return;
@@ -249,11 +233,10 @@ public class Start implements Callable<Void> {
 
         LOGGER.debug("Created Work queue");
 
-        workQueue.modify(new WorkQueue.Attributes(config -> {
-            config.setCurrentState(WorkQueue.State.RESET);
-            config.setState(WorkQueue.State.READY);
-            config.setAttributesMask( WorkQueue.AttributeFlag.CURRENT_STATE, WorkQueue.AttributeFlag.STATE);
-        }));
+        workQueue.modify(new WorkQueue.Attributes.Builder()
+                .withCurrentState(WorkQueue.State.RESET)
+                .withState(WorkQueue.State.READY)
+                .build());
 
         LOGGER.debug("Modified Work queue");
 
@@ -281,6 +264,8 @@ public class Start implements Callable<Void> {
 
         queuePair = createQueuePair(socket);
 
+        //testMemoryWindow();
+
         startMonitoring();
     }
 
@@ -290,33 +275,21 @@ public class Start implements Callable<Void> {
 
         queuePair = createQueuePair(socket);
 
+        //testMemoryWindow();
+
         readMonitoringData();
     }
 
     private QueuePair createQueuePair(Socket socket) throws IOException {
-        var initialAttributes = new QueuePair.InitialAttributes(config -> {
-            config.setReceiveCompletionQueue(completionQueue);
-            config.setSendCompletionQueue(completionQueue);
-            config.setSharedReceiveQueue(sharedReceiveQueue);
-            config.setType(Type.RC);
-            config.capabilities.setMaxSendWorkRequests(DEFAULT_QUEUE_SIZE);
-            config.capabilities.setMaxReceiveWorkRequests(DEFAULT_QUEUE_SIZE);
-            config.capabilities.setMaxReceiveScatterGatherElements(1);
-            config.capabilities.setMaxSendScatterGatherElements(1);
-        });
+        queuePair = protectionDomain.createQueuePair(new QueuePair.InitialAttributes.Builder(
+                Type.RC, completionQueue, completionQueue, DEFAULT_QUEUE_SIZE, DEFAULT_BUFFER_SIZE, 1, 1)
+                .build());
 
-        queuePair = protectionDomain.createQueuePair(initialAttributes);
 
         LOGGER.info("Created queue pair!");
 
-        var attributes = new QueuePair.Attributes(config -> {
-            config.setState(State.INIT);
-            config.setPartitionKeyIndex((short) 0);
-            config.setPortNumber((byte) 1);
-            config.setAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ);
-        });
-
-        queuePair.modify(attributes, AttributeFlag.STATE, AttributeFlag.PKEY_INDEX, AttributeFlag.PORT, AttributeFlag.ACCESS_FLAGS);
+        queuePair.modify(QueuePair.Attributes.Builder.buildInitAttributesRC(
+                (short) 0, (byte) 1, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ));
 
         LOGGER.info("Queue pair transitioned to INIT state!");
 
@@ -327,34 +300,12 @@ public class Start implements Callable<Void> {
 
         LOGGER.info(remoteBuffer.toString());
 
-        attributes = new Attributes(config -> {
-            config.setState(State.RTR);
-            config.setPathMtu(Mtu.MTU_4096);
-            config.setDestination(remoteInfo.getQueuePairNumber());
-            config.setReceivePacketNumber(0);
-            config.setMaxDestinationAtomicReads((byte) 1);
-            config.setMinRnrTimer((byte) 12);
-            config.addressHandle.setDestination(remoteInfo.getLocalId());
-            config.addressHandle.setServiceLevel((byte) 1);
-            config.addressHandle.setSourcePathBits((byte) 0);
-            config.addressHandle.setPortNumber((byte) 1);
-            config.addressHandle.setIsGlobal(false);
-        });
-
-        queuePair.modify(attributes, AttributeFlag.STATE, AttributeFlag.PATH_MTU, AttributeFlag.DEST_QPN, AttributeFlag.RQ_PSN, AttributeFlag.AV, AttributeFlag.MAX_DEST_RD_ATOMIC, AttributeFlag.MIN_RNR_TIMER);
+        queuePair.modify(QueuePair.Attributes.Builder.buildReadyToReceiveAttributesRC(
+                remoteInfo.getQueuePairNumber(), remoteInfo.getLocalId(), (byte) 1));
 
         LOGGER.info("Queue pair transitioned to RTR state");
 
-        attributes = new Attributes(config -> {
-            config.setState(State.RTS);
-            config.setSendPacketNumber(0);
-            config.setTimeout((byte) 14);
-            config.setRetryCount((byte) 7);
-            config.setRnrRetryCount((byte) 7);
-            config.setMaxInitiatorAtomicReads((byte) 1);
-        });
-
-        queuePair.modify(attributes, AttributeFlag.STATE, AttributeFlag.SQ_PSN, AttributeFlag.TIMEOUT, AttributeFlag.RETRY_CNT, AttributeFlag.RNR_RETRY, AttributeFlag.MAX_QP_RD_ATOMIC);
+        queuePair.modify(QueuePair.Attributes.Builder.buildReadyToSendAttributesRC());
 
         LOGGER.info("Queue pair transitioned to RTS state");
 
