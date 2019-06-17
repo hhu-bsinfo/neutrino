@@ -1,6 +1,7 @@
 package de.hhu.bsinfo.neutrino.api;
 
-import de.hhu.bsinfo.neutrino.api.util.service.Service;
+import de.hhu.bsinfo.neutrino.api.util.Expose;
+import de.hhu.bsinfo.neutrino.api.util.InternalAccessException;
 import de.hhu.bsinfo.neutrino.api.util.service.ServiceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,10 @@ public final class Neutrino {
     }
 
     public <T> T getService(final Class<T> service) {
+        if (!service.isAnnotationPresent(Expose.class)) {
+            throw new InternalAccessException("{} is not exposed", service.getName());
+        }
+
         return serviceManager.get(service);
     }
 }

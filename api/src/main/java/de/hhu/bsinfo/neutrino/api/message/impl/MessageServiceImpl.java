@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 
 public class MessageServiceImpl extends Service<NullConfig> implements MessageService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MessageServiceImpl.class);
-
     @Override
     protected void onInit(final NullConfig config) {
 

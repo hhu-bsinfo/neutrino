@@ -16,13 +16,18 @@
 
 package de.hhu.bsinfo.neutrino.api.util.service;
 
+import de.hhu.bsinfo.neutrino.api.util.Expose;
 import de.hhu.bsinfo.neutrino.api.util.service.inject.ServiceInjector;
 import de.hhu.bsinfo.neutrino.api.util.service.resolve.DependencyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 public class ServiceManager implements ServiceProvider {
 
@@ -51,7 +56,7 @@ public class ServiceManager implements ServiceProvider {
 
     private void initializeServices() {
         for (var service : dependencyManager.getOrderedDependencies()) {
-            var container = services.get(service);
+            var container = services.get(findServiceInterface(service));
             var config = container.newConfigInstance();
             var instance = container.newServiceInstance(config);
             injector.inject(instance);
@@ -61,7 +66,32 @@ public class ServiceManager implements ServiceProvider {
 
     @Override
     public <T> T get(Class<T> service) {
-        return service.cast(services.get(service).getInstance());
+        var interfaceClass = findServiceInterface(service);
+
+        if (interfaceClass == null) {
+            return null;
+        } else {
+            return service.cast(services.get(interfaceClass).getInstance());
+        }
+    }
+
+    public static Class<?> findServiceInterface(Class<?> root) {
+        if (root.isAnnotationPresent(Expose.class)) {
+            return root;
+        }
+
+        var interfaceStream = Stream.iterate(
+                new Class<?>[]{ root },
+                classes -> classes.length > 0,
+                classes -> Arrays.stream(classes)
+                        .flatMap(it -> Arrays.stream(it.getInterfaces()))
+                        .filter(Objects::nonNull)
+                        .toArray(Class<?>[]::new));
+
+        return interfaceStream
+                .flatMap(Arrays::stream)
+                .filter(it -> it.isAnnotationPresent(Expose.class))
+                .findFirst().orElse(null);
     }
 
     public static class ServiceContainer {

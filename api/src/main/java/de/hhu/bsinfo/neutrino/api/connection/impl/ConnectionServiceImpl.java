@@ -5,6 +5,7 @@ import de.hhu.bsinfo.neutrino.api.connection.impl.manager.Connection;
 import de.hhu.bsinfo.neutrino.api.connection.impl.manager.ConnectionManager;
 import de.hhu.bsinfo.neutrino.api.connection.impl.manager.RemoteQueuePair;
 import de.hhu.bsinfo.neutrino.api.core.CoreService;
+import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
 import de.hhu.bsinfo.neutrino.api.util.InitializationException;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
@@ -23,7 +24,7 @@ import java.util.Queue;
 public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> implements ConnectionService {
 
     @Inject
-    private CoreService core;
+    private InternalCoreService core;
 
     private ConnectionManager connectionManager;
 
