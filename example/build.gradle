@@ -42,8 +42,10 @@ repositories {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    
+
     implementation project(':neutrino')
+    implementation project(':api')
+    
     implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.11.2'
     implementation 'info.picocli:picocli:3.9.6'
 
