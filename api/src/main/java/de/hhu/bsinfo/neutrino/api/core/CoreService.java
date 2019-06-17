@@ -7,5 +7,4 @@ import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 @Expose
 public interface CoreService {
 
-    RegisteredBuffer allocateMemory(long capacity, AccessFlag... flags);
 }
