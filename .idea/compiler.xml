@@ -2,6 +2,8 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
+      <module name="api_main" target="11" />
+      <module name="api_test" target="11" />
       <module name="benchmark_jmh" target="11" />
       <module name="benchmark_main" target="11" />
       <module name="benchmark_test" target="11" />

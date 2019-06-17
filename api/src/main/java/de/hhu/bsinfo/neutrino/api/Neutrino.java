@@ -31,7 +31,7 @@ public final class Neutrino {
         serviceManager.initialize();
     }
 
-    public <T extends Service<?>> T getService(final Class<T> service) {
+    public <T> T getService(final Class<T> service) {
         return serviceManager.get(service);
     }
 
