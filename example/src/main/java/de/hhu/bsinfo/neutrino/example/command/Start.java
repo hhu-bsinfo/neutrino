@@ -14,11 +14,10 @@ import de.hhu.bsinfo.neutrino.verbs.CompletionQueue.WorkCompletionArray;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.InitialAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.PollAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedCompletionQueue.WorkCompletionCapability;
-import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.AttributeFlag;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.InitalAttributes;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedConnectionDomain.OperationFlag;
 import de.hhu.bsinfo.neutrino.verbs.ExtendedDeviceAttributes.QueryExtendedDeviceInput;
-import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeMask;
+import de.hhu.bsinfo.neutrino.verbs.QueuePair.AttributeFlag;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Attributes;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.State;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair.Type;
@@ -130,7 +129,7 @@ public class Start implements Callable<Void> {
 
         if(useExtendedApi) {
             InitalAttributes attributes = new InitalAttributes(config -> {
-                config.setAttributesMask(AttributeFlag.OFLAGS, AttributeFlag.FD);
+                config.setAttributesMask(ExtendedConnectionDomain.AttributeFlag.OFLAGS, ExtendedConnectionDomain.AttributeFlag.FD);
                 config.setOperationFlags(OperationFlag.O_CREAT);
             });
 
@@ -317,7 +316,7 @@ public class Start implements Callable<Void> {
             config.setAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ);
         });
 
-        queuePair.modify(attributes, AttributeMask.STATE, AttributeMask.PKEY_INDEX, AttributeMask.PORT, AttributeMask.ACCESS_FLAGS);
+        queuePair.modify(attributes, AttributeFlag.STATE, AttributeFlag.PKEY_INDEX, AttributeFlag.PORT, AttributeFlag.ACCESS_FLAGS);
 
         LOGGER.info("Queue pair transitioned to INIT state!");
 
@@ -342,7 +341,7 @@ public class Start implements Callable<Void> {
             config.addressHandle.setIsGlobal(false);
         });
 
-        queuePair.modify(attributes, AttributeMask.STATE, AttributeMask.PATH_MTU, AttributeMask.DEST_QPN, AttributeMask.RQ_PSN, AttributeMask.AV, AttributeMask.MAX_DEST_RD_ATOMIC, AttributeMask.MIN_RNR_TIMER);
+        queuePair.modify(attributes, AttributeFlag.STATE, AttributeFlag.PATH_MTU, AttributeFlag.DEST_QPN, AttributeFlag.RQ_PSN, AttributeFlag.AV, AttributeFlag.MAX_DEST_RD_ATOMIC, AttributeFlag.MIN_RNR_TIMER);
 
         LOGGER.info("Queue pair transitioned to RTR state");
 
@@ -355,7 +354,7 @@ public class Start implements Callable<Void> {
             config.setMaxInitiatorAtomicReads((byte) 1);
         });
 
-        queuePair.modify(attributes, AttributeMask.STATE, AttributeMask.SQ_PSN, AttributeMask.TIMEOUT, AttributeMask.RETRY_CNT, AttributeMask.RNR_RETRY, AttributeMask.MAX_QP_RD_ATOMIC);
+        queuePair.modify(attributes, AttributeFlag.STATE, AttributeFlag.SQ_PSN, AttributeFlag.TIMEOUT, AttributeFlag.RETRY_CNT, AttributeFlag.RNR_RETRY, AttributeFlag.MAX_QP_RD_ATOMIC);
 
         LOGGER.info("Queue pair transitioned to RTS state");
 
