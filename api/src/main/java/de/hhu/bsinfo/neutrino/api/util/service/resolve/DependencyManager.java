@@ -1,5 +1,7 @@
 package de.hhu.bsinfo.neutrino.api.util.service.resolve;
 
+import de.hhu.bsinfo.neutrino.api.util.service.ServiceManager;
+
 import javax.inject.Inject;
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -26,6 +28,7 @@ public class DependencyManager {
         return Arrays.stream(target.getDeclaredFields())
                 .filter(field -> field.getAnnotation(Inject.class) != null)
                 .map(Field::getType)
+                .map(ServiceManager::findServiceInterface)
                 .collect(Collectors.toList());
     }
 }

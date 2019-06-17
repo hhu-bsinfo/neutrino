@@ -1,39 +1,29 @@
 package de.hhu.bsinfo.neutrino.api.core.impl;
 
 import de.hhu.bsinfo.neutrino.api.core.CoreService;
+import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
 import de.hhu.bsinfo.neutrino.api.util.InitializationException;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-public class CoreServiceImpl extends Service<CoreServiceConfig> implements CoreService {
+import static de.hhu.bsinfo.neutrino.api.util.Assert.assertNotNull;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CoreServiceImpl.class);
+public class CoreServiceImpl extends Service<CoreServiceConfig> implements InternalCoreService {
 
     private Context context;
     private Port port;
     private ProtectionDomain protectionDomain;
+    private DeviceAttributes deviceAttributes;
 
     @Override
     protected void onInit(final CoreServiceConfig config) {
-        context = Context.openDevice(config.getDeviceNumber());
-        if (context == null) {
-            throw new InitializationException("Opening device context failed");
-        }
-
-        port = context.queryPort(config.getPortNumber());
-        if (port == null) {
-            throw new InitializationException("Querying device port failed");
-        }
-
-        protectionDomain = context.allocateProtectionDomain();
-        if (protectionDomain == null) {
-            throw new InitializationException("Allocating protection domain failed");
-        }
+        context = assertNotNull(Context.openDevice(config.getDeviceNumber()), "Opening device context failed");
+        deviceAttributes = assertNotNull(context.queryDevice(), "Querying device failed");
+        port = assertNotNull(context.queryPort(config.getPortNumber()), "Querying device port failed");
+        protectionDomain = assertNotNull(context.allocateProtectionDomain(), "Allocating protection domain failed");
     }
 
     @Override

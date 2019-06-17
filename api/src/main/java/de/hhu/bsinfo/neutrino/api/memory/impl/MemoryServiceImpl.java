@@ -1,6 +1,7 @@
 package de.hhu.bsinfo.neutrino.api.memory.impl;
 
 import de.hhu.bsinfo.neutrino.api.core.CoreService;
+import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
 import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
 import de.hhu.bsinfo.neutrino.api.util.NullConfig;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
@@ -13,7 +14,7 @@ import javax.inject.Inject;
 public class MemoryServiceImpl extends Service<NullConfig> implements MemoryService {
 
     @Inject
-    private CoreService core;
+    private InternalCoreService core;
 
     private static final AccessFlag[] DEFAULT_ACCESS_FLAGS = {
             AccessFlag.LOCAL_WRITE,

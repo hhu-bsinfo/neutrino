@@ -2,6 +2,8 @@ package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
+import de.hhu.bsinfo.neutrino.api.core.CoreService;
+import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
