@@ -1,6 +1,4 @@
-package de.hhu.bsinfo.neutrino.api.connection.impl.manager;
-
-import de.hhu.bsinfo.neutrino.verbs.QueuePair;
+package de.hhu.bsinfo.neutrino.api.connection.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

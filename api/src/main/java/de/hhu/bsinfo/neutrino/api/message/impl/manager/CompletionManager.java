@@ -1,7 +1,8 @@
-package de.hhu.bsinfo.neutrino.api.request;
+package de.hhu.bsinfo.neutrino.api.message.impl.manager;
 
-import de.hhu.bsinfo.neutrino.api.queue.CompletionHandler;
-import de.hhu.bsinfo.neutrino.api.queue.QueueProcessor;
+
+import de.hhu.bsinfo.neutrino.api.message.impl.processor.CompletionHandler;
+import de.hhu.bsinfo.neutrino.api.message.impl.processor.QueueProcessor;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
@@ -12,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.IntStream;
 
-public class CompletionManager implements CompletionHandler{
+public class CompletionManager implements CompletionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionManager.class);
 
@@ -20,7 +21,7 @@ public class CompletionManager implements CompletionHandler{
         PENDING, FULFILLED
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private final AtomicReference<Status>[] completions = IntStream.range(0, 1048576)
             .mapToObj(value -> new AtomicReference<>(Status.FULFILLED))
             .toArray(AtomicReference[]::new);
@@ -29,10 +30,12 @@ public class CompletionManager implements CompletionHandler{
 
     public CompletionManager(CompletionQueue... completionQueues) {
         queueProcessor = new QueueProcessor(this, completionQueues);
+        queueProcessor.start();
     }
 
     public CompletionManager(CompletionChannel completionChannel) {
         queueProcessor = new QueueProcessor(this, completionChannel);
+        queueProcessor.start();
     }
 
     public void setPending(long id) {

@@ -1,9 +1,6 @@
 package de.hhu.bsinfo.neutrino.api.connection.impl;
 
-import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
-import de.hhu.bsinfo.neutrino.api.connection.impl.manager.Connection;
-import de.hhu.bsinfo.neutrino.api.connection.impl.manager.ConnectionManager;
-import de.hhu.bsinfo.neutrino.api.connection.impl.manager.RemoteQueuePair;
+import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
 import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
 import de.hhu.bsinfo.neutrino.api.util.InitializationException;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
@@ -19,7 +16,7 @@ import io.reactivex.disposables.CompositeDisposable;
 import javax.inject.Inject;
 import java.net.InetSocketAddress;
 
-public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> implements ConnectionService {
+public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> implements InternalConnectionService {
 
     @Inject
     private InternalCoreService core;
@@ -126,5 +123,20 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
             QueuePair.AttributeFlag.RNR_RETRY,
             QueuePair.AttributeFlag.SQ_PSN,
             QueuePair.AttributeFlag.MAX_QP_RD_ATOMIC);
+    }
+
+    @Override
+    public CompletionQueue getCompletionQueue() {
+        return completionQueue;
+    }
+
+    @Override
+    public SharedReceiveQueue getSharedReceiveQueue() {
+        return sharedReceiveQueue;
+    }
+
+    @Override
+    public QueuePair getQueuePair(Connection connection) {
+        return connection.getQueuePair();
     }
 }

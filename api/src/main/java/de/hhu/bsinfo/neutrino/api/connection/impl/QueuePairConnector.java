@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.neutrino.api.connection.impl.manager;
+package de.hhu.bsinfo.neutrino.api.connection.impl;
 
 import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 

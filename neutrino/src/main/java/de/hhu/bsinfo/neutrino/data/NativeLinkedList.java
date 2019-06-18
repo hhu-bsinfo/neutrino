@@ -32,4 +32,13 @@ public class NativeLinkedList<T extends NativeObject & Linkable<T>> implements N
     public long getNativeSize() {
         return current == null ? 0 : current.getNativeSize() * elements.size();
     }
+
+    @SafeVarargs
+    public static <T extends NativeObject & Linkable<T>> NativeLinkedList<T> from(T... elements) {
+        var list = new NativeLinkedList<T>();
+        for (T element : elements) {
+            list.add(element);
+        }
+        return list;
+    }
 }

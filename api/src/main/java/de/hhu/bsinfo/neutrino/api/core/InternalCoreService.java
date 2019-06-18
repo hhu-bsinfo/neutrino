@@ -11,6 +11,8 @@ public interface InternalCoreService extends CoreService {
 
     PortAttributes getPortAttributes();
 
+    DeviceAttributes getDeviceAttributes();
+
     ProtectionDomain getProtectionDomain();
 
     QueuePair createQueuePair(Consumer<QueuePair.InitialAttributes> configurator);

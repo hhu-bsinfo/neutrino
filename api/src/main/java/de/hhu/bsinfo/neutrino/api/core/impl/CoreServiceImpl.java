@@ -47,6 +47,11 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     }
 
     @Override
+    public DeviceAttributes getDeviceAttributes() {
+        return deviceAttributes;
+    }
+
+    @Override
     public ProtectionDomain getProtectionDomain() {
         return protectionDomain;
     }
