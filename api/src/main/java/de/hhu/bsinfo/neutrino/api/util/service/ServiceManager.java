@@ -91,7 +91,7 @@ public class ServiceManager implements ServiceProvider {
         return interfaceStream
                 .flatMap(Arrays::stream)
                 .filter(it -> it.isAnnotationPresent(Expose.class))
-                .findFirst().orElse(null);
+                .findFirst().orElseThrow();
     }
 
     public static class ServiceContainer {

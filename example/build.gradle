@@ -28,6 +28,22 @@ project.startScripts.with {
     }
 }
 
+task debugStartScripts(type: CreateStartScripts) {
+    applicationName = 'neutrino-dbg'
+    mainClassName = startScripts.mainClassName
+    defaultJvmOpts = startScripts.defaultJvmOpts + "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"
+    classpath = startScripts.classpath
+    outputDir = startScripts.outputDir
+}
+
+project.debugStartScripts.with {
+    doLast {
+        unixScript.text = unixScript.text.replace('EXAMPLES_HOME', '\$APP_HOME')
+    }
+}
+
+startScripts.dependsOn(debugStartScripts)
+
 installDist.doLast {
     project.file("$project.buildDir/install/$project.name/jni").mkdir()
     project.copy {
