@@ -14,8 +14,6 @@ public class SubscriptionStore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionStore.class);
 
-    private final ReentrantLock lock = new ReentrantLock();
-
     private final Map<Class<?>, ArrayList<SubscriberMethod>> subscribers = new HashMap<>();
 
     public List<SubscriberMethod> getSubscribers(Class<?> type) {
