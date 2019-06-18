@@ -2457,6 +2457,11 @@
     <inspection_tool class="StaticGuardedByInstance" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="StaticImport" enabled="true" level="WARNING" enabled_by_default="true">
       <scope name="Tests" level="WARNING" enabled="false" />
+      <option name="allowedClasses">
+        <set>
+          <option value="de.hhu.bsinfo.neutrino.api.util.Assert" />
+        </set>
+      </option>
     </inspection_tool>
     <inspection_tool class="StaticInheritance" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="StaticMethodNamingConvention" enabled="true" level="WARNING" enabled_by_default="true">

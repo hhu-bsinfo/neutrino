@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.neutrino.api.connection.impl.manager;
+package de.hhu.bsinfo.neutrino.api.connection.impl;
 
 import java.nio.ByteBuffer;
 import java.util.StringJoiner;
