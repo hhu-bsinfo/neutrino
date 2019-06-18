@@ -219,6 +219,12 @@ public class Start implements Callable<Void> {
         LOGGER.debug("Allocated and bound memory window");
         LOGGER.debug(window.toString());
 
+        window.rebind(localBuffer, queuePair, 4, 8, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
+
+        poll();
+        LOGGER.debug("Rebound memory window");
+        LOGGER.debug(window.toString());
+
         window.close();
         LOGGER.debug("Deallocated memory window");
     }
