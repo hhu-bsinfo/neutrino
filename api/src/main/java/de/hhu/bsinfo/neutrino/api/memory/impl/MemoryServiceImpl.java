@@ -1,11 +1,15 @@
 package de.hhu.bsinfo.neutrino.api.memory.impl;
 
+import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
 import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
 import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
+import de.hhu.bsinfo.neutrino.api.memory.RemoteHandle;
 import de.hhu.bsinfo.neutrino.api.util.NullConfig;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
+import de.hhu.bsinfo.neutrino.verbs.QueuePair;
+import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
 
 import javax.inject.Inject;
 
@@ -14,12 +18,8 @@ public class MemoryServiceImpl extends Service<NullConfig> implements MemoryServ
     @Inject
     private InternalCoreService coreService;
 
-    private static final AccessFlag[] DEFAULT_ACCESS_FLAGS = {
-            AccessFlag.LOCAL_WRITE,
-            AccessFlag.REMOTE_READ,
-            AccessFlag.REMOTE_WRITE,
-            AccessFlag.MW_BIND
-    };
+    @Inject
+    private InternalConnectionService connectionService;
 
     @Override
     protected void onInit(final NullConfig config) {
@@ -32,7 +32,41 @@ public class MemoryServiceImpl extends Service<NullConfig> implements MemoryServ
     }
 
     @Override
-    public RegisteredBuffer register(long capacity) {
-        return coreService.allocateMemory(capacity, DEFAULT_ACCESS_FLAGS);
+    public void read(RemoteHandle source, RegisteredBuffer target) {
+        execute(SendWorkRequest.OpCode.RDMA_READ, source, target);
+    }
+
+    @Override
+    public void read(RemoteHandle source, long sourceOffset, RegisteredBuffer target, long targetOffset, long length) {
+        execute(SendWorkRequest.OpCode.RDMA_READ, sourceOffset, source, target, targetOffset, length);
+    }
+
+    @Override
+    public void write(RegisteredBuffer source, RemoteHandle target) {
+        execute(SendWorkRequest.OpCode.RDMA_WRITE, target, source);
+    }
+
+    @Override
+    public void write(RegisteredBuffer source, long sourceOffset, RemoteHandle target, long targetOffset, long length) {
+        execute(SendWorkRequest.OpCode.RDMA_WRITE, sourceOffset, target, source, targetOffset, length);
+    }
+
+    private void execute(final SendWorkRequest.OpCode operation, RemoteHandle remoteHandle, RegisteredBuffer buffer) {
+        execute(operation, 0, remoteHandle, buffer, 0, buffer.capacity());
+    }
+
+    private void execute(final SendWorkRequest.OpCode operation, long index, RemoteHandle remoteHandle, RegisteredBuffer local, long offset, long length) {
+        var queuePair = connectionService.getQueuePair(remoteHandle.getConnection());
+
+        var elements = local.split(offset, length);
+        var request = new SendWorkRequest(config -> {
+            config.setOpCode(operation);
+            config.rdma.setRemoteAddress(remoteHandle.getAddress() + index);
+            config.rdma.setRemoteKey(remoteHandle.getKey());
+            config.setListHandle(elements.getHandle());
+            config.setListLength(1);
+        });
+
+        queuePair.postSend(request);
     }
 }

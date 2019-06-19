@@ -95,8 +95,8 @@ public class DependencyGraph<T> {
             // Check if this node was already seen to prevent circular dependencies
             if (seen.contains(node)) {
                 throw new CircularDependencyException("Circular dependency between {} and {} detected",
-                        root.getIdentifier().getClass().getName(),
-                        node.getIdentifier().getClass().getName());
+                        root.getIdentifier(),
+                        node.getIdentifier());
             }
 
             resolve(node, resolved, seen);

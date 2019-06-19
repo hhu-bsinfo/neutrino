@@ -23,6 +23,13 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     private DeviceAttributes deviceAttributes;
     private PortAttributes portAttributes;
 
+    private static final AccessFlag[] DEFAULT_ACCESS_FLAGS = {
+            AccessFlag.LOCAL_WRITE,
+            AccessFlag.REMOTE_READ,
+            AccessFlag.REMOTE_WRITE,
+            AccessFlag.MW_BIND
+    };
+
     @Override
     protected void onInit(final CoreServiceConfig config) {
         context = assertNotNull(Context.openDevice(config.getDeviceNumber()), "Opening device context failed");
@@ -49,6 +56,11 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     @Override
     public DeviceAttributes getDeviceAttributes() {
         return deviceAttributes;
+    }
+
+    @Override
+    public RegisteredBuffer registerMemory(long capacity) {
+        return protectionDomain.allocateMemory(capacity, DEFAULT_ACCESS_FLAGS);
     }
 
     @Override
