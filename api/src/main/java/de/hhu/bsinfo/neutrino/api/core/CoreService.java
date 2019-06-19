@@ -12,4 +12,6 @@ public interface CoreService {
     PortAttributes getPortAttributes();
 
     DeviceAttributes getDeviceAttributes();
+
+    RegisteredBuffer registerMemory(long capacity);
 }

@@ -2,8 +2,15 @@ package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
+import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
+import de.hhu.bsinfo.neutrino.api.core.CoreService;
+import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
+import de.hhu.bsinfo.neutrino.api.memory.RemoteHandle;
 import de.hhu.bsinfo.neutrino.api.message.MessageService;
 import de.hhu.bsinfo.neutrino.buffer.LocalBuffer;
+import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
+import de.hhu.bsinfo.neutrino.data.NativeInteger;
+import de.hhu.bsinfo.neutrino.data.NativeLong;
 import de.hhu.bsinfo.neutrino.data.NativeString;
 import de.hhu.bsinfo.neutrino.struct.Struct;
 import de.hhu.bsinfo.neutrino.util.CustomStruct;
@@ -14,6 +21,7 @@ import picocli.CommandLine;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 @CommandLine.Command(
         name = "demo",
@@ -25,6 +33,8 @@ public class Demo implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Demo.class);
 
     private static final int DEFAULT_SERVER_PORT = 2998;
+    private static final long RDMA_BUFFER_SIZE = 1024;
+    private static final long MAGIC = 0xC0FFEE;
 
     @CommandLine.Option(
             names = "--server",
@@ -43,13 +53,21 @@ public class Demo implements Runnable {
 
     private final Neutrino neutrino = Neutrino.newInstance();
 
+    private CoreService coreService;
     private ConnectionService connectionService;
     private MessageService messageService;
+    private MemoryService memoryService;
+
+    private RegisteredBuffer localBuffer;
 
     @Override
     public void run() {
+        coreService = neutrino.getService(CoreService.class);
         connectionService = neutrino.getService(ConnectionService.class);
         messageService = neutrino.getService(MessageService.class);
+        memoryService = neutrino.getService(MemoryService.class);
+
+        localBuffer = coreService.registerMemory(RDMA_BUFFER_SIZE);
 
         if (isServer) {
             runServer();
@@ -59,34 +77,64 @@ public class Demo implements Runnable {
     }
 
     private void runServer() {
+        localBuffer.putLong(0, MAGIC);
         connectionService.listen(bindAddress)
                 .forEach(connection -> {
-                    var message = messageService.receive(connection, Message::new).blockingFirst();
-                    LOGGER.info(message.toString());
+                    LOGGER.info("New client connection from {}", connection);
+                    var remoteHandle = messageService.receive(connection, BufferInformation::new)
+                            .map(info -> new RemoteHandle(connection, info.getAddress(), info.getCapacity(), info.getKey()))
+                            .blockingFirst();
+
+                    LOGGER.info("Writing magic number into remote buffer on connection {}", connection);
+                    memoryService.write(localBuffer, 0, remoteHandle, 0, Long.BYTES);
                 });
     }
 
     private void runClient() {
-        var server = connectionService.connect(serverAddress).blockingGet();
-        messageService.send(server, new Message("Hello InfiniBand!"));
-    }
+        localBuffer.putLong(0, 0);
+        var connection = connectionService.connect(serverAddress).blockingGet();
 
-    @CustomStruct(128)
-    private static final class Message extends Struct {
+        LOGGER.info("Established server connection with {}", connection);
+        messageService.send(connection, BufferInformation.from(localBuffer));
 
-        private final NativeString message = stringField(128);
-
-        public Message(String message) {
-            this.message.set(message);
+        while (localBuffer.getLong(0) != MAGIC) {
+            LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(1));
         }
 
-        public Message(LocalBuffer buffer, long offset) {
+        LOGGER.info("Change detected within local buffer");
+    }
+
+    @CustomStruct(2 * Long.BYTES + Integer.BYTES)
+    private static final class BufferInformation extends Struct {
+
+        private final NativeLong address = longField();
+        private final NativeLong capacity = longField();
+        private final NativeInteger key = integerField();
+
+        public BufferInformation(long address, long capacity, int key) {
+            this.address.set(address);
+            this.capacity.set(capacity);
+            this.key.set(key);
+        }
+
+        public BufferInformation(LocalBuffer buffer, long offset) {
             super(buffer, offset);
         }
 
-        @Override
-        public String toString() {
-            return message.get();
+        public static BufferInformation from(RegisteredBuffer buffer) {
+            return new BufferInformation(buffer.getHandle(), buffer.capacity(), buffer.getRemoteKey());
+        }
+
+        public long getAddress() {
+            return address.get();
+        }
+
+        public long getCapacity() {
+            return capacity.get();
+        }
+
+        public int getKey() {
+            return key.get();
         }
     }
 }

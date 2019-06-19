@@ -24,9 +24,6 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
     @Inject
     private InternalCoreService coreService;
 
-    @Inject
-    private MemoryService memoryService;
-
     private ConnectionManager connectionManager;
 
     private CompletionQueue completionQueue;
@@ -54,8 +51,8 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
         }
 
         connectionManager = new ConnectionManager(this::newConnection, this::connect);
-        sendBuffers = new BufferPool(() -> memoryService.register(getConfig().getConnectionBufferSize()));
-        receiveBuffers = new BufferPool(() -> memoryService.register(getConfig().getConnectionBufferSize()));
+        sendBuffers = new BufferPool(() -> coreService.registerMemory(getConfig().getConnectionBufferSize()));
+        receiveBuffers = new BufferPool(() -> coreService.registerMemory(getConfig().getConnectionBufferSize()));
     }
 
     @Override

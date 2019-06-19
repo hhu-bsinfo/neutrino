@@ -2594,6 +2594,7 @@
           <option value="NestedTryStatement" />
           <option value="SerializableHasSerializationMethods" />
           <option value="FieldMayBeFinal" />
+          <option value="FieldCanBeLocal" />
         </list>
       </option>
     </inspection_tool>
