@@ -2,21 +2,25 @@ package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
-import de.hhu.bsinfo.neutrino.api.core.CoreService;
-import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
+import de.hhu.bsinfo.neutrino.api.message.MessageService;
+import de.hhu.bsinfo.neutrino.buffer.LocalBuffer;
+import de.hhu.bsinfo.neutrino.data.NativeString;
+import de.hhu.bsinfo.neutrino.struct.Struct;
+import de.hhu.bsinfo.neutrino.util.CustomStruct;
+import io.reactivex.Observable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 @CommandLine.Command(
         name = "demo",
         description = "Starts the neutrino high-level api demo%n",
         showDefaultValues = true,
         separator = " ")
-public class Demo implements Callable<Void> {
+public class Demo implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Demo.class);
 
@@ -39,19 +43,50 @@ public class Demo implements Callable<Void> {
 
     private final Neutrino neutrino = Neutrino.newInstance();
 
-    @Override
-    public Void call() {
+    private ConnectionService connectionService;
+    private MessageService messageService;
 
-        var connectionService = neutrino.getService(ConnectionService.class);
+    @Override
+    public void run() {
+        connectionService = neutrino.getService(ConnectionService.class);
+        messageService = neutrino.getService(MessageService.class);
 
         if (isServer) {
-            connectionService.listen(bindAddress)
-                    .subscribe(connection -> LOGGER.info(connection.toString()));
+            runServer();
         } else {
-            connectionService.connect(serverAddress)
-                    .subscribe(connection -> LOGGER.info(connection.toString()));
+            runClient();
+        }
+    }
+
+    private void runServer() {
+        connectionService.listen(bindAddress)
+                .forEach(connection -> {
+                    var message = messageService.receive(connection, Message::new).blockingFirst();
+                    LOGGER.info(message.toString());
+                });
+    }
+
+    private void runClient() {
+        var server = connectionService.connect(serverAddress).blockingGet();
+        messageService.send(server, new Message("Hello InfiniBand!"));
+    }
+
+    @CustomStruct(128)
+    private static final class Message extends Struct {
+
+        private final NativeString message = stringField(128);
+
+        public Message(String message) {
+            this.message.set(message);
         }
 
-        return null;
+        public Message(LocalBuffer buffer, long offset) {
+            super(buffer, offset);
+        }
+
+        @Override
+        public String toString() {
+            return message.get();
+        }
     }
 }

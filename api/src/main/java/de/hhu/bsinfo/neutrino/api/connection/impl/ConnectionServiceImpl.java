@@ -32,7 +32,8 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
     private CompletionQueue completionQueue;
     private SharedReceiveQueue sharedReceiveQueue;
 
-    private BufferPool bufferPool;
+    private BufferPool sendBuffers;
+    private BufferPool receiveBuffers;
 
     private final CompositeDisposable disposables = new CompositeDisposable();
 
@@ -53,7 +54,8 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
         }
 
         connectionManager = new ConnectionManager(this::newConnection, this::connect);
-        bufferPool = new BufferPool(() -> memoryService.register(getConfig().getConnectionBufferSize()));
+        sendBuffers = new BufferPool(() -> memoryService.register(getConfig().getConnectionBufferSize()));
+        receiveBuffers = new BufferPool(() -> memoryService.register(getConfig().getConnectionBufferSize()));
     }
 
     @Override
@@ -127,7 +129,12 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
     }
 
     @Override
-    public RegisteredBuffer getBuffer(Connection connection) {
-        return bufferPool.get(connection);
+    public RegisteredBuffer getSendBuffer(Connection connection) {
+        return sendBuffers.get(connection);
+    }
+
+    @Override
+    public RegisteredBuffer getReceiveBuffer(Connection connection) {
+        return receiveBuffers.get(connection);
     }
 }
