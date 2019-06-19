@@ -11,11 +11,11 @@ public interface InternalCoreService extends CoreService {
 
     ProtectionDomain getProtectionDomain();
 
-    QueuePair createQueuePair(Consumer<QueuePair.InitialAttributes> configurator);
+    QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes);
 
     CompletionQueue createCompletionQueue(int capacity);
 
-    SharedReceiveQueue createSharedReceiveQueue(Consumer<SharedReceiveQueue.InitialAttributes> configurator);
+    SharedReceiveQueue createSharedReceiveQueue(SharedReceiveQueue.InitialAttributes initialAttributes);
 
     RegisteredBuffer allocateMemory(long capacity, AccessFlag... flags);
 

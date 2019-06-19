@@ -37,11 +37,7 @@ public class MessageServiceImpl extends Service<NullConfig> implements MessageSe
         var sendBuffer = connectionService.getBuffer(connection);
         sendBuffer.putObject(object);
 
-        var element = new ScatterGatherElement(configurator -> {
-            configurator.setAddress(sendBuffer.getHandle());
-            configurator.setLength((int) object.getNativeSize());
-            configurator.setLocalKey(sendBuffer.getLocalKey());
-        });
+        var element = new ScatterGatherElement(sendBuffer.getHandle(), sendBuffer.getLocalKey(), (int) object.getNativeSize());
 
         queuePair.postSend(new SendWorkRequest(configurator -> {
             configurator.setOpCode(OpCode.SEND);
