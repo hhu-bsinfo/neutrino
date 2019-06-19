@@ -24,6 +24,8 @@ public class ConnectionServiceConfig extends ServiceConfig {
 
     private int maxScatterGatherElements = 10;
 
+    private int connectionBufferSize = 1024 * 1024 * 2;
+
     public byte getRnrTimer() {
         return rnrTimer;
     }
@@ -58,5 +60,9 @@ public class ConnectionServiceConfig extends ServiceConfig {
 
     public int getReceiveQueueSize() {
         return receiveQueueSize;
+    }
+
+    public int getConnectionBufferSize() {
+        return connectionBufferSize;
     }
 }

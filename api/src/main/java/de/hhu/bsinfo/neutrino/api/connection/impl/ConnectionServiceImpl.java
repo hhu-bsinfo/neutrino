@@ -1,9 +1,12 @@
 package de.hhu.bsinfo.neutrino.api.connection.impl;
 
 import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
+import de.hhu.bsinfo.neutrino.api.connection.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
+import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
 import de.hhu.bsinfo.neutrino.api.util.InitializationException;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
+import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
@@ -19,23 +22,28 @@ import java.net.InetSocketAddress;
 public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> implements InternalConnectionService {
 
     @Inject
-    private InternalCoreService core;
+    private InternalCoreService coreService;
+
+    @Inject
+    private MemoryService memoryService;
 
     private ConnectionManager connectionManager;
 
     private CompletionQueue completionQueue;
     private SharedReceiveQueue sharedReceiveQueue;
 
+    private BufferPool bufferPool;
+
     private final CompositeDisposable disposables = new CompositeDisposable();
 
     @Override
     protected void onInit(ConnectionServiceConfig config) {
-        completionQueue = core.createCompletionQueue(config.getCompletionQueueSize());
+        completionQueue = coreService.createCompletionQueue(config.getCompletionQueueSize());
         if (completionQueue == null) {
             throw new InitializationException("Creating completion queue failed");
         }
 
-        sharedReceiveQueue = core.createSharedReceiveQueue(configurator -> {
+        sharedReceiveQueue = coreService.createSharedReceiveQueue(configurator -> {
             configurator.attributes.setMaxWorkRequest(getConfig().getReceiveQueueSize());
             configurator.attributes.setMaxScatterGatherElements(getConfig().getMaxScatterGatherElements());
         });
@@ -45,6 +53,7 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
         }
 
         connectionManager = new ConnectionManager(this::newConnection, this::connect);
+        bufferPool = new BufferPool(() -> memoryService.register(getConfig().getConnectionBufferSize()));
     }
 
     @Override
@@ -65,7 +74,7 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
     }
 
     private Connection newConnection() {
-        var queuePair = core.createQueuePair(configurator -> {
+        var queuePair = coreService.createQueuePair(configurator -> {
             configurator.setReceiveCompletionQueue(completionQueue);
             configurator.setSendCompletionQueue(completionQueue);
             configurator.setSharedReceiveQueue(sharedReceiveQueue);
@@ -86,7 +95,7 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
             QueuePair.AttributeFlag.PORT,
             QueuePair.AttributeFlag.ACCESS_FLAGS);
 
-        return new Connection(queuePair, core.getLocalId(), getConfig().getPortNumber());
+        return new Connection(queuePair, coreService.getLocalId(), getConfig().getPortNumber());
     }
 
     private void connect(final QueuePair queuePair, final RemoteQueuePair remote) {
@@ -138,5 +147,10 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
     @Override
     public QueuePair getQueuePair(Connection connection) {
         return connection.getQueuePair();
+    }
+
+    @Override
+    public RegisteredBuffer getBuffer(Connection connection) {
+        return bufferPool.get(connection);
     }
 }
