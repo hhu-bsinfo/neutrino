@@ -119,7 +119,7 @@ public class Start implements Callable<Void> {
         int numDevices = DeviceAttributes.getDeviceCount();
 
         if(numDevices <= 0) {
-            LOGGER.error("No RDMA devices were found in your system");
+            LOGGER.error("No InfiniBand devices were found in your system");
             return null;
         }
 

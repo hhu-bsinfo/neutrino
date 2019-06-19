@@ -1,0 +1,220 @@
+package de.hhu.bsinfo.neutrino.example.command;
+
+import de.hhu.bsinfo.neutrino.example.util.DefaultContext;
+import de.hhu.bsinfo.neutrino.example.util.Result;
+import de.hhu.bsinfo.neutrino.verbs.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.Callable;
+
+@CommandLine.Command(
+        name = "msg-test",
+        description = "Starts a simple InfiniBand messaging test, using the neutrino core.%n",
+        showDefaultValues = true,
+        separator = " ")
+public class MessagingTest implements Callable<Void> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessagingTest.class);
+
+    private static final int DEFAULT_QUEUE_SIZE = 100;
+    private static final int DEFAULT_BUFFER_SIZE = 1024;
+    private static final int DEFAULT_SERVER_PORT = 2998;
+    private static final int DEFAULT_MESSAGE_SIZE = 1024;
+    private static final int DEFAULT_MESSAGE_COUNT = 1048576;
+
+    private ScatterGatherElement scatterGatherElement;
+    private SendWorkRequest sendWorkRequest;
+    private ReceiveWorkRequest receiveWorkRequest;
+
+    private CompletionQueue.WorkCompletionArray completionArray;
+
+    @CommandLine.Option(
+            names = "--server",
+            description = "Runs this instance in server mode.")
+    private boolean isServer;
+
+    @CommandLine.Option(
+            names = {"-p", "--port"},
+            description = "The port the server will listen on.")
+    private int port = DEFAULT_SERVER_PORT;
+
+    @CommandLine.Option(
+            names = {"-b", "--buffer-size"},
+            description = "Sets the memory regions buffer size.")
+    private int bufferSize = DEFAULT_BUFFER_SIZE;
+
+    @CommandLine.Option(
+            names = {"-c", "--connect"},
+            description = "The server to connect to.")
+    private InetSocketAddress serverAddress;
+
+    @CommandLine.Option(
+            names = {"-a", "--bind"},
+            description = "The servers bind address.")
+    private InetSocketAddress bindAddress = new InetSocketAddress(DEFAULT_SERVER_PORT);
+
+    @CommandLine.Option(
+            names = {"-q", "--queue-size"},
+            description = "The queue size to be used for the queue pair and completion queue.")
+    private int queueSize = DEFAULT_QUEUE_SIZE;
+
+    @CommandLine.Option(
+            names = {"-s", "--size"},
+            description = "The message size to be used for sending/receiving.")
+    private int messageSize = DEFAULT_MESSAGE_SIZE;
+
+    @CommandLine.Option(
+            names = {"-n", "--count"},
+            description = "The amount of messages to be sent/received.")
+    private int messageCount = DEFAULT_MESSAGE_COUNT;
+
+    private DefaultContext context;
+    private Result result;
+
+    @Override
+    public Void call() throws Exception {
+        Root.printBanner();
+
+        if (!isServer && serverAddress == null) {
+            LOGGER.error("Please specify the server address");
+            return null;
+        }
+
+        completionArray = new CompletionQueue.WorkCompletionArray(queueSize);
+
+        context = new DefaultContext(queueSize, messageSize);
+
+        scatterGatherElement = new ScatterGatherElement(context.getBuffer().getHandle(), (int) context.getBuffer().getNativeSize(), context.getBuffer().getLocalKey());
+
+        sendWorkRequest = new SendWorkRequest(config -> {
+            config.setOpCode(SendWorkRequest.OpCode.SEND);
+            config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
+            config.setListLength(1);
+            config.setListHandle(scatterGatherElement.getHandle());
+        });
+
+        receiveWorkRequest = new ReceiveWorkRequest(config -> {
+            config.setListLength(1);
+            config.setListHandle(scatterGatherElement.getHandle());
+        });
+
+        if(isServer) {
+            startServer();
+        } else {
+            startClient();
+        }
+
+        context.close();
+        
+        if(isServer) {
+            LOGGER.info(result.toString());
+        }
+
+        return null;
+    }
+
+    private void startServer() throws IOException {
+        var serverSocket = new ServerSocket(port);
+        var socket = serverSocket.accept();
+
+        context.connect(socket);
+
+        LOGGER.info("Starting to send messages");
+        
+        int messagesLeft = messageCount;
+        int pendingCompletions = 0;
+        
+        long startTime = System.nanoTime();
+
+        while(messagesLeft > 0) {
+            int batchSize = queueSize - pendingCompletions;
+
+            if(batchSize > messagesLeft) {
+                batchSize = messagesLeft;
+            }
+
+            send(batchSize);
+
+            pendingCompletions += batchSize;
+            messagesLeft -= batchSize;
+
+            pendingCompletions -= poll();
+        }
+
+        while(pendingCompletions > 0) {
+            pendingCompletions -= poll();
+        }
+        
+        long time = System.nanoTime() - startTime;
+        result = new Result(messageCount, messageSize, time);
+
+        LOGGER.info("Finished sending");
+    }
+
+    private void startClient() throws IOException {
+        var socket = new Socket(serverAddress.getAddress(), serverAddress.getPort());
+
+        context.connect(socket);
+        
+        LOGGER.info("Starting to receive messages");
+
+        int messagesLeft = messageCount;
+        int pendingCompletions = 0;
+
+        while(messagesLeft > 0) {
+            int batchSize = queueSize - pendingCompletions;
+
+            if(batchSize > messagesLeft) {
+                batchSize = messagesLeft;
+            }
+
+            receive(batchSize);
+
+            pendingCompletions += batchSize;
+            messagesLeft -= batchSize;
+
+            pendingCompletions -= poll();
+        }
+
+        while(pendingCompletions > 0) {
+            pendingCompletions -= poll();
+        }
+        
+        LOGGER.info("Finished receiving! See results on the server");
+    }
+
+    private void send(int amount) {
+        for(int i = 0; i < amount; i++) {
+            context.getQueuePair().postSend(sendWorkRequest);
+        }
+    }
+
+    private void receive(int amount) {
+        for(int i = 0; i < amount; i++) {
+            context.getQueuePair().postReceive(receiveWorkRequest);
+        }
+    }
+
+    private int poll() {
+        var completionQueue = context.getCompletionQueue();
+
+        completionQueue.poll(completionArray);
+
+        for(int i = 0; i < completionArray.getLength(); i++) {
+            WorkCompletion completion = completionArray.get(i);
+
+            if(completion.getStatus() != WorkCompletion.Status.SUCCESS) {
+                LOGGER.error("Work completion failed with error [{}]", completion.getStatus());
+                System.exit(1);
+            }
+        }
+
+        return completionArray.getLength();
+    }
+}
