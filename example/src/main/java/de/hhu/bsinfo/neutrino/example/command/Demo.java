@@ -3,6 +3,7 @@ package de.hhu.bsinfo.neutrino.example.command;
 import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
 import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
+import de.hhu.bsinfo.neutrino.api.connection.impl.Connection;
 import de.hhu.bsinfo.neutrino.api.core.CoreService;
 import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
 import de.hhu.bsinfo.neutrino.api.memory.RemoteHandle;
@@ -82,7 +83,7 @@ public class Demo implements Runnable {
                 .forEach(connection -> {
                     LOGGER.info("New client connection from {}", connection);
                     var remoteHandle = messageService.receive(connection, BufferInformation::new)
-                            .map(info -> new RemoteHandle(connection, info.getAddress(), info.getCapacity(), info.getKey()))
+                            .map(info -> info.toRemoteHandle(connection))
                             .blockingFirst();
 
                     LOGGER.info("Writing magic number into remote buffer on connection {}", connection);
@@ -125,16 +126,8 @@ public class Demo implements Runnable {
             return new BufferInformation(buffer.getHandle(), buffer.capacity(), buffer.getRemoteKey());
         }
 
-        public long getAddress() {
-            return address.get();
-        }
-
-        public long getCapacity() {
-            return capacity.get();
-        }
-
-        public int getKey() {
-            return key.get();
+        public RemoteHandle toRemoteHandle(Connection connection) {
+            return new RemoteHandle(connection, address.get(), capacity.get(), key.get());
         }
     }
 }
