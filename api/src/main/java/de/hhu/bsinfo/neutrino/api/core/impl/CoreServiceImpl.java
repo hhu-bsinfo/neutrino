@@ -57,8 +57,8 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     }
 
     @Override
-    public QueuePair createQueuePair(Consumer<QueuePair.InitialAttributes> configurator) {
-        return protectionDomain.createQueuePair(configurator);
+    public QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes) {
+        return protectionDomain.createQueuePair(initialAttributes);
     }
 
     @Override
@@ -67,8 +67,8 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     }
 
     @Override
-    public SharedReceiveQueue createSharedReceiveQueue(Consumer<SharedReceiveQueue.InitialAttributes> configurator) {
-        return protectionDomain.createSharedReceiveQueue(configurator);
+    public SharedReceiveQueue createSharedReceiveQueue(SharedReceiveQueue.InitialAttributes initialAttributes) {
+        return protectionDomain.createSharedReceiveQueue(initialAttributes);
     }
 
     @Override

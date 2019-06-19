@@ -43,10 +43,10 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
             throw new InitializationException("Creating completion queue failed");
         }
 
-        sharedReceiveQueue = coreService.createSharedReceiveQueue(configurator -> {
-            configurator.attributes.setMaxWorkRequest(getConfig().getReceiveQueueSize());
-            configurator.attributes.setMaxScatterGatherElements(getConfig().getMaxScatterGatherElements());
-        });
+        var initialAttribtues = new SharedReceiveQueue.InitialAttributes.Builder(
+                getConfig().getReceiveQueueSize(), getConfig().getMaxScatterGatherElements()).build();
+
+        sharedReceiveQueue = coreService.createSharedReceiveQueue(initialAttribtues);
 
         if (sharedReceiveQueue == null) {
             throw new InitializationException("Creating shared receive queue failed");
@@ -74,64 +74,41 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
     }
 
     private Connection newConnection() {
-        var queuePair = coreService.createQueuePair(configurator -> {
-            configurator.setReceiveCompletionQueue(completionQueue);
-            configurator.setSendCompletionQueue(completionQueue);
-            configurator.setSharedReceiveQueue(sharedReceiveQueue);
-            configurator.setType(QueuePair.Type.RC);
-            configurator.capabilities.setMaxSendWorkRequests(getConfig().getCompletionQueueSize());
-            configurator.capabilities.setMaxReceiveWorkRequests(getConfig().getCompletionQueueSize());
-            configurator.capabilities.setMaxReceiveScatterGatherElements(getConfig().getMaxScatterGatherElements());
-            configurator.capabilities.setMaxSendScatterGatherElements(getConfig().getMaxScatterGatherElements());
-        });
+        var initialAttributes = new QueuePair.InitialAttributes.Builder(
+                QueuePair.Type.RC,
+                completionQueue,
+                completionQueue,
+                getConfig().getCompletionQueueSize(),
+                getConfig().getCompletionQueueSize(),
+                getConfig().getMaxScatterGatherElements(),
+                getConfig().getMaxScatterGatherElements()).build();
 
-        queuePair.modify(configurator -> {
-            configurator.setState(QueuePair.State.INIT);
-            configurator.setPartitionKeyIndex((short) 0);
-            configurator.setPortNumber(getConfig().getPortNumber());
-            configurator.setAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ);
-        },  QueuePair.AttributeFlag.STATE,
-            QueuePair.AttributeFlag.PKEY_INDEX,
-            QueuePair.AttributeFlag.PORT,
-            QueuePair.AttributeFlag.ACCESS_FLAGS);
+        var queuePair = coreService.createQueuePair(initialAttributes);
+
+        queuePair.modify(new QueuePair.Attributes.Builder()
+            .withState(QueuePair.State.INIT)
+            .withPartitionKeyIndex((short) 0)
+            .withPortNumber(getConfig().getPortNumber())
+            .withAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ));
 
         return new Connection(queuePair, coreService.getLocalId(), getConfig().getPortNumber());
     }
 
     private void connect(final QueuePair queuePair, final RemoteQueuePair remote) {
-        queuePair.modify(configurator -> {
-            configurator.setState(QueuePair.State.RTR);
-            configurator.setPathMtu(Mtu.MTU_4096);
-            configurator.setDestination(remote.getQueuePairNumber());
-            configurator.setReceivePacketNumber(0);
-            configurator.setMaxDestinationAtomicReads((byte) 1);
-            configurator.setMinRnrTimer(getConfig().getRnrTimer());
-            configurator.addressHandle.setDestination(remote.getLocalId());
-            configurator.addressHandle.setServiceLevel(getConfig().getServiceLevel());
-            configurator.addressHandle.setPortNumber(remote.getPortNumber());
-            configurator.addressHandle.setSourcePathBits((byte) 0);
-            configurator.addressHandle.setIsGlobal(false);
-        },  QueuePair.AttributeFlag.STATE,
-            QueuePair.AttributeFlag.PATH_MTU,
-            QueuePair.AttributeFlag.RQ_PSN,
-            QueuePair.AttributeFlag.DEST_QPN,
-            QueuePair.AttributeFlag.AV,
-            QueuePair.AttributeFlag.MAX_DEST_RD_ATOMIC,
-            QueuePair.AttributeFlag.MIN_RNR_TIMER);
+        queuePair.modify(QueuePair.Attributes.Builder
+                .buildReadyToReceiveAttributesRC(remote.getQueuePairNumber(), remote.getLocalId(), remote.getPortNumber())
+                .withPathMtu(Mtu.MTU_4096)
+                .withReceivePacketNumber(0)
+                .withMaxDestinationAtomicReads((byte) 1)
+                .withMinRnrTimer(getConfig().getRnrTimer())
+                .withServiceLevel(getConfig().getServiceLevel())
+                .withSourcePathBits((byte) 0)
+                .withIsGlobal(false));
 
-        queuePair.modify(configurator -> {
-            configurator.setState(QueuePair.State.RTS);
-            configurator.setSendPacketNumber(0);
-            configurator.setTimeout(getConfig().getTimeout());
-            configurator.setRetryCount(getConfig().getRetryCount());
-            configurator.setRnrRetryCount(getConfig().getRnrRetryCount());
-            configurator.setMaxInitiatorAtomicReads((byte) 1);
-        },  QueuePair.AttributeFlag.STATE,
-            QueuePair.AttributeFlag.TIMEOUT,
-            QueuePair.AttributeFlag.RETRY_CNT,
-            QueuePair.AttributeFlag.RNR_RETRY,
-            QueuePair.AttributeFlag.SQ_PSN,
-            QueuePair.AttributeFlag.MAX_QP_RD_ATOMIC);
+        queuePair.modify(QueuePair.Attributes.Builder.buildReadyToSendAttributesRC()
+                .withTimeout(getConfig().getTimeout())
+                .withRetryCount(getConfig().getRetryCount())
+                .withRnrRetryCount(getConfig().getRnrRetryCount()));
     }
 
     @Override

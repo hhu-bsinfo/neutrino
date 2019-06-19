@@ -127,11 +127,6 @@ public class ProtectionDomain extends Struct implements AutoCloseable {
     }
 
     @Nullable
-    public SharedReceiveQueue createSharedReceiveQueue(Consumer<SharedReceiveQueue.InitialAttributes> configurator) {
-        return createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes(configurator));
-    }
-
-    @Nullable
     public SharedReceiveQueue createSharedReceiveQueue(SharedReceiveQueue.InitialAttributes initialAttributes) {
         var result = (Result) Verbs.getPoolableInstance(Result.class);
 
