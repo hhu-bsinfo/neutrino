@@ -14,5 +14,7 @@ public interface InternalConnectionService extends ConnectionService {
 
     QueuePair getQueuePair(Connection connection);
 
-    RegisteredBuffer getBuffer(Connection connection);
+    RegisteredBuffer getSendBuffer(Connection connection);
+
+    RegisteredBuffer getReceiveBuffer(Connection connection);
 }

@@ -32,11 +32,7 @@ public class Connection {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", Connection.class.getSimpleName() + "[", "]")
-                .add("queuePairNumber=" + queuePair.getQueuePairNumber())
-                .add("localId=" + localId)
-                .add("portNumber=" + portNumber)
-                .toString();
+        return String.format("0x%04X", localId);
     }
 
     @Override
