@@ -1,5 +1,6 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
+import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
 import de.hhu.bsinfo.neutrino.example.util.DefaultContext;
 import de.hhu.bsinfo.neutrino.example.util.Result;
 import de.hhu.bsinfo.neutrino.verbs.*;
@@ -29,8 +30,11 @@ public class MessagingTest implements Callable<Void> {
     private static final int DEFAULT_MESSAGE_COUNT = 1048576;
 
     private ScatterGatherElement scatterGatherElement;
-    private SendWorkRequest sendWorkRequest;
-    private ReceiveWorkRequest receiveWorkRequest;
+    private SendWorkRequest[] sendWorkRequests;
+    private ReceiveWorkRequest[] receiveWorkRequests;
+
+    private NativeLinkedList<SendWorkRequest> sendList = new NativeLinkedList<>();
+    private NativeLinkedList<ReceiveWorkRequest> receiveList = new NativeLinkedList<>();
 
     private CompletionQueue.WorkCompletionArray completionArray;
 
@@ -92,17 +96,24 @@ public class MessagingTest implements Callable<Void> {
 
         scatterGatherElement = new ScatterGatherElement(context.getBuffer().getHandle(), (int) context.getBuffer().getNativeSize(), context.getBuffer().getLocalKey());
 
-        sendWorkRequest = new SendWorkRequest(config -> {
-            config.setOpCode(SendWorkRequest.OpCode.SEND);
-            config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
-            config.setListLength(1);
-            config.setListHandle(scatterGatherElement.getHandle());
-        });
+        sendWorkRequests = new SendWorkRequest[queueSize];
+        receiveWorkRequests = new ReceiveWorkRequest[queueSize];
 
-        receiveWorkRequest = new ReceiveWorkRequest(config -> {
-            config.setListLength(1);
-            config.setListHandle(scatterGatherElement.getHandle());
-        });
+        for(int i = 0; i < queueSize; i++) {
+            sendWorkRequests[i] = new SendWorkRequest(config -> {
+                config.setOpCode(SendWorkRequest.OpCode.SEND);
+                config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
+                config.setListLength(1);
+                config.setListHandle(scatterGatherElement.getHandle());
+            });
+        }
+
+        for(int i = 0; i < queueSize; i++) {
+            receiveWorkRequests[i] = new ReceiveWorkRequest(config -> {
+                config.setListLength(1);
+                config.setListHandle(scatterGatherElement.getHandle());
+            });
+        }
 
         if(isServer) {
             startServer();
@@ -190,15 +201,31 @@ public class MessagingTest implements Callable<Void> {
     }
 
     private void send(int amount) {
-        for(int i = 0; i < amount; i++) {
-            context.getQueuePair().postSend(sendWorkRequest);
+        if(amount == 0) {
+            return;
         }
+
+        sendList.clear();
+
+        for(int i = 0; i < amount; i++) {
+            sendList.add(sendWorkRequests[i]);
+        }
+
+        context.getQueuePair().postSend(sendList);
     }
 
     private void receive(int amount) {
-        for(int i = 0; i < amount; i++) {
-            context.getQueuePair().postReceive(receiveWorkRequest);
+        if(amount == 0) {
+            return;
         }
+
+        receiveList.clear();
+
+        for(int i = 0; i < amount; i++) {
+            receiveList.add(receiveWorkRequests[i]);
+        }
+
+        context.getQueuePair().postReceive(receiveList);
     }
 
     private int poll() {
