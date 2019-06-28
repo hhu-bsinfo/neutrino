@@ -119,7 +119,7 @@ public class DefaultContext extends BaseContext {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         queuePair.close();
         completionQueue.close();
         completionChannel.close();
