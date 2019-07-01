@@ -3,6 +3,7 @@ package de.hhu.bsinfo.neutrino.example.command;
 import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
 import de.hhu.bsinfo.neutrino.example.util.DefaultContext;
+import de.hhu.bsinfo.neutrino.example.util.RdmaContext;
 import de.hhu.bsinfo.neutrino.example.util.Result;
 import de.hhu.bsinfo.neutrino.verbs.*;
 import org.slf4j.Logger;
@@ -16,25 +17,29 @@ import java.net.Socket;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(
-        name = "msg-test",
-        description = "Starts a simple InfiniBand messaging test, using the neutrino core.%n",
+        name = "rdma-test",
+        description = "Starts a simple InfiniBand RDMA test, using the neutrino core.%n",
         showDefaultValues = true,
         separator = " ")
-public class MessagingTest implements Callable<Void> {
+public class RdmaTest implements Callable<Void> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MessagingTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RdmaTest.class);
 
     private static final int DEFAULT_SERVER_PORT = 2998;
     private static final int DEFAULT_QUEUE_SIZE = 100;
-    private static final int DEFAULT_MESSAGE_SIZE = 1024;
-    private static final int DEFAULT_MESSAGE_COUNT = 1048576;
+    private static final int DEFAULT_BUFFER_SIZE = 1024;
+    private static final int DEFAULT_OPERATION_COUNT = 1048576;
+
+    private static final String SOCKET_CLOSE_SIGNAL = "close";
+
+    private enum Mode {
+        READ, WRITE
+    }
 
     private ScatterGatherElement scatterGatherElement;
     private SendWorkRequest[] sendWorkRequests;
-    private ReceiveWorkRequest[] receiveWorkRequests;
 
     private NativeLinkedList<SendWorkRequest> sendList = new NativeLinkedList<>();
-    private NativeLinkedList<ReceiveWorkRequest> receiveList = new NativeLinkedList<>();
 
     private CompletionQueue.WorkCompletionArray completionArray;
 
@@ -50,8 +55,8 @@ public class MessagingTest implements Callable<Void> {
 
     @CommandLine.Option(
             names = {"-s", "--size"},
-            description = "Sets the message size.")
-    private int messageSize = DEFAULT_MESSAGE_SIZE;
+            description = "Sets the buffer size.")
+    private int bufferSize = DEFAULT_BUFFER_SIZE;
 
     @CommandLine.Option(
             names = {"-c", "--connect"},
@@ -70,10 +75,15 @@ public class MessagingTest implements Callable<Void> {
 
     @CommandLine.Option(
             names = {"-n", "--count"},
-            description = "The amount of messages to be sent/received.")
-    private int messageCount = DEFAULT_MESSAGE_COUNT;
+            description = "The amount of RDMA operations to be performed.")
+    private int operationCount = DEFAULT_OPERATION_COUNT;
 
-    private DefaultContext context;
+    @CommandLine.Option(
+            names = {"-m", "--mode"},
+            description = "Set the rdma operation mode (read/write).")
+    private Mode mode = Mode.WRITE;
+
+    private RdmaContext context;
     private Result result;
 
     @Override
@@ -87,28 +97,11 @@ public class MessagingTest implements Callable<Void> {
 
         completionArray = new CompletionQueue.WorkCompletionArray(queueSize);
 
-        context = new DefaultContext(queueSize, messageSize);
+        context = new RdmaContext(queueSize, bufferSize);
 
         scatterGatherElement = new ScatterGatherElement(context.getLocalBuffer().getHandle(), (int) context.getLocalBuffer().getNativeSize(), context.getLocalBuffer().getLocalKey());
 
         sendWorkRequests = new SendWorkRequest[queueSize];
-        receiveWorkRequests = new ReceiveWorkRequest[queueSize];
-
-        for(int i = 0; i < queueSize; i++) {
-            sendWorkRequests[i] = new SendWorkRequest(config -> {
-                config.setOpCode(SendWorkRequest.OpCode.SEND);
-                config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
-                config.setListLength(1);
-                config.setListHandle(scatterGatherElement.getHandle());
-            });
-        }
-
-        for(int i = 0; i < queueSize; i++) {
-            receiveWorkRequests[i] = new ReceiveWorkRequest(config -> {
-                config.setListLength(1);
-                config.setListHandle(scatterGatherElement.getHandle());
-            });
-        }
 
         if(isServer) {
             startServer();
@@ -117,7 +110,7 @@ public class MessagingTest implements Callable<Void> {
         }
 
         context.close();
-        
+
         if(isServer) {
             LOGGER.info(result.toString());
         }
@@ -131,26 +124,36 @@ public class MessagingTest implements Callable<Void> {
 
         context.connect(socket);
 
-        socket.close();
+        for(int i = 0; i < queueSize; i++) {
+            sendWorkRequests[i] = new SendWorkRequest(config -> {
+                config.setOpCode(mode == Mode.WRITE ? SendWorkRequest.OpCode.RDMA_WRITE : SendWorkRequest.OpCode.RDMA_READ);
+                config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
+                config.setListLength(1);
+                config.setListHandle(scatterGatherElement.getHandle());
 
-        LOGGER.info("Starting to send messages");
-        
-        int messagesLeft = messageCount;
+                config.rdma.setRemoteAddress(context.getRemoteBufferInfo().getAddress());
+                config.rdma.setRemoteKey(context.getRemoteBufferInfo().getRemoteKey());
+            });
+        }
+
+        LOGGER.info("Starting to " + mode.toString().toLowerCase() + " via RDMA");
+
+        int operationsLeft = operationCount;
         int pendingCompletions = 0;
-        
+
         long startTime = System.nanoTime();
 
-        while(messagesLeft > 0) {
+        while(operationsLeft > 0) {
             int batchSize = queueSize - pendingCompletions;
 
-            if(batchSize > messagesLeft) {
-                batchSize = messagesLeft;
+            if(batchSize > operationsLeft) {
+                batchSize = operationsLeft;
             }
 
-            send(batchSize);
+            performOperations(batchSize);
 
             pendingCompletions += batchSize;
-            messagesLeft -= batchSize;
+            operationsLeft -= batchSize;
 
             pendingCompletions -= poll();
         }
@@ -158,11 +161,17 @@ public class MessagingTest implements Callable<Void> {
         while(pendingCompletions > 0) {
             pendingCompletions -= poll();
         }
-        
-        long time = System.nanoTime() - startTime;
-        result = new Result(messageCount, messageSize, time);
 
-        LOGGER.info("Finished sending");
+        long time = System.nanoTime() - startTime;
+        result = new Result(operationCount, bufferSize, time);
+
+        LOGGER.info("Finished " + mode.toString().toLowerCase() + "ing via RDMA");
+
+        socket.getOutputStream().write(SOCKET_CLOSE_SIGNAL.getBytes());
+
+        LOGGER.info("Sent '" + SOCKET_CLOSE_SIGNAL + "' to client");
+
+        socket.close();
     }
 
     private void startClient() throws IOException {
@@ -170,36 +179,22 @@ public class MessagingTest implements Callable<Void> {
 
         context.connect(socket);
 
+        LOGGER.info("Waiting for server to finish RDMA operations");
+
+        String serverString = new String(socket.getInputStream().readAllBytes());
+
+        if(serverString.equals(SOCKET_CLOSE_SIGNAL)) {
+            LOGGER.info("Received '" + serverString + "' from server");
+        } else if(serverString.isEmpty()) {
+            LOGGER.error("Lost connection to server");
+        } else {
+            LOGGER.error("Received invalid string '" + serverString + "' from server");
+        }
+
         socket.close();
-        
-        LOGGER.info("Starting to receive messages");
-
-        int messagesLeft = messageCount;
-        int pendingCompletions = 0;
-
-        while(messagesLeft > 0) {
-            int batchSize = queueSize - pendingCompletions;
-
-            if(batchSize > messagesLeft) {
-                batchSize = messagesLeft;
-            }
-
-            receive(batchSize);
-
-            pendingCompletions += batchSize;
-            messagesLeft -= batchSize;
-
-            pendingCompletions -= poll();
-        }
-
-        while(pendingCompletions > 0) {
-            pendingCompletions -= poll();
-        }
-        
-        LOGGER.info("Finished receiving");
     }
 
-    private void send(int amount) {
+    private void performOperations(int amount) {
         if(amount == 0) {
             return;
         }
@@ -211,20 +206,6 @@ public class MessagingTest implements Callable<Void> {
         }
 
         context.getQueuePair().postSend(sendList);
-    }
-
-    private void receive(int amount) {
-        if(amount == 0) {
-            return;
-        }
-
-        receiveList.clear();
-
-        for(int i = 0; i < amount; i++) {
-            receiveList.add(receiveWorkRequests[i]);
-        }
-
-        context.getQueuePair().postReceive(receiveList);
     }
 
     private int poll() {

@@ -5,7 +5,7 @@ import picocli.CommandLine;
 @CommandLine.Command(
     name = "neutrino",
     description = "",
-    subcommands = { Start.class, MessagingTest.class }
+    subcommands = { MessagingTest.class, RdmaTest.class }
 )
 public class Root implements Runnable {
 

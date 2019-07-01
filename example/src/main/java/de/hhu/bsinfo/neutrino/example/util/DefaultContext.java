@@ -14,7 +14,7 @@ public class DefaultContext extends BaseContext {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultContext.class);
 
-    private final RegisteredBuffer buffer;
+    private final RegisteredBuffer localBuffer;
     private final CompletionQueue completionQueue;
     private final CompletionChannel completionChannel;
 
@@ -30,8 +30,8 @@ public class DefaultContext extends BaseContext {
             throw new IOException("Unable to query port");
         }
 
-        buffer = getProtectionDomain().allocateMemory(messageSize, AccessFlag.LOCAL_WRITE);
-        if(buffer == null) {
+        localBuffer = getProtectionDomain().allocateMemory(messageSize, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
+        if(localBuffer == null) {
             throw new IOException("Unable to allocate message buffer");
         }
 
@@ -59,7 +59,7 @@ public class DefaultContext extends BaseContext {
 
         LOGGER.info("Created queue pair");
 
-        if(!queuePair.modify(QueuePair.Attributes.Builder.buildInitAttributesRC((short) 0, (byte) 1, AccessFlag.LOCAL_WRITE))) {
+        if(!queuePair.modify(QueuePair.Attributes.Builder.buildInitAttributesRC((short) 0, (byte) 1, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE))) {
             throw new IOException(("Unable to move queue pair into INIT state"));
         }
 
@@ -102,8 +102,8 @@ public class DefaultContext extends BaseContext {
         LOGGER.info("Moved queue pair into RTS state");
     }
 
-    public RegisteredBuffer getBuffer() {
-        return buffer;
+    public RegisteredBuffer getLocalBuffer() {
+        return localBuffer;
     }
 
     public CompletionQueue getCompletionQueue() {
@@ -123,7 +123,7 @@ public class DefaultContext extends BaseContext {
         queuePair.close();
         completionQueue.close();
         completionChannel.close();
-        buffer.close();
+        localBuffer.close();
         super.close();
 
         LOGGER.info("Closed context");
@@ -147,15 +147,15 @@ public class DefaultContext extends BaseContext {
             queuePairNumber = buffer.getInt();
         }
 
-        byte getPortNumber() {
+        public byte getPortNumber() {
             return portNumber;
         }
 
-        short getLocalId() {
+        public short getLocalId() {
             return localId;
         }
 
-        int getQueuePairNumber() {
+        public int getQueuePairNumber() {
             return queuePairNumber;
         }
 

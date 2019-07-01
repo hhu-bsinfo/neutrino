@@ -3,7 +3,7 @@ package de.hhu.bsinfo.neutrino.example.util;
 public class Result {
 
     private static final char[] metricTable = {
-            ' ',
+            0,
             'k',
             'm',
             'g',
