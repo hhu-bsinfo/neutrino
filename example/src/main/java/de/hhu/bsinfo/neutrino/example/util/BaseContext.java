@@ -15,7 +15,7 @@ class BaseContext implements AutoCloseable {
     private final ProtectionDomain protectionDomain;
 
     BaseContext(int deviceNumber) throws IOException {
-        int numDevices = DeviceAttributes.getDeviceCount();
+        int numDevices = Context.getDeviceCount();
 
         if(numDevices <= deviceNumber) {
             throw new InvalidParameterException("Invalid device number " + deviceNumber + ". Only " + numDevices + " InfiniBand devices were found in your system");
