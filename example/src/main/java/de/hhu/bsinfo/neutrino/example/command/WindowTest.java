@@ -22,11 +22,11 @@ public class WindowTest implements Callable<Void> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WindowTest.class);
 
-    private static final int DEFAULT_SERVER_PORT = 2998;
-    private static final int DEFAULT_QUEUE_SIZE = 10;
-    private static final int DEFAULT_BUFFER_SIZE = 16;
-
+    private static final int QUEUE_SIZE = 10;
     private static final int WINDOW_SIZE = 4;
+
+    private static final int DEFAULT_SERVER_PORT = 2998;
+    private static final int DEFAULT_BUFFER_SIZE = 16;
 
     @CommandLine.Option(
             names = "--server",
@@ -37,6 +37,11 @@ public class WindowTest implements Callable<Void> {
             names = {"-p", "--port"},
             description = "The port the server will listen on.")
     private int port = DEFAULT_SERVER_PORT;
+
+    @CommandLine.Option(
+            names = "-d, --device",
+            description = "Sets the InfiniBand device to be used.")
+    private int device = 0;
 
     @CommandLine.Option(
             names = {"-c", "--connect"},
@@ -68,7 +73,7 @@ public class WindowTest implements Callable<Void> {
             return null;
         }
 
-        context = new WindowContext(DEFAULT_QUEUE_SIZE, bufferSize, WINDOW_SIZE);
+        context = new WindowContext(device, QUEUE_SIZE, bufferSize, WINDOW_SIZE);
 
         for(int i = 0; i < bufferSize; i += WINDOW_SIZE) {
             context.getLocalBuffer().putInt(i, (i / WINDOW_SIZE));
@@ -90,7 +95,7 @@ public class WindowTest implements Callable<Void> {
             config.setListHandle(readRemoteWindowElement.getHandle());
         });
 
-        completionArray = new CompletionQueue.WorkCompletionArray(DEFAULT_QUEUE_SIZE);
+        completionArray = new CompletionQueue.WorkCompletionArray(QUEUE_SIZE);
 
         if(isServer) {
             startServer();

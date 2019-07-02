@@ -32,10 +32,6 @@ public class WindowContext extends RdmaContext {
         readBuffer = getProtectionDomain().allocateMemory(windowSize, AccessFlag.LOCAL_WRITE);
     }
 
-    public WindowContext(int queueSize, long bufferSize, long windowSize) throws IOException {
-        this(0, queueSize, bufferSize, windowSize);
-    }
-
     @Override
     public void connect(Socket socket) throws IOException {
         super.connect(socket);

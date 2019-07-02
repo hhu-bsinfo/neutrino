@@ -19,10 +19,6 @@ public class RdmaContext extends DefaultContext {
         super(deviceNumber, queueSize, bufferSize);
     }
 
-    public RdmaContext(int queueSize, long bufferSize) throws IOException {
-        this(0, queueSize, bufferSize);
-    }
-
     @Override
     public void connect(Socket socket) throws IOException {
         super.connect(socket);

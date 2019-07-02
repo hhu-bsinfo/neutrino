@@ -45,6 +45,11 @@ public class RdmaTest implements Callable<Void> {
     private int port = DEFAULT_SERVER_PORT;
 
     @CommandLine.Option(
+            names = "-d, --device",
+            description = "Sets the InfiniBand device to be used.")
+    private int device = 0;
+
+    @CommandLine.Option(
             names = {"-s", "--size"},
             description = "Sets the buffer size.")
     private int bufferSize = DEFAULT_BUFFER_SIZE;
@@ -88,7 +93,7 @@ public class RdmaTest implements Callable<Void> {
 
         completionArray = new CompletionQueue.WorkCompletionArray(queueSize);
 
-        context = new RdmaContext(queueSize, bufferSize);
+        context = new RdmaContext(device, queueSize, bufferSize);
 
         scatterGatherElement = new ScatterGatherElement(context.getLocalBuffer().getHandle(), (int) context.getLocalBuffer().getNativeSize(), context.getLocalBuffer().getLocalKey());
 

@@ -66,10 +66,6 @@ public class DefaultContext extends BaseContext {
         LOGGER.info("Moved queue pair into INIT state");
     }
 
-    public DefaultContext(int queueSize, long bufferSize) throws IOException {
-        this(0, queueSize, bufferSize);
-    }
-
     public void connect(Socket socket) throws IOException {
         var localInfo = new ConnectionInformation((byte) 1, port.getLocalId(), queuePair.getQueuePairNumber());
 

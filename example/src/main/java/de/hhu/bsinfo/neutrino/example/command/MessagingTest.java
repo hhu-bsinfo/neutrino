@@ -39,6 +39,11 @@ public class MessagingTest implements Callable<Void> {
     private int port = DEFAULT_SERVER_PORT;
 
     @CommandLine.Option(
+            names = "-d, --device",
+            description = "Sets the InfiniBand device to be used.")
+    private int device = 0;
+
+    @CommandLine.Option(
             names = {"-s", "--size"},
             description = "Sets the message size.")
     private int messageSize = DEFAULT_MESSAGE_SIZE;
@@ -79,7 +84,7 @@ public class MessagingTest implements Callable<Void> {
 
         completionArray = new CompletionQueue.WorkCompletionArray(queueSize);
 
-        context = new DefaultContext(queueSize, messageSize);
+        context = new DefaultContext(device, queueSize, messageSize);
 
         scatterGatherElement = new ScatterGatherElement(context.getLocalBuffer().getHandle(), (int) context.getLocalBuffer().getNativeSize(), context.getLocalBuffer().getLocalKey());
 
