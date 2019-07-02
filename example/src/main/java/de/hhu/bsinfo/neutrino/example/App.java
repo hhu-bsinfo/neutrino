@@ -12,7 +12,7 @@ public class App {
         cli.registerConverter(InetSocketAddress.class, new InetSocketAddressConverter(22222));
         cli.setCaseInsensitiveEnumValuesAllowed(true);
         cli.parseWithHandlers(
-            new CommandLine.RunLast().useOut(System.out),
+            new CommandLine.RunAll().useOut(System.out),
             CommandLine.defaultExceptionHandler().useErr(System.err),
             args);
     }

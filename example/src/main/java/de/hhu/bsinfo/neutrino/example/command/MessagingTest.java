@@ -1,6 +1,5 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
 import de.hhu.bsinfo.neutrino.example.util.DefaultContext;
 import de.hhu.bsinfo.neutrino.example.util.Result;
@@ -73,9 +72,7 @@ public class MessagingTest implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        Neutrino.printBanner();
-
-        if (!isServer && serverAddress == null) {
+        if(!isServer && serverAddress == null) {
             LOGGER.error("Please specify the server address");
             return null;
         }

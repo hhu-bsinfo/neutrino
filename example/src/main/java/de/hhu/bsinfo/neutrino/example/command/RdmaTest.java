@@ -1,8 +1,6 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
-import de.hhu.bsinfo.neutrino.example.util.DefaultContext;
 import de.hhu.bsinfo.neutrino.example.util.RdmaContext;
 import de.hhu.bsinfo.neutrino.example.util.Result;
 import de.hhu.bsinfo.neutrino.verbs.*;
@@ -83,9 +81,7 @@ public class RdmaTest implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        Neutrino.printBanner();
-
-        if (!isServer && serverAddress == null) {
+        if(!isServer && serverAddress == null) {
             LOGGER.error("Please specify the server address");
             return null;
         }

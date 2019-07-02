@@ -63,9 +63,7 @@ public class WindowTest implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        Neutrino.printBanner();
-
-        if (!isServer && serverAddress == null) {
+        if(!isServer && serverAddress == null) {
             LOGGER.error("Please specify the server address");
             return null;
         }
