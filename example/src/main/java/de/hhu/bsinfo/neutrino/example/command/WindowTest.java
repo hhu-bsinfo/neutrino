@@ -141,7 +141,9 @@ public class WindowTest implements Callable<Void> {
 
                 Thread.sleep(1000);
 
-                context.getWindow().rebind(context.getLocalBuffer(), context.getQueuePair(), i, WINDOW_SIZE, AccessFlag.REMOTE_READ, AccessFlag.ZERO_BASED);
+                if(!context.getWindow().rebind(context.getLocalBuffer(), context.getQueuePair(), i, WINDOW_SIZE, AccessFlag.REMOTE_READ, AccessFlag.ZERO_BASED)) {
+                    System.exit(1);
+                }
             }
 
             first = false;

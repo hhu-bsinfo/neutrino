@@ -38,6 +38,10 @@ public class WindowContext extends RdmaContext {
 
         window = getLocalBuffer().allocateAndBindMemoryWindow(getQueuePair(), 0, windowSize, AccessFlag.REMOTE_READ, AccessFlag.ZERO_BASED);
 
+        if(window == null) {
+            System.exit(1);
+        }
+
         LOGGER.info("Requested memory window bind");
 
         var completions = new CompletionQueue.WorkCompletionArray(1);
