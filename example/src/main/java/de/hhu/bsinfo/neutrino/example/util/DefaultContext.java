@@ -30,7 +30,7 @@ public class DefaultContext extends BaseContext {
             throw new IOException("Unable to query port");
         }
 
-        localBuffer = getProtectionDomain().allocateMemory(messageSize, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE);
+        localBuffer = getProtectionDomain().allocateMemory(messageSize, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE, AccessFlag.MW_BIND);
         if(localBuffer == null) {
             throw new IOException("Unable to allocate message buffer");
         }

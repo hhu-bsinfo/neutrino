@@ -29,15 +29,6 @@ public class MessagingTest implements Callable<Void> {
     private static final int DEFAULT_MESSAGE_SIZE = 1024;
     private static final int DEFAULT_MESSAGE_COUNT = 1048576;
 
-    private ScatterGatherElement scatterGatherElement;
-    private SendWorkRequest[] sendWorkRequests;
-    private ReceiveWorkRequest[] receiveWorkRequests;
-
-    private NativeLinkedList<SendWorkRequest> sendList = new NativeLinkedList<>();
-    private NativeLinkedList<ReceiveWorkRequest> receiveList = new NativeLinkedList<>();
-
-    private CompletionQueue.WorkCompletionArray completionArray;
-
     @CommandLine.Option(
             names = "--server",
             description = "Runs this instance in server mode.")
@@ -59,11 +50,6 @@ public class MessagingTest implements Callable<Void> {
     private InetSocketAddress serverAddress;
 
     @CommandLine.Option(
-            names = {"-a", "--bind"},
-            description = "The server's bind address.")
-    private InetSocketAddress bindAddress = new InetSocketAddress(DEFAULT_SERVER_PORT);
-
-    @CommandLine.Option(
             names = {"-q", "--queue-size"},
             description = "The queue size to be used for the queue pair and completion queue.")
     private int queueSize = DEFAULT_QUEUE_SIZE;
@@ -72,6 +58,15 @@ public class MessagingTest implements Callable<Void> {
             names = {"-n", "--count"},
             description = "The amount of messages to be sent/received.")
     private int messageCount = DEFAULT_MESSAGE_COUNT;
+
+    private ScatterGatherElement scatterGatherElement;
+    private SendWorkRequest[] sendWorkRequests;
+    private ReceiveWorkRequest[] receiveWorkRequests;
+
+    private NativeLinkedList<SendWorkRequest> sendList = new NativeLinkedList<>();
+    private NativeLinkedList<ReceiveWorkRequest> receiveList = new NativeLinkedList<>();
+
+    private CompletionQueue.WorkCompletionArray completionArray;
 
     private DefaultContext context;
     private Result result;

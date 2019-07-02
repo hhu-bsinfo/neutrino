@@ -36,13 +36,6 @@ public class RdmaTest implements Callable<Void> {
         READ, WRITE
     }
 
-    private ScatterGatherElement scatterGatherElement;
-    private SendWorkRequest[] sendWorkRequests;
-
-    private NativeLinkedList<SendWorkRequest> sendList = new NativeLinkedList<>();
-
-    private CompletionQueue.WorkCompletionArray completionArray;
-
     @CommandLine.Option(
             names = "--server",
             description = "Runs this instance in server mode.")
@@ -64,11 +57,6 @@ public class RdmaTest implements Callable<Void> {
     private InetSocketAddress serverAddress;
 
     @CommandLine.Option(
-            names = {"-a", "--bind"},
-            description = "The server's bind address.")
-    private InetSocketAddress bindAddress = new InetSocketAddress(DEFAULT_SERVER_PORT);
-
-    @CommandLine.Option(
             names = {"-q", "--queue-size"},
             description = "The queue size to be used for the queue pair and completion queue.")
     private int queueSize = DEFAULT_QUEUE_SIZE;
@@ -82,6 +70,13 @@ public class RdmaTest implements Callable<Void> {
             names = {"-m", "--mode"},
             description = "Set the rdma operation mode (read/write).")
     private Mode mode = Mode.WRITE;
+
+    private ScatterGatherElement scatterGatherElement;
+    private SendWorkRequest[] sendWorkRequests;
+
+    private NativeLinkedList<SendWorkRequest> sendList = new NativeLinkedList<>();
+
+    private CompletionQueue.WorkCompletionArray completionArray;
 
     private RdmaContext context;
     private Result result;

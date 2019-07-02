@@ -15,12 +15,12 @@ public class RdmaContext extends DefaultContext {
 
     private BufferInformation remoteBufferInfo;
 
-    public RdmaContext(int deviceNumber, int queueSize, long messageSize) throws IOException {
-        super(deviceNumber, queueSize, messageSize);
+    public RdmaContext(int deviceNumber, int queueSize, long bufferSize) throws IOException {
+        super(deviceNumber, queueSize, bufferSize);
     }
 
     public RdmaContext(int queueSize, long bufferSize) throws IOException {
-        super(queueSize, bufferSize);
+        this(0, queueSize, bufferSize);
     }
 
     @Override
