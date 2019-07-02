@@ -39,7 +39,7 @@ public class MessagingTest implements Callable<Void> {
     private int port = DEFAULT_SERVER_PORT;
 
     @CommandLine.Option(
-            names = "-d, --device",
+            names = { "-d", "--device" },
             description = "Sets the InfiniBand device to be used.")
     private int device = 0;
 

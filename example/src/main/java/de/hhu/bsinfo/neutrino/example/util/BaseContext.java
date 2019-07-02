@@ -18,7 +18,7 @@ class BaseContext implements AutoCloseable {
         int numDevices = Context.getDeviceCount();
 
         if(numDevices <= deviceNumber) {
-            throw new InvalidParameterException("Invalid device number " + deviceNumber + ". Only " + numDevices + " InfiniBand devices were found in your system");
+            throw new InvalidParameterException("Invalid device number '" + deviceNumber + "'. Only " + numDevices + " InfiniBand " + (numDevices == 1 ? "device was" : "devices were") + " found in your system");
         }
 
         context = Context.openDevice(deviceNumber);
