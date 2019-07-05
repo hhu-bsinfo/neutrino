@@ -1,6 +1,5 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.example.util.WindowContext;
 import de.hhu.bsinfo.neutrino.verbs.*;
 import org.slf4j.Logger;
@@ -15,7 +14,7 @@ import java.util.concurrent.Callable;
 
 @CommandLine.Command(
         name = "window-test",
-        description = "Starts a simple test to show memory window capabilities of modern InfiniBand cards.%n",
+        description = "Starts a simple test to show the memory window capabilities of modern InfiniBand cards.%n",
         showDefaultValues = true,
         separator = " ")
 public class WindowTest implements Callable<Void> {

@@ -13,9 +13,9 @@ import java.util.concurrent.Callable;
         description = "Scans the system for InfiniBand devices using the extended verbs API.%n",
         showDefaultValues = true,
         separator = " ")
-public class DeviceInfoExtended implements Callable<Void> {
+public class ExtendedDeviceInfo implements Callable<Void> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DeviceInfoExtended.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExtendedDeviceInfo.class);
 
     @Override
     public Void call() throws Exception {

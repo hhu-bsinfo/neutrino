@@ -13,7 +13,7 @@ import java.net.Socket;
 
 public class WindowContext extends RdmaContext {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultContext.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionContext.class);
 
     private final long windowSize;
 

@@ -2,6 +2,7 @@ package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
 import de.hhu.bsinfo.neutrino.example.util.ConnectionContext;
+import de.hhu.bsinfo.neutrino.example.util.ExtendedConnectionContext;
 import de.hhu.bsinfo.neutrino.example.util.Result;
 import de.hhu.bsinfo.neutrino.verbs.*;
 import org.slf4j.Logger;
@@ -15,13 +16,13 @@ import java.net.Socket;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(
-        name = "msg-test",
-        description = "Starts a simple InfiniBand messaging test, using the neutrino core.%n",
+        name = "msg-test-ext",
+        description = "Starts a simple InfiniBand messaging test, using the neutrino core with extended verbs.%n",
         showDefaultValues = true,
         separator = " ")
-public class MessagingTest implements Callable<Void> {
+public class ExtendedMessagingTest implements Callable<Void> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MessagingTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExtendedMessagingTest.class);
 
     private static final int DEFAULT_SERVER_PORT = 2998;
     private static final int DEFAULT_QUEUE_SIZE = 100;
@@ -64,15 +65,13 @@ public class MessagingTest implements Callable<Void> {
     private int messageCount = DEFAULT_MESSAGE_COUNT;
 
     private ScatterGatherElement scatterGatherElement;
-    private SendWorkRequest[] sendWorkRequests;
     private ReceiveWorkRequest[] receiveWorkRequests;
 
-    private NativeLinkedList<SendWorkRequest> sendList = new NativeLinkedList<>();
     private NativeLinkedList<ReceiveWorkRequest> receiveList = new NativeLinkedList<>();
 
-    private CompletionQueue.WorkCompletionArray completionArray;
+    private ExtendedCompletionQueue.PollAttributes pollAttributes;
 
-    private ConnectionContext context;
+    private ExtendedConnectionContext context;
     private Result result;
 
     @Override
@@ -82,23 +81,13 @@ public class MessagingTest implements Callable<Void> {
             return null;
         }
 
-        completionArray = new CompletionQueue.WorkCompletionArray(queueSize);
+        pollAttributes = new ExtendedCompletionQueue.PollAttributes();
 
-        context = new ConnectionContext(device, queueSize, messageSize);
+        context = new ExtendedConnectionContext(device, queueSize, messageSize);
 
         scatterGatherElement = new ScatterGatherElement(context.getLocalBuffer().getHandle(), (int) context.getLocalBuffer().getNativeSize(), context.getLocalBuffer().getLocalKey());
 
-        sendWorkRequests = new SendWorkRequest[queueSize];
         receiveWorkRequests = new ReceiveWorkRequest[queueSize];
-
-        for(int i = 0; i < queueSize; i++) {
-            sendWorkRequests[i] = new SendWorkRequest(config -> {
-                config.setOpCode(SendWorkRequest.OpCode.SEND);
-                config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
-                config.setListLength(1);
-                config.setListHandle(scatterGatherElement.getHandle());
-            });
-        }
 
         for(int i = 0; i < queueSize; i++) {
             receiveWorkRequests[i] = new ReceiveWorkRequest(config -> {
@@ -201,13 +190,16 @@ public class MessagingTest implements Callable<Void> {
             return;
         }
 
-        sendList.clear();
+        var queuePair = context.getQueuePair();
+        queuePair.startWorkRequest();
 
         for(int i = 0; i < amount; i++) {
-            sendList.add(sendWorkRequests[i]);
+            queuePair.setWorkRequestFlags(SendWorkRequest.SendFlag.SIGNALED);
+            queuePair.send();
+            queuePair.setScatterGatherElement(scatterGatherElement);
         }
 
-        context.getQueuePair().postSend(sendList);
+        queuePair.completeWorkRequest();
     }
 
     private void receive(int amount) {
@@ -221,23 +213,26 @@ public class MessagingTest implements Callable<Void> {
             receiveList.add(receiveWorkRequests[i]);
         }
 
-        context.getQueuePair().postReceive(receiveList);
+        context.getQueuePair().baseQueuePair.postReceive(receiveList);
     }
 
     private int poll() {
         var completionQueue = context.getCompletionQueue();
+        int count = 0;
 
-        completionQueue.poll(completionArray);
+        completionQueue.startPolling(pollAttributes);
 
-        for(int i = 0; i < completionArray.getLength(); i++) {
-            WorkCompletion completion = completionArray.get(i);
-
-            if(completion.getStatus() != WorkCompletion.Status.SUCCESS) {
-                LOGGER.error("Work completion failed with error [{}]: {}", completion.getStatus(), completion.getStatusMessage());
+        do {
+            if(completionQueue.getStatus() != WorkCompletion.Status.SUCCESS) {
+                LOGGER.error("Work completion failed with error [{}]: {}", completionQueue.getStatus(), completionQueue.getStatusMessage());
                 System.exit(1);
             }
-        }
 
-        return completionArray.getLength();
+            count++;
+        } while(completionQueue.pollNext());
+
+        completionQueue.stopPolling();
+
+        return count;
     }
 }

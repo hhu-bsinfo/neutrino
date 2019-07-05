@@ -5,7 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.security.InvalidParameterException;
+import java.util.StringJoiner;
 
 class BaseContext implements AutoCloseable {
 
@@ -48,5 +50,45 @@ class BaseContext implements AutoCloseable {
     public void close() {
         protectionDomain.close();
         context.close();
+    }
+
+    public static final class ConnectionInformation {
+
+        private final byte portNumber;
+        private final short localId;
+        private final int queuePairNumber;
+
+        ConnectionInformation(byte portNumber, short localId, int queuePairNumber) {
+            this.portNumber = portNumber;
+            this.localId = localId;
+            this.queuePairNumber = queuePairNumber;
+        }
+
+        ConnectionInformation(ByteBuffer buffer) {
+            portNumber = buffer.get();
+            localId = buffer.getShort();
+            queuePairNumber = buffer.getInt();
+        }
+
+        public byte getPortNumber() {
+            return portNumber;
+        }
+
+        public short getLocalId() {
+            return localId;
+        }
+
+        public int getQueuePairNumber() {
+            return queuePairNumber;
+        }
+
+        @Override
+        public String toString() {
+            return new StringJoiner(", ", ConnectionInformation.class.getSimpleName() + "[", "]")
+                    .add("portNumber=" + portNumber)
+                    .add("localId=" + localId)
+                    .add("queuePairNumber=" + queuePairNumber)
+                    .toString();
+        }
     }
 }

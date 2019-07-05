@@ -1,6 +1,5 @@
 package de.hhu.bsinfo.neutrino.example.util;
 
-import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,7 +8,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.StringJoiner;
 
-public class RdmaContext extends DefaultContext {
+public class RdmaContext extends ConnectionContext {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RdmaContext.class);
 

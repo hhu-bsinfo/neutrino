@@ -8,21 +8,20 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.StringJoiner;
 
-public class DefaultContext extends BaseContext {
+public class ExtendedConnectionContext extends BaseContext {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultContext.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionContext.class);
 
     private final RegisteredBuffer localBuffer;
-    private final CompletionQueue completionQueue;
+    private final ExtendedCompletionQueue completionQueue;
     private final CompletionChannel completionChannel;
 
     private final QueuePair queuePair;
 
     private final PortAttributes port;
 
-    public DefaultContext(int deviceNumber, int queueSize, long messageSize) throws IOException {
+    public ExtendedConnectionContext(int deviceNumber, int queueSize, long messageSize, ExtendedCompletionQueue.WorkCompletionCapability... workCompletionCapabilities) throws IOException {
         super(deviceNumber);
 
         port = getContext().queryPort(1);
@@ -44,15 +43,27 @@ public class DefaultContext extends BaseContext {
 
         LOGGER.info("Created completion channel");
 
-        completionQueue = getContext().createCompletionQueue(queueSize, completionChannel);
+        completionQueue = getContext().createExtendedCompletionQueue(new ExtendedCompletionQueue.InitialAttributes.Builder(queueSize)
+                .withCompletionChannel(completionChannel).withWorkCompletionCapabilities(workCompletionCapabilities).build());
         if(completionQueue == null) {
             throw new IOException("Unable to create completion queue");
         }
 
         LOGGER.info("Created completion queue");
 
-        queuePair = getProtectionDomain().createQueuePair(new QueuePair.InitialAttributes.Builder(
-                QueuePair.Type.RC, completionQueue, completionQueue, queueSize, queueSize, 1, 1).build());
+        queuePair = getContext().createExtendedQueuePair(new ExtendedQueuePair.InitialAttributes.Builder(QueuePair.Type.RC, getProtectionDomain())
+                .withSendCompletionQueue(completionQueue.toCompletionQueue())
+                .withReceiveCompletionQueue(completionQueue.toCompletionQueue())
+                .withMaxSendWorkRequests(queueSize)
+                .withMaxReceiveWorkRequests(queueSize)
+                .withMaxSendScatterGatherElements(1)
+                .withMaxReceiveScatterGatherElements(1)
+                .withSendOperationFlags(ExtendedQueuePair.SendOperationFlag.WITH_SEND,
+                        ExtendedQueuePair.SendOperationFlag.WITH_SEND_WITH_IMM,
+                        ExtendedQueuePair.SendOperationFlag.WITH_RDMA_READ,
+                        ExtendedQueuePair.SendOperationFlag.WITH_RDMA_WRITE,
+                        ExtendedQueuePair.SendOperationFlag.WITH_BIND_MW)
+                .build());
         if(queuePair == null) {
             throw new IOException("Unable to create queue pair");
         }
@@ -102,7 +113,7 @@ public class DefaultContext extends BaseContext {
         return localBuffer;
     }
 
-    public CompletionQueue getCompletionQueue() {
+    public ExtendedCompletionQueue getCompletionQueue() {
         return completionQueue;
     }
 
@@ -110,8 +121,8 @@ public class DefaultContext extends BaseContext {
         return completionChannel;
     }
 
-    public QueuePair getQueuePair() {
-        return queuePair;
+    public ExtendedQueuePair getQueuePair() {
+        return queuePair.toExtendedQueuePair();
     }
 
     @Override
@@ -123,45 +134,5 @@ public class DefaultContext extends BaseContext {
         super.close();
 
         LOGGER.info("Closed context");
-    }
-
-    public static final class ConnectionInformation {
-
-        private final byte portNumber;
-        private final short localId;
-        private final int queuePairNumber;
-
-        ConnectionInformation(byte portNumber, short localId, int queuePairNumber) {
-            this.portNumber = portNumber;
-            this.localId = localId;
-            this.queuePairNumber = queuePairNumber;
-        }
-
-        ConnectionInformation(ByteBuffer buffer) {
-            portNumber = buffer.get();
-            localId = buffer.getShort();
-            queuePairNumber = buffer.getInt();
-        }
-
-        public byte getPortNumber() {
-            return portNumber;
-        }
-
-        public short getLocalId() {
-            return localId;
-        }
-
-        public int getQueuePairNumber() {
-            return queuePairNumber;
-        }
-
-        @Override
-        public String toString() {
-            return new StringJoiner(", ", ConnectionInformation.class.getSimpleName() + "[", "]")
-                    .add("portNumber=" + portNumber)
-                    .add("localId=" + localId)
-                    .add("queuePairNumber=" + queuePairNumber)
-                    .toString();
-        }
     }
 }
