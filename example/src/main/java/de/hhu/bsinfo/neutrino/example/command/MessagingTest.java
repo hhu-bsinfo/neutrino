@@ -233,7 +233,7 @@ public class MessagingTest implements Callable<Void> {
             WorkCompletion completion = completionArray.get(i);
 
             if(completion.getStatus() != WorkCompletion.Status.SUCCESS) {
-                LOGGER.error("Work completion failed with error [{}]", completion.getStatus());
+                LOGGER.error("Work completion failed with error [{}]: {}", completion.getStatus(), completion.getStatusMessage());
                 System.exit(1);
             }
         }
