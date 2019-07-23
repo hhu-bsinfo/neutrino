@@ -10,8 +10,12 @@ addons:
 
 stages:
   - name: build
+  - name: snapshot
+    if: branch = master AND type = push
 
 jobs:
   include:
     - stage: build
-      script: ./gradlew jar
+      script: ./gradlew build
+    - stage: snapshot
+      script: ./gradlew -Dbintray.user=${BINTRAY_USER} -Dbintray.key=${BINTRAY_KEY} -Dbuild.number=${TRAVIS_BUILD_NUMBER} artifactoryPublish
