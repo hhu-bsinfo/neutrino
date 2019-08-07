@@ -1,7 +1,7 @@
 # neutrino
 
 <p align="center">
-  <img src="logo.svg">
+  <img src="logo.svg" height=175>
 </p>
 
 <p align="center">
