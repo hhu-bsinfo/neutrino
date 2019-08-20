@@ -1,3 +1,1 @@
-include ':neutrino', ':jni', ':example', ':codegen', ':api'
-include 'benchmark'
-
+include ':neutrino', ':jni', ':example', ':codegen', ':api', ':benchmark'

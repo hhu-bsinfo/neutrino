@@ -3,6 +3,7 @@ package de.hhu.bsinfo.neutrino.api;
 import de.hhu.bsinfo.neutrino.api.util.Expose;
 import de.hhu.bsinfo.neutrino.api.util.InternalAccessException;
 import de.hhu.bsinfo.neutrino.api.util.service.ServiceManager;
+import de.hhu.bsinfo.neutrino.generated.BuildConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;

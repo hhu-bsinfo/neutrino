@@ -17,7 +17,7 @@ buildscript {
 }
 
 subprojects {
-    buildDir = rootProject.file("build/${it.name}")
+//    buildDir = rootProject.file("build/${it.name}")
 
     repositories {
         mavenCentral()
