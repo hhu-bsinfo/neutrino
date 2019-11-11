@@ -17,13 +17,18 @@ public class StructGenerator {
 
     public static void main(String... args) throws Exception {
 
-        String content = Files.readString(Paths.get("/usr/include/infiniband/verbs.h"));
+        String content = Files.readString(Paths.get("/usr/include/infiniband/verbs.h"))
+                + Files.readString(Paths.get("/usr/include/infiniband/mlx5dv.h"));
 
         var structs = getStructs(content);
 
         structs.forEach((key, value) -> {
-            System.out.println(generateClass(key, value));
-            System.out.println(NativeMapGenerator.generate(key, value));
+            try {
+                System.out.println(generateClass(key, value));
+                System.out.println(NativeMapGenerator.generate(key, value));
+            } catch (Exception e) {
+                System.err.println("Unable to generate code for '" + key + "'");
+            }
         });
     }
 

@@ -1,5 +1,6 @@
 #include <neutrino/ReflectionUtility.hpp>
 #include <infiniband/verbs.h>
+#include <infiniband/mlx5dv.h>
 
 #define GET_MEMBER_INFO(structName, memberName) ReflectionUtility::MemberInfo{#memberName, offsetof(struct structName, memberName)}
 
@@ -872,6 +873,30 @@ ReflectionUtility::StructInfo ibv_qp_open_attr_struct_info {
         ibv_qp_open_attr_member_infos
 };
 
+ReflectionUtility::MemberInfo mlx5dv_qp_init_attr_member_infos[] = {
+	GET_MEMBER_INFO(mlx5dv_qp_init_attr, comp_mask),
+	GET_MEMBER_INFO(mlx5dv_qp_init_attr, create_flags),
+	GET_MEMBER_INFO(mlx5dv_qp_init_attr, dc_init_attr),
+	GET_MEMBER_INFO(mlx5dv_qp_init_attr, send_ops_flags)
+};
+
+ReflectionUtility::StructInfo mlx5dv_qp_init_attr_struct_info {
+	sizeof(mlx5dv_qp_init_attr),
+	sizeof(mlx5dv_qp_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+	mlx5dv_qp_init_attr_member_infos
+};
+
+ReflectionUtility::MemberInfo mlx5dv_dc_init_attr_member_infos[] = {
+	GET_MEMBER_INFO(mlx5dv_dc_init_attr, dc_type),
+	GET_MEMBER_INFO(mlx5dv_dc_init_attr, dct_access_key)
+};
+
+ReflectionUtility::StructInfo mlx5dv_dc_init_attr_struct_info {
+	sizeof(mlx5dv_dc_init_attr),
+	sizeof(mlx5dv_dc_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+	mlx5dv_dc_init_attr_member_infos
+};
+
 std::unordered_map<std::string, ReflectionUtility::StructInfo*> ReflectionUtility::structInfos {
     {"ibv_device_attr", &ibv_device_attr_struct_info},
     {"ibv_port_attr", &ibv_port_attr_struct_info},
@@ -928,6 +953,8 @@ std::unordered_map<std::string, ReflectionUtility::StructInfo*> ReflectionUtilit
     {"ibv_rx_hash_conf", &ibv_rx_hash_conf_struct_info},
     {"ibv_data_buf", &ibv_data_buf_struct_info},
     {"ibv_open_qp_attr", &ibv_qp_open_attr_struct_info},
+    {"mlx5dv_qp_init_attr", &mlx5dv_qp_init_attr_struct_info},
+    {"mlx5dv_dc_init_attr", &mlx5dv_dc_init_attr_struct_info}
 };
 
 ReflectionUtility::StructInfo *ReflectionUtility::getStructInfo(const std::string& identifier) {

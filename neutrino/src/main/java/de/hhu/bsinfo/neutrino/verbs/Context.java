@@ -357,4 +357,18 @@ public class Context implements NativeObject, AutoCloseable {
     public boolean mlx5IsSupported() {
         return Verbs.mlx5IsSupported(handle);
     }
+
+    public QueuePair mlx5CreateQueuePair(ExtendedQueuePair.InitialAttributes attributes, Mlx5ExtendedQueuePair.InitialAttributes mlx5Attributes) {
+        var result = (Result) Verbs.getPoolableInstance(Result.class);
+
+        Verbs.mlx5CreateQueuePair(getHandle(), attributes.getHandle(), mlx5Attributes.getHandle(), result.getHandle());
+        if (result.isError()) {
+            LOGGER.error("Creating mlx5 extended queue pair failed with error [{}]: {}", result.getStatus(), result.getStatusMessage());
+        }
+
+        var queuePair = result.getAndRelease(QueuePair::new);
+        NativeObjectRegistry.registerObject(queuePair);
+
+        return queuePair;
+    }
 }

@@ -621,7 +621,7 @@ public class ExtendedQueuePair extends Struct {
             }
 
             public InitialAttributes build() {
-                var ret = new ExtendedQueuePair.InitialAttributes();
+                var ret = new InitialAttributes();
 
                 ret.setType(type);
                 ret.setUserContext(userContext);

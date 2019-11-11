@@ -416,11 +416,7 @@ public class QueuePair extends Struct implements AutoCloseable {
 
         public final Capabilities capabilities = valueField("cap", Capabilities::new);
 
-        public InitialAttributes() {}
-
-        public InitialAttributes(final Consumer<InitialAttributes> configurator) {
-            configurator.accept(this);
-        }
+        InitialAttributes() {}
 
         public long getUserContext() {
             return userContext.get();
