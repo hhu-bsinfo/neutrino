@@ -71,7 +71,7 @@ public class ExtendedConnectionContext extends BaseContext {
         LOGGER.info("Created queue pair");
 
         if(!queuePair.modify(QueuePair.Attributes.Builder.buildInitAttributesRC((short) 0, (byte) 1, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE))) {
-            throw new IOException(("Unable to move queue pair into INIT state"));
+            throw new IOException("Unable to move queue pair into INIT state");
         }
 
         LOGGER.info("Moved queue pair into INIT state");

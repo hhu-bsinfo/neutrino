@@ -160,6 +160,9 @@ public final class Verbs {
     static native void setScatterGatherElement(long extendedQueuePairHandle, int localKey, long address, int length);
     static native void setScatterGatherElementList(long extendedQueuePairHandle, int scatterGatherElementCount, long scatterGatherElementListHandle);
 
+    // Direct (vendor specific) verbs
+    static native boolean mlx5IsSupported(long contextHandle);
+
     // Dummy methods for benchmarking JNI overhead
     public static native void benchmarkDummyMethod1(long resultHandle);
     public static native long benchmarkDummyMethod2();

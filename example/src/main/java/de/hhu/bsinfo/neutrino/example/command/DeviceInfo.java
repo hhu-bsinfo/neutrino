@@ -41,6 +41,7 @@ public class DeviceInfo implements Callable<Void> {
             }
 
             LOGGER.info("Device {}: {}\n{}", i, context.getDeviceName(), device);
+            LOGGER.info("Mlx5 direct verbs support: {}", context.mlx5IsSupported());
 
             for(int j = 0; j < device.getPhysicalPortCount(); j++) {
                 var port = context.queryPort(j + 1);

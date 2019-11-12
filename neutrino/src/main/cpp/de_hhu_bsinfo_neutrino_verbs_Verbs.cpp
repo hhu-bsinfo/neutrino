@@ -1,9 +1,8 @@
 #include <de_hhu_bsinfo_neutrino_verbs_Verbs.h>
 #include <infiniband/verbs.h>
-#include <stddef.h>
-#include <vector>
-#include <neutrino/NativeCall.hpp>
+#include <infiniband/mlx5dv.h>
 #include <fcntl.h>
+#include <neutrino/NativeCall.hpp>
 
 JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_verbs_Verbs_getOperationFlagCreate(JNIEnv *env, jclass clazz) {
     return O_CREAT;
@@ -811,6 +810,12 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_neutrino_verbs_Verbs_setScatterGatherE
     auto scatterGatherElementList = NativeCall::castHandle<ibv_sge>(scatterGatherElementListHandle);
 
     ibv_wr_set_sge_list(extendedQueuePair, scatterGatherElementCount, scatterGatherElementList);
+}
+
+JNIEXPORT jboolean JNICALL Java_de_hhu_bsinfo_neutrino_verbs_Verbs_mlx5IsSupported (JNIEnv *env, jclass clazz, jlong contextHandle) {
+    auto context = NativeCall::castHandle<ibv_context>(contextHandle);
+
+    return mlx5dv_is_supported(context->device);
 }
 
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_neutrino_verbs_Verbs_benchmarkDummyMethod1 (JNIEnv *env, jclass clazz, jlong resultHandle) {

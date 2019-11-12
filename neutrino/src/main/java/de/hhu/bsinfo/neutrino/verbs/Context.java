@@ -11,6 +11,8 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+
 public class Context implements NativeObject, AutoCloseable {
 
     static {
@@ -350,5 +352,9 @@ public class Context implements NativeObject, AutoCloseable {
         NativeObjectRegistry.registerObject(queuePair);
 
         return queuePair;
+    }
+
+    public boolean mlx5IsSupported() {
+        return Verbs.mlx5IsSupported(handle);
     }
 }
