@@ -136,7 +136,7 @@ public class Mlx5ExtendedQueuePair extends Struct {
     @LinkNative("mlx5dv_dc_init_attr")
     public static final class DcInitialAttributes extends Struct {
 
-        private final NativeEnum<DcType> dcType = enumField("DcType", DcType.CONVERTER);
+        private final NativeEnum<DcType> dcType = enumField("dc_type", DcType.CONVERTER);
         private final NativeLong accessKey = longField("dct_access_key");
 
         DcInitialAttributes(final long handle) {
