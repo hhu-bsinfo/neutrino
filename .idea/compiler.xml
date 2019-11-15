@@ -5,17 +5,8 @@
       <profile default="true" name="Default" enabled="true" />
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="api_main" target="11" />
-      <module name="api_test" target="11" />
-      <module name="benchmark_jmh" target="11" />
-      <module name="benchmark_main" target="11" />
-      <module name="benchmark_test" target="11" />
       <module name="bsinfo-neutrino-neutrino_main" target="11" />
       <module name="bsinfo-neutrino-neutrino_test" target="11" />
-      <module name="codegen_main" target="11" />
-      <module name="codegen_test" target="11" />
-      <module name="example_main" target="11" />
-      <module name="example_test" target="11" />
       <module name="neutrino-benchmark_jmh" target="11" />
       <module name="neutrino-benchmark_main" target="11" />
       <module name="neutrino-benchmark_test" target="11" />
@@ -23,8 +14,6 @@
       <module name="neutrino-codegen_test" target="11" />
       <module name="neutrino-example_main" target="11" />
       <module name="neutrino-example_test" target="11" />
-      <module name="neutrino-neutrino_main" target="11" />
-      <module name="neutrino-neutrino_test" target="11" />
       <module name="neutrino-rsocket-transport-neutrino_main" target="11" />
       <module name="neutrino-rsocket-transport-neutrino_test" target="11" />
       <module name="neutrino.benchmark.jmh" target="12" />
@@ -51,8 +40,6 @@
       <module name="rsocket-transport-local_test" target="11" />
       <module name="rsocket-transport-netty_main" target="11" />
       <module name="rsocket-transport-netty_test" target="11" />
-      <module name="rsocket-transport-neutrino_main" target="11" />
-      <module name="rsocket-transport-neutrino_test" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>

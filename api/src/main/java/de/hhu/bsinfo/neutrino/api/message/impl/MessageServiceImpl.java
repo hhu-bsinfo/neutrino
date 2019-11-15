@@ -5,12 +5,10 @@ import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
 import de.hhu.bsinfo.neutrino.api.message.MessageService;
 import de.hhu.bsinfo.neutrino.api.util.NullConfig;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
-import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredByteBuf;
 import de.hhu.bsinfo.neutrino.verbs.*;
 import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest.OpCode;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -19,7 +17,6 @@ import reactor.core.scheduler.Schedulers;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 public class MessageServiceImpl extends Service<NullConfig> implements MessageService {
@@ -44,11 +41,13 @@ public class MessageServiceImpl extends Service<NullConfig> implements MessageSe
         var completionQueue = connection.getCompletionQueue();
         return Flux.from(frames)
                 .doOnNext(source -> {
-                    log.info("Sending {} bytes", source.readableBytes());
-                    var target = sendBuffer.getBuffer();
                     var messageSize = source.readableBytes();
-                    target.setBytes(0, source);
-                    var element = new ScatterGatherElement(target.memoryAddress(), messageSize, sendBuffer.getLocalKey());
+                    log.debug("Sending {} bytes", messageSize);
+                    var target = sendBuffer.getBuffer();
+                    target.writeBytes(source);
+                    var memoryAddress = target.memoryAddress() + target.readerIndex();
+                    target.readerIndex(target.writerIndex());
+                    var element = new ScatterGatherElement(memoryAddress, messageSize, sendBuffer.getLocalKey());
                     queuePair.postSend(new SendWorkRequest(configurator -> {
                         configurator.setOpCode(OpCode.SEND);
                         configurator.setListHandle(element.getHandle());
@@ -76,9 +75,12 @@ public class MessageServiceImpl extends Service<NullConfig> implements MessageSe
                 for(int i = 0; i < completionArray.getLength(); i++) {
                     var workCompletion = completionArray.get(i);
                     if (workCompletion.getStatus() == WorkCompletion.Status.SUCCESS) {
-                        log.info("Received {} bytes", workCompletion.getByteCount());
-                        var buffer = receiveBuffer.getBuffer().slice(0, workCompletion.getByteCount());
-                        buffer.retain();
+                        var bytesReceived = workCompletion.getByteCount();
+                        log.debug("Received {} bytes", bytesReceived);
+                        var source = receiveBuffer.getBuffer();
+                        source.writerIndex(source.writerIndex() + bytesReceived);
+                        var buffer = source.readRetainedSlice(bytesReceived);
+                        log.debug("{}", buffer);
                         emitter.next(buffer);
                     } else {
                         emitter.error(new IOException("Request failed"));
@@ -90,9 +92,9 @@ public class MessageServiceImpl extends Service<NullConfig> implements MessageSe
         .publishOn(Schedulers.parallel());
     }
 
-    private void fillUp(QueuePair queuePair, RegisteredByteBuf receiveBuffer) {
+    private static void fillUp(QueuePair queuePair, RegisteredByteBuf receiveBuffer) {
         var buffer = receiveBuffer.getBuffer();
-        var element = new ScatterGatherElement(buffer.memoryAddress(), buffer.capacity(), receiveBuffer.getLocalKey());
+        var element = new ScatterGatherElement(buffer.memoryAddress() + buffer.writerIndex(), buffer.writableBytes(), receiveBuffer.getLocalKey());
 
         queuePair.postReceive(new ReceiveWorkRequest(config -> {
             config.setListHandle(element.getHandle());

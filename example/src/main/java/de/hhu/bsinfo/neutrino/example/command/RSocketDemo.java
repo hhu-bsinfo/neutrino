@@ -11,6 +11,7 @@ import io.rsocket.transport.neutrino.client.InfinibandClientTransport;
 import io.rsocket.transport.neutrino.server.InfinibandServerTransport;
 import io.rsocket.util.DefaultPayload;
 import lombok.extern.slf4j.Slf4j;
+import org.reactivestreams.Publisher;
 import picocli.CommandLine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,6 +36,7 @@ public class RSocketDemo implements Runnable {
 
     private static final byte PORT_NUMBER = 1;
     private static final int DEFAULT_SERVER_PORT = 2998;
+    private static final Duration SEND_INTERVAL = Duration.ofMillis(200);
 
     @CommandLine.Option(
             names = "--server",
@@ -77,19 +79,17 @@ public class RSocketDemo implements Runnable {
             var transport = InfinibandClientTransport.create(connection, remoteAddress, neutrino);
             var rsocket = RSocketFactory.connect()
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
-                    .acceptor(rSocket -> new AbstractRSocket() {
-                        @Override
-                        public Flux<Payload> requestStream(Payload payload) {
-                            return Flux.interval(Duration.ofSeconds(1))
-                                    .map(aLong -> DefaultPayload.create("Hello Server" + aLong));
-                        }
-                    })
+                    .acceptor(rSocket -> new DemoSocket())
                     .transport(transport)
                     .start()
                     .block();
 
-            log.info("Connection established");
-            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(600));
+            log.info("Starting stream");
+            Flux.interval(SEND_INTERVAL)
+                .map(second -> DefaultPayload.create("Hello Infiniworld! (" + second + ")"))
+                .compose(rsocket::requestChannel)
+                .doOnNext(payload -> log.info("Received echo message \"{}\"", payload.getDataUtf8()))
+                .blockLast();
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
@@ -105,21 +105,12 @@ public class RSocketDemo implements Runnable {
             var transport = InfinibandServerTransport.create(connection, remoteAddress, neutrino);
             var rsocket = RSocketFactory.receive()
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
-                    .acceptor((setup, reactiveSocket) -> {
-                        reactiveSocket
-                                .requestStream(DefaultPayload.create("Hello Client"))
-                                .map(Payload::getDataUtf8)
-                                .log()
-                                .subscribe();
-
-                        return Mono.just(new AbstractRSocket() {});
-                    })
+                    .acceptor((setup, reactiveSocket) -> Mono.just(new DemoSocket()))
                     .transport(transport)
                     .start()
                     .block();
 
-            log.info("Connection established");
-            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(600));
+            rsocket.onClose().block();
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
@@ -140,6 +131,39 @@ public class RSocketDemo implements Runnable {
             return (QueuePairAddress) in.readObject();
         } catch (IOException | ClassNotFoundException e) {
             return null;
+        }
+    }
+
+    private static final class DemoSocket extends AbstractRSocket {
+
+        @Override
+        public Mono<Void> fireAndForget(Payload payload) {
+            var message = payload.getDataUtf8();
+            log.info("[fireAndForget] received message \"{}\"", message);
+            return Mono.empty();
+        }
+
+        @Override
+        public Mono<Payload> requestResponse(Payload payload) {
+            var message = payload.getDataUtf8();
+            log.info("[requestResponse] received message \"{}\"", message);
+            return Mono.just(DefaultPayload.create(message));
+        }
+
+        @Override
+        public Flux<Payload> requestStream(Payload payload) {
+            var message = payload.getDataUtf8();
+            log.info("[requestStream] received message \"{}\"", message);
+            return Flux.interval(Duration.ofSeconds(1))
+                    .map(it -> DefaultPayload.create(message));
+        }
+
+        @Override
+        public Flux<Payload> requestChannel(Publisher<Payload> payloads) {
+            return Flux.from(payloads)
+                    .map(Payload::getDataUtf8)
+                    .doOnNext(message -> log.info("[requestChannel] received message \"{}\"", message))
+                    .map(DefaultPayload::create);
         }
     }
 }
