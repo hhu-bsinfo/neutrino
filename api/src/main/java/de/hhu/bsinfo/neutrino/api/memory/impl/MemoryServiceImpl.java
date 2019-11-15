@@ -56,7 +56,7 @@ public class MemoryServiceImpl extends Service<NullConfig> implements MemoryServ
     }
 
     private void execute(final SendWorkRequest.OpCode operation, long index, RemoteHandle remoteHandle, RegisteredBuffer local, long offset, long length) {
-        var queuePair = connectionService.getQueuePair(remoteHandle.getConnection());
+        var queuePair = remoteHandle.getConnection().getQueuePair();
 
         var elements = local.split(offset, length);
         var request = new SendWorkRequest.RdmaBuilder(operation, elements,

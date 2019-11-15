@@ -59,13 +59,18 @@ repositories {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation project(':neutrino')
     implementation project(':api')
-    
+    implementation project(':rsocket-transport-neutrino')
+    implementation 'io.rsocket:rsocket-core:1.0.0-RC5'
+    implementation 'io.netty:netty-buffer:4.1.43.Final'
+
     implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.11.2'
     implementation 'info.picocli:picocli:3.9.6'
 
-
     testImplementation 'com.greghaskins:spectrum:1.2.0'
     testImplementation 'org.assertj:assertj-core:3.12.2'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.10'
+    annotationProcessor 'org.projectlombok:lombok:1.18.10'
 }

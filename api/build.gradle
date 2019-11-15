@@ -20,16 +20,27 @@ repositories {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    
-    implementation project(':neutrino')
+
+    // Public libraries
+    api project(':neutrino')
+    api 'io.projectreactor:reactor-core:3.3.0.RELEASE'
+
+    // Utilities
     implementation 'javax.inject:javax.inject:1'
     implementation 'org.jetbrains:annotations:17.0.0'
     implementation 'org.yaml:snakeyaml:1.24'
 
-    api "io.reactivex.rxjava2:rxjava:2.2.9"
-
-    testImplementation 'com.greghaskins:spectrum:1.2.0'
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.5.2'
     testImplementation 'org.assertj:assertj-core:3.12.2'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.10'
+    annotationProcessor 'org.projectlombok:lombok:1.18.10'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 buildConfig {

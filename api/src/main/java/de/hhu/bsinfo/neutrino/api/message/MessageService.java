@@ -1,16 +1,16 @@
 package de.hhu.bsinfo.neutrino.api.message;
 
-import de.hhu.bsinfo.neutrino.api.connection.impl.Connection;
+import de.hhu.bsinfo.neutrino.api.connection.Connection;
 import de.hhu.bsinfo.neutrino.api.util.Expose;
-import de.hhu.bsinfo.neutrino.buffer.LocalBuffer;
-import de.hhu.bsinfo.neutrino.data.NativeObject;
-import de.hhu.bsinfo.neutrino.util.ValueFactory;
-import io.reactivex.Observable;
+import io.netty.buffer.ByteBuf;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Expose
 public interface MessageService {
 
-    void send(Connection connection, NativeObject object);
+    Mono<Void> send(Connection connection, Publisher<ByteBuf> frames);
 
-    <T extends NativeObject> Observable<T> receive(Connection connection, ValueFactory<T> factory);
+    Flux<ByteBuf> receive(Connection connection);
 }

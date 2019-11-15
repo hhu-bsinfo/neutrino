@@ -1,17 +1,25 @@
 package de.hhu.bsinfo.neutrino.api;
 
+import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
+import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
 import de.hhu.bsinfo.neutrino.api.util.Expose;
 import de.hhu.bsinfo.neutrino.api.util.InternalAccessException;
+import de.hhu.bsinfo.neutrino.api.util.ServiceProvider;
 import de.hhu.bsinfo.neutrino.api.util.service.ServiceManager;
 import de.hhu.bsinfo.neutrino.generated.BuildConfig;
+import lombok.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
-public final class Neutrino {
+public final class Neutrino implements ServiceProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Neutrino.class);
 
@@ -33,6 +41,7 @@ public final class Neutrino {
         serviceManager.initialize();
     }
 
+    @Override
     public <T> T getService(final Class<T> service) {
         if (!service.isAnnotationPresent(Expose.class)) {
             throw new InternalAccessException("{} is not exposed", service.getName());

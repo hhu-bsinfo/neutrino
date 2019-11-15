@@ -2,8 +2,7 @@ package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
-import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
-import de.hhu.bsinfo.neutrino.api.connection.impl.Connection;
+import de.hhu.bsinfo.neutrino.api.connection.impl.ConnectionImpl;
 import de.hhu.bsinfo.neutrino.api.core.CoreService;
 import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
 import de.hhu.bsinfo.neutrino.api.memory.RemoteHandle;
@@ -12,17 +11,13 @@ import de.hhu.bsinfo.neutrino.buffer.LocalBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.data.NativeInteger;
 import de.hhu.bsinfo.neutrino.data.NativeLong;
-import de.hhu.bsinfo.neutrino.data.NativeString;
 import de.hhu.bsinfo.neutrino.struct.Struct;
 import de.hhu.bsinfo.neutrino.util.CustomStruct;
-import io.reactivex.Observable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 @CommandLine.Command(
         name = "demo",
@@ -78,31 +73,31 @@ public class Demo implements Runnable {
     }
 
     private void runServer() {
-        localBuffer.putLong(0, MAGIC);
-        connectionService.listen(bindAddress)
-                .forEach(connection -> {
-                    LOGGER.info("New client connection from {}", connection);
-                    var remoteHandle = messageService.receive(connection, BufferInformation::new)
-                            .map(info -> info.toRemoteHandle(connection))
-                            .blockingFirst();
-
-                    LOGGER.info("Writing magic number into remote buffer on connection {}", connection);
-                    memoryService.write(localBuffer, 0, remoteHandle, 0, Long.BYTES);
-                });
+//        localBuffer.putLong(0, MAGIC);
+//        connectionService.listen(bindAddress)
+//                .forEach(connection -> {
+//                    LOGGER.info("New client connection from {}", connection);
+//                    var remoteHandle = messageService.receive(connection)
+//                            .map(info -> info.toRemoteHandle(connection))
+//                            .blockingFirst();
+//
+//                    LOGGER.info("Writing magic number into remote buffer on connection {}", connection);
+//                    memoryService.write(localBuffer, 0, remoteHandle, 0, Long.BYTES);
+//                });
     }
 
     private void runClient() {
-        localBuffer.putLong(0, 0);
-        var connection = connectionService.connect(serverAddress).blockingGet();
-
-        LOGGER.info("Established server connection with {}", connection);
-        messageService.send(connection, BufferInformation.from(localBuffer));
-
-        while (localBuffer.getLong(0) != MAGIC) {
-            LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(1));
-        }
-
-        LOGGER.info("Change detected within local buffer");
+//        localBuffer.putLong(0, 0);
+//        var connection = connectionService.connect(serverAddress).blockingGet();
+//
+//        LOGGER.info("Established server connection with {}", connection);
+//        messageService.send(connection, BufferInformation.from(localBuffer));
+//
+//        while (localBuffer.getLong(0) != MAGIC) {
+//            LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(1));
+//        }
+//
+//        LOGGER.info("Change detected within local buffer");
     }
 
     @CustomStruct(2 * Long.BYTES + Integer.BYTES)
@@ -126,7 +121,7 @@ public class Demo implements Runnable {
             return new BufferInformation(buffer.getHandle(), buffer.capacity(), buffer.getRemoteKey());
         }
 
-        public RemoteHandle toRemoteHandle(Connection connection) {
+        public RemoteHandle toRemoteHandle(ConnectionImpl connection) {
             return new RemoteHandle(connection, address.get(), capacity.get(), key.get());
         }
     }

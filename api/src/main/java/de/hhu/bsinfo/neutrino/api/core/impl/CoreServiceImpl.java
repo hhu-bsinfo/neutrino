@@ -3,16 +3,9 @@ package de.hhu.bsinfo.neutrino.api.core.impl;
 import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
-import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
-import de.hhu.bsinfo.neutrino.verbs.Context;
-import de.hhu.bsinfo.neutrino.verbs.DeviceAttributes;
-import de.hhu.bsinfo.neutrino.verbs.PortAttributes;
-import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
-import de.hhu.bsinfo.neutrino.verbs.QueuePair;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
-
-import java.util.function.Consumer;
+import de.hhu.bsinfo.neutrino.buffer.RegisteredByteBuf;
+import de.hhu.bsinfo.neutrino.verbs.*;
+import io.netty.buffer.ByteBuf;
 
 import static de.hhu.bsinfo.neutrino.api.util.Assert.assertNotNull;
 
@@ -61,6 +54,18 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     @Override
     public RegisteredBuffer registerMemory(long capacity) {
         return protectionDomain.allocateMemory(capacity, DEFAULT_ACCESS_FLAGS);
+    }
+
+    @Override
+    public RegisteredByteBuf registerBuffer(ByteBuf buffer) {
+        if (!buffer.hasMemoryAddress()) {
+            throw new IllegalArgumentException("buffer not direct");
+        }
+
+        var memoryAddress = buffer.memoryAddress();
+        var memoryRegion = protectionDomain.registerMemoryRegion(memoryAddress, buffer.capacity(), DEFAULT_ACCESS_FLAGS);
+
+        return new RegisteredByteBuf(buffer, memoryRegion);
     }
 
     @Override

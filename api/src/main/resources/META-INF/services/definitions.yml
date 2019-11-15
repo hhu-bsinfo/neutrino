@@ -9,6 +9,3 @@
 
 - interface: de.hhu.bsinfo.neutrino.api.connection.ConnectionService
   implementation: de.hhu.bsinfo.neutrino.api.connection.impl.ConnectionServiceImpl
-
-- interface: de.hhu.bsinfo.neutrino.api.subscribe.SubscriptionService
-  implementation: de.hhu.bsinfo.neutrino.api.subscribe.impl.SubscriptionServiceImpl

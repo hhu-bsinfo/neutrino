@@ -1,9 +1,7 @@
 package de.hhu.bsinfo.neutrino.api.memory;
 
 import de.hhu.bsinfo.neutrino.api.util.Expose;
-import de.hhu.bsinfo.neutrino.buffer.LocalBuffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
-import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
 
 @Expose
 public interface MemoryService {

@@ -1,1 +1,3 @@
-include ':neutrino', ':jni', ':example', ':codegen', ':api', ':benchmark'
+rootProject.name = 'neutrino'
+
+include ':neutrino', ':jni', ':example', ':codegen', ':api', ':benchmark', ':rsocket-transport-neutrino'

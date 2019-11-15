@@ -1,46 +1,34 @@
 package de.hhu.bsinfo.neutrino.api.connection.impl;
 
+import de.hhu.bsinfo.neutrino.api.connection.Connection;
 import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
-import de.hhu.bsinfo.neutrino.api.connection.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
-import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
 import de.hhu.bsinfo.neutrino.api.util.InitializationException;
+import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
 import de.hhu.bsinfo.neutrino.api.util.service.Service;
-import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
-import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.disposables.CompositeDisposable;
+import io.netty.buffer.PooledByteBufAllocator;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.inject.Inject;
-import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> implements InternalConnectionService {
 
     @Inject
     private InternalCoreService coreService;
 
-    private ConnectionManager connectionManager;
-
-    private CompletionQueue completionQueue;
     private SharedReceiveQueue sharedReceiveQueue;
 
-    private BufferPool sendBuffers;
-    private BufferPool receiveBuffers;
-
-    private final CompositeDisposable disposables = new CompositeDisposable();
+    private static final PooledByteBufAllocator ALLOCATOR = PooledByteBufAllocator.DEFAULT;
 
     @Override
     protected void onInit(ConnectionServiceConfig config) {
-        completionQueue = coreService.createCompletionQueue(config.getCompletionQueueSize());
-        if (completionQueue == null) {
-            throw new InitializationException("Creating completion queue failed");
-        }
-
         var initialAttribtues = new SharedReceiveQueue.InitialAttributes.Builder(
                 getConfig().getReceiveQueueSize(), getConfig().getMaxScatterGatherElements()).build();
 
@@ -49,89 +37,78 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
         if (sharedReceiveQueue == null) {
             throw new InitializationException("Creating shared receive queue failed");
         }
-
-        connectionManager = new ConnectionManager(this::newConnection, this::connect);
-        sendBuffers = new BufferPool(() -> coreService.registerMemory(getConfig().getConnectionBufferSize()));
-        receiveBuffers = new BufferPool(() -> coreService.registerMemory(getConfig().getConnectionBufferSize()));
     }
 
     @Override
     protected void onShutdown() {
-        disposables.dispose();
         sharedReceiveQueue.close();
-        completionQueue.close();
     }
 
     @Override
-    public Single<Connection> connect(InetSocketAddress remote) {
-        return connectionManager.connect(remote);
+    public Flux<Connection> listen() {
+        return null;
     }
 
     @Override
-    public Observable<Connection> listen(InetSocketAddress bindAddress) {
-        return connectionManager.listen(bindAddress);
-    }
+    public Mono<Connection> newConnection() {
+        return Mono.fromCallable(() -> {
+            var completionQueue = coreService.createCompletionQueue(getConfig().getCompletionQueueSize());
+            var initialAttributes = new QueuePair.InitialAttributes.Builder(
+                    QueuePair.Type.RC,
+                    completionQueue,
+                    completionQueue,
+                    getConfig().getCompletionQueueSize(),
+                    getConfig().getCompletionQueueSize(),
+                    getConfig().getMaxScatterGatherElements(),
+                    getConfig().getMaxScatterGatherElements()).build();
 
-    private Connection newConnection() {
-        var initialAttributes = new QueuePair.InitialAttributes.Builder(
-                QueuePair.Type.RC,
-                completionQueue,
-                completionQueue,
-                getConfig().getCompletionQueueSize(),
-                getConfig().getCompletionQueueSize(),
-                getConfig().getMaxScatterGatherElements(),
-                getConfig().getMaxScatterGatherElements()).build();
+            var queuePair = coreService.createQueuePair(initialAttributes);
 
-        var queuePair = coreService.createQueuePair(initialAttributes);
+            queuePair.modify(new QueuePair.Attributes.Builder()
+                    .withState(QueuePair.State.INIT)
+                    .withPartitionKeyIndex((short) 0)
+                    .withPortNumber(getConfig().getPortNumber())
+                    .withAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ));
 
-        queuePair.modify(new QueuePair.Attributes.Builder()
-            .withState(QueuePair.State.INIT)
-            .withPartitionKeyIndex((short) 0)
-            .withPortNumber(getConfig().getPortNumber())
-            .withAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ));
+            var sendBuffer = coreService.registerBuffer(ALLOCATOR.directBuffer(getConfig().getConnectionBufferSize()));
+            var receiveBuffer = coreService.registerBuffer(ALLOCATOR.directBuffer(getConfig().getConnectionBufferSize()));
 
-        return new Connection(queuePair, coreService.getLocalId(), getConfig().getPortNumber());
-    }
-
-    private void connect(final QueuePair queuePair, final RemoteQueuePair remote) {
-        queuePair.modify(QueuePair.Attributes.Builder
-                .buildReadyToReceiveAttributesRC(remote.getQueuePairNumber(), remote.getLocalId(), remote.getPortNumber())
-                .withPathMtu(Mtu.MTU_4096)
-                .withReceivePacketNumber(0)
-                .withMaxDestinationAtomicReads((byte) 1)
-                .withMinRnrTimer(getConfig().getRnrTimer())
-                .withServiceLevel(getConfig().getServiceLevel())
-                .withSourcePathBits((byte) 0)
-                .withIsGlobal(false));
-
-        queuePair.modify(QueuePair.Attributes.Builder.buildReadyToSendAttributesRC()
-                .withTimeout(getConfig().getTimeout())
-                .withRetryCount(getConfig().getRetryCount())
-                .withRnrRetryCount(getConfig().getRnrRetryCount()));
+            return ConnectionImpl.builder()
+                    .localId(coreService.getLocalId())
+                    .portNumber(getConfig().getPortNumber())
+                    .sendBuffer(sendBuffer)
+                    .receiveBuffer(receiveBuffer)
+                    .queuePair(queuePair)
+                    .completionQueue(completionQueue)
+                    .build();
+        });
     }
 
     @Override
-    public CompletionQueue getCompletionQueue() {
-        return completionQueue;
+    public Mono<Connection> connect(final Connection connection, final QueuePairAddress remote) {
+        return Mono.fromCallable(() -> {
+            var queuePair = connection.getQueuePair();
+            queuePair.modify(QueuePair.Attributes.Builder
+                    .buildReadyToReceiveAttributesRC(remote.getQueuePairNumber(), remote.getLocalId(), remote.getPortNumber())
+                    .withPathMtu(Mtu.MTU_4096)
+                    .withReceivePacketNumber(0)
+                    .withMaxDestinationAtomicReads((byte) 1)
+                    .withMinRnrTimer(getConfig().getRnrTimer())
+                    .withServiceLevel(getConfig().getServiceLevel())
+                    .withSourcePathBits((byte) 0)
+                    .withIsGlobal(false));
+
+            queuePair.modify(QueuePair.Attributes.Builder.buildReadyToSendAttributesRC()
+                    .withTimeout(getConfig().getTimeout())
+                    .withRetryCount(getConfig().getRetryCount())
+                    .withRnrRetryCount(getConfig().getRnrRetryCount()));
+
+            return connection;
+        });
     }
 
     @Override
     public SharedReceiveQueue getSharedReceiveQueue() {
         return sharedReceiveQueue;
-    }
-
-    @Override
-    public QueuePair getQueuePair(Connection connection) {
-        return connection.getQueuePair();
-    }
-
-    @Override
-    public RegisteredBuffer getSendBuffer(Connection connection) {
-        return sendBuffers.get(connection);
-    }
-
-    @Override
-    public RegisteredBuffer getReceiveBuffer(Connection connection) {
-        return receiveBuffers.get(connection);
     }
 }
