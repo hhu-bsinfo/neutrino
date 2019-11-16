@@ -1,5 +1,7 @@
 plugins {
+    id 'idea'
     id 'application'
+    id "com.google.protobuf" version "0.8.10"
 }
 
 compileJava {
@@ -56,15 +58,47 @@ repositories {
     mavenCentral()
 }
 
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.10.0'
+    }
+    plugins {
+        rsocketRpc {
+            artifact = 'io.rsocket.rpc:rsocket-rpc-protobuf:0.2.19'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            rsocketRpc {}
+        }
+    }
+}
+
+idea {
+    module {
+        sourceDirs += file("src/main/proto")
+        sourceDirs += file("src/generated/main/java")
+        sourceDirs += file("src/generated/main/rsocketRpc")
+
+        generatedSourceDirs += file('src/generated/main/java')
+        generatedSourceDirs += file('src/generated/main/rsocketRpc')
+    }
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation project(':api')
     implementation project(':rsocket-transport-neutrino')
     implementation 'io.rsocket:rsocket-core:1.0.0-RC5'
+    implementation('io.rsocket.rpc:rsocket-rpc-core:0.2.17') {
+        exclude group: 'org.slf4j', module: ''
+    }
+    implementation 'com.google.protobuf:protobuf-java:3.10.0'
+
     implementation 'io.netty:netty-buffer:4.1.43.Final'
 
-    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.11.2'
+    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.12.1'
     implementation 'info.picocli:picocli:3.9.6'
 
     testImplementation 'com.greghaskins:spectrum:1.2.0'
