@@ -75,24 +75,20 @@ public class WindowTest implements Callable<Void> {
         context = new WindowContext(device, QUEUE_SIZE, bufferSize, WINDOW_SIZE);
 
         for(int i = 0; i < bufferSize; i += WINDOW_SIZE) {
-            context.getLocalBuffer().putInt(i, (i / WINDOW_SIZE));
+            context.getLocalBuffer().putInt(i, i / WINDOW_SIZE);
         }
 
-        sendRemoteKeyRequest = new SendWorkRequest(config -> {
-            config.setOpCode(SendWorkRequest.OpCode.SEND_WITH_IMM);
-            config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
-        });
+        sendRemoteKeyRequest = new SendWorkRequest.Builder(SendWorkRequest.OpCode.SEND_WITH_IMM)
+                .withSendFlags(SendWorkRequest.SendFlag.SIGNALED)
+                .build();
 
-        receiveRemoteKeyRequest = new ReceiveWorkRequest();
+        receiveRemoteKeyRequest = new ReceiveWorkRequest.Builder().build();
 
         readRemoteWindowElement = new ScatterGatherElement(context.getReadBuffer().getHandle(), WINDOW_SIZE, context.getReadBuffer().getLocalKey());
 
-        readRemoteWindowRequest = new SendWorkRequest(config -> {
-            config.setOpCode(SendWorkRequest.OpCode.RDMA_READ);
-            config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
-            config.setListLength(1);
-            config.setListHandle(readRemoteWindowElement.getHandle());
-        });
+        readRemoteWindowRequest = new SendWorkRequest.Builder(SendWorkRequest.OpCode.RDMA_READ, readRemoteWindowElement)
+                .withSendFlags(SendWorkRequest.SendFlag.SIGNALED)
+                .build();
 
         completionArray = new CompletionQueue.WorkCompletionArray(QUEUE_SIZE);
 

@@ -120,16 +120,17 @@ public class RdmaTest implements Callable<Void> {
 
         context.connect(socket);
 
-        for(int i = 0; i < queueSize; i++) {
-            sendWorkRequests[i] = new SendWorkRequest(config -> {
-                config.setOpCode(mode == Mode.WRITE ? SendWorkRequest.OpCode.RDMA_WRITE : SendWorkRequest.OpCode.RDMA_READ);
-                config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
-                config.setListLength(1);
-                config.setListHandle(scatterGatherElement.getHandle());
+        var sendBuilder = new SendWorkRequest.RdmaBuilder(
+                mode == Mode.WRITE ? SendWorkRequest.OpCode.RDMA_WRITE : SendWorkRequest.OpCode.RDMA_READ,
+                scatterGatherElement, context.getRemoteBufferInfo().getAddress(), context.getRemoteBufferInfo().getRemoteKey())
+                .withSendFlags(SendWorkRequest.SendFlag.SIGNALED);
 
-                config.rdma.setRemoteAddress(context.getRemoteBufferInfo().getAddress());
-                config.rdma.setRemoteKey(context.getRemoteBufferInfo().getRemoteKey());
-            });
+        for(int i = 0; i < queueSize; i++) {
+            sendWorkRequests[i] = sendBuilder.build();
+        }
+
+        for(int i = 0; i < queueSize; i++) {
+            sendWorkRequests[i] = sendBuilder.build();
         }
 
         LOGGER.info("Starting to " + mode.toString().toLowerCase() + " via RDMA");

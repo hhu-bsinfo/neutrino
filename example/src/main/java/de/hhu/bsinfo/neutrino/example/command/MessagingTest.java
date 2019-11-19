@@ -91,20 +91,17 @@ public class MessagingTest implements Callable<Void> {
         sendWorkRequests = new SendWorkRequest[queueSize];
         receiveWorkRequests = new ReceiveWorkRequest[queueSize];
 
+        var sendBuilder = new SendWorkRequest.Builder(SendWorkRequest.OpCode.SEND, scatterGatherElement)
+                .withSendFlags(SendWorkRequest.SendFlag.SIGNALED);
+
+        var receiveBuilder = new ReceiveWorkRequest.Builder(scatterGatherElement);
+
         for(int i = 0; i < queueSize; i++) {
-            sendWorkRequests[i] = new SendWorkRequest(config -> {
-                config.setOpCode(SendWorkRequest.OpCode.SEND);
-                config.setFlags(SendWorkRequest.SendFlag.SIGNALED);
-                config.setListLength(1);
-                config.setListHandle(scatterGatherElement.getHandle());
-            });
+            sendWorkRequests[i] = sendBuilder.build();
         }
 
         for(int i = 0; i < queueSize; i++) {
-            receiveWorkRequests[i] = new ReceiveWorkRequest(config -> {
-                config.setListLength(1);
-                config.setListHandle(scatterGatherElement.getHandle());
-            });
+            receiveWorkRequests[i] = receiveBuilder.build();
         }
 
         if(isServer) {

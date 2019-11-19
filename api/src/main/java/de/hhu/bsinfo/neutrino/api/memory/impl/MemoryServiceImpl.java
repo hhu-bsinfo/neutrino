@@ -59,13 +59,9 @@ public class MemoryServiceImpl extends Service<NullConfig> implements MemoryServ
         var queuePair = connectionService.getQueuePair(remoteHandle.getConnection());
 
         var elements = local.split(offset, length);
-        var request = new SendWorkRequest(config -> {
-            config.setOpCode(operation);
-            config.rdma.setRemoteAddress(remoteHandle.getAddress() + index);
-            config.rdma.setRemoteKey(remoteHandle.getKey());
-            config.setListHandle(elements.getHandle());
-            config.setListLength(1);
-        });
+        var request = new SendWorkRequest.RdmaBuilder(operation, elements,
+                remoteHandle.getAddress() + index, remoteHandle.getKey())
+                .build();
 
         queuePair.postSend(request);
     }
