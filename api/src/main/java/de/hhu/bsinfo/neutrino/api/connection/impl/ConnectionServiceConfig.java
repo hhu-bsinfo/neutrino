@@ -22,7 +22,7 @@ public class ConnectionServiceConfig extends ServiceConfig {
 
     private int receiveQueueSize = 100;
 
-    private int maxScatterGatherElements = 10;
+    private int maxScatterGatherElements = 1;
 
     private int connectionBufferSize = 1024 * 1024 * 2;
 

@@ -5,6 +5,8 @@
       <profile default="true" name="Default" enabled="true" />
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="api_main" target="11" />
+      <module name="api_test" target="11" />
       <module name="bsinfo-neutrino-neutrino_main" target="11" />
       <module name="bsinfo-neutrino-neutrino_test" target="11" />
       <module name="neutrino-benchmark_jmh" target="11" />

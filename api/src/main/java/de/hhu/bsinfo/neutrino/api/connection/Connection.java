@@ -27,7 +27,12 @@ public interface Connection {
     /**
      * The {@link CompletionQueue} used by this connection.
      */
-    CompletionQueue getCompletionQueue();
+    CompletionQueue getSendCompletionQueue();
+
+    /**
+     * The {@link CompletionQueue} used by this connection.
+     */
+    CompletionQueue getReceiveCompletionQueue();
 
     /**
      * The send buffer used by this connection.

@@ -15,7 +15,8 @@ public @Data class ConnectionImpl implements Connection {
     private final short localId;
     private final byte portNumber;
     private final QueuePair queuePair;
-    private final CompletionQueue completionQueue;
+    private final CompletionQueue sendCompletionQueue;
+    private final CompletionQueue receiveCompletionQueue;
     private final RegisteredByteBuf sendBuffer;
     private final RegisteredByteBuf receiveBuffer;
 }

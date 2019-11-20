@@ -31,7 +31,10 @@
 		<Logger name="de.hhu.bsinfo" level="info" additivity="false">
 			<AppenderRef ref="ConsoleAsync" />
 		</Logger>
-		<Logger name="io.rsocket.transport.neutrino" level="info" additivity="false">
+		<Logger name="io.rsocket" level="warn" additivity="false">
+			<AppenderRef ref="ConsoleAsync" />
+		</Logger>
+		<Logger name="io.rsocket.transport.neutrino" level="warn" additivity="false">
 			<AppenderRef ref="ConsoleAsync" />
 		</Logger>
   	</Loggers>

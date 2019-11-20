@@ -15,8 +15,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.inject.Inject;
-import java.nio.charset.StandardCharsets;
-import java.util.Scanner;
 
 public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> implements InternalConnectionService {
 
@@ -52,11 +50,13 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
     @Override
     public Mono<Connection> newConnection() {
         return Mono.fromCallable(() -> {
-            var completionQueue = coreService.createCompletionQueue(getConfig().getCompletionQueueSize());
+            var sendQueue = coreService.createCompletionQueue(getConfig().getCompletionQueueSize());
+            var receiveQueue = coreService.createCompletionQueue(getConfig().getCompletionQueueSize());
+
             var initialAttributes = new QueuePair.InitialAttributes.Builder(
                     QueuePair.Type.RC,
-                    completionQueue,
-                    completionQueue,
+                    sendQueue,
+                    receiveQueue,
                     getConfig().getCompletionQueueSize(),
                     getConfig().getCompletionQueueSize(),
                     getConfig().getMaxScatterGatherElements(),
@@ -79,18 +79,19 @@ public class ConnectionServiceImpl extends Service<ConnectionServiceConfig> impl
                     .sendBuffer(sendBuffer)
                     .receiveBuffer(receiveBuffer)
                     .queuePair(queuePair)
-                    .completionQueue(completionQueue)
+                    .sendCompletionQueue(sendQueue)
+                    .receiveCompletionQueue(receiveQueue)
                     .build();
         });
     }
 
     @Override
-    public Mono<Connection> connect(final Connection connection, final QueuePairAddress remote) {
+    public Mono<Connection> connect(final Connection connection, final QueuePairAddress remote, final Mtu mtu) {
         return Mono.fromCallable(() -> {
             var queuePair = connection.getQueuePair();
             queuePair.modify(QueuePair.Attributes.Builder
                     .buildReadyToReceiveAttributesRC(remote.getQueuePairNumber(), remote.getLocalId(), remote.getPortNumber())
-                    .withPathMtu(Mtu.MTU_4096)
+                    .withPathMtu(mtu)
                     .withReceivePacketNumber(0)
                     .withMaxDestinationAtomicReads((byte) 1)
                     .withMinRnrTimer(getConfig().getRnrTimer())

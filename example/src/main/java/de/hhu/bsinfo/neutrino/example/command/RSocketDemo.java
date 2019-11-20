@@ -18,6 +18,7 @@ import org.reactivestreams.Publisher;
 import picocli.CommandLine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -39,9 +40,11 @@ import java.util.stream.Collectors;
         separator = " ")
 public class RSocketDemo implements Runnable {
 
+
     private static final byte PORT_NUMBER = 1;
     private static final int DEFAULT_SERVER_PORT = 2998;
-    private static final Duration SEND_INTERVAL = Duration.ofMillis(200);
+    private static final int DEFAULT_MESSAGE_COUNT = 1024 * 1024;
+    private static final int DEFAULT_MTU = 4096;
 
     @CommandLine.Option(
             names = "--server",
@@ -57,6 +60,11 @@ public class RSocketDemo implements Runnable {
             names = {"-p", "--port"},
             description = "The port the server will listen on.")
     private int port = DEFAULT_SERVER_PORT;
+
+    @CommandLine.Option(
+            names = {"-m", "--messages"},
+            description = "The number of messages to send.")
+    private int messageCount = DEFAULT_MESSAGE_COUNT;
 
     private static final QueuePairAddress DUMMY_ADDRESS = QueuePairAddress.builder().build();
 
@@ -84,6 +92,7 @@ public class RSocketDemo implements Runnable {
             var transport = InfinibandClientTransport.create(connection, remoteAddress, neutrino);
             var serviceServer = new EchoServiceServer(new EchoServiceImpl(), Optional.empty(), Optional.empty());
             var rsocket = RSocketFactory.connect()
+                    .fragment(DEFAULT_MTU)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
                     .acceptor(rSocket -> new RequestHandlingRSocket(serviceServer))
                     .transport(transport)
@@ -91,11 +100,21 @@ public class RSocketDemo implements Runnable {
                     .block();
 
             var client = new EchoServiceClient(rsocket);
-            Flux.interval(SEND_INTERVAL)
+            var disposable = Flux.range(0, messageCount)
                 .map(second -> SimpleMessage.newBuilder().setContent("Hello Infiniworld! (" + second + ")").build())
+                .delayElements(Duration.ofMillis(10))
                 .compose(client::streamingRequestAndResponse)
                 .doOnNext(response -> log.info("Received echo message \"{}\"", response.getContent()))
-                .blockLast();
+                .doOnError(error -> log.error("{}", error.getMessage()))
+                .subscribe();
+
+            var disposable = Mono.just("Hello Infiniworld")
+                    .repeat()
+                    .take(4096)
+                    .collect(Collectors.joining(" "))
+                    .map(message -> SimpleMessage.newBuilder().setContent(message).build())
+                    .flatMap(client::fireAndForget)
+                    .subscribe();
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
@@ -111,13 +130,12 @@ public class RSocketDemo implements Runnable {
             var transport = InfinibandServerTransport.create(connection, remoteAddress, neutrino);
             var serviceServer = new EchoServiceServer(new EchoServiceImpl(), Optional.empty(), Optional.empty());
             var rsocket = RSocketFactory.receive()
+                    .fragment(DEFAULT_MTU)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
                     .acceptor((setup, reactiveSocket) -> Mono.just(new RequestHandlingRSocket(serviceServer)))
                     .transport(transport)
                     .start()
-                    .block();
-
-            rsocket.onClose().block();
+                    .subscribe();
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
@@ -127,27 +145,26 @@ public class RSocketDemo implements Runnable {
 
         @Override
         public Mono<Empty> fireAndForget(SimpleMessage message, ByteBuf metadata) {
-            log.info("[fireAndForget] received message \"{}\"", message.getContent());
+            log.info("Received message \"{}\"", message.getContent());
             return Mono.just(Empty.getDefaultInstance());
         }
 
         @Override
         public Mono<SimpleMessage> requestReply(SimpleMessage message, ByteBuf metadata) {
-            log.info("[requestReply] received message \"{}\"", message.getContent());
+            log.info("Received message \"{}\"", message.getContent());
             return Mono.just(message);
         }
 
         @Override
         public Flux<SimpleMessage> requestStream(SimpleMessage message, ByteBuf metadata) {
-            log.info("[requestStream] received message \"{}\"", message.getContent());
-            return Flux.interval(SEND_INTERVAL)
-                    .map(it -> message);
+            log.info("Received message \"{}\"", message.getContent());
+            return Flux.just(message).repeat(DEFAULT_MESSAGE_COUNT);
         }
 
         @Override
         public Mono<SimpleMessage> streamingRequestSingleResponse(Publisher<SimpleMessage> messages, ByteBuf metadata) {
             return Flux.from(messages)
-                    .doOnNext(it ->  log.info("[streamingRequestSingleResponse] received message \"{}\"", it.getContent()))
+                    .doOnNext(it ->  log.info("Received message \"{}\"", it.getContent()))
                     .map(SimpleMessage::getContent)
                     .collect(Collectors.joining(", ", "[", "]"))
                     .map(it -> SimpleMessage.newBuilder().setContent(it).build());
@@ -156,7 +173,7 @@ public class RSocketDemo implements Runnable {
         @Override
         public Flux<SimpleMessage> streamingRequestAndResponse(Publisher<SimpleMessage> messages, ByteBuf metadata) {
             return Flux.from(messages)
-                    .doOnNext(it ->  log.info("[streamingRequestAndResponse] received message \"{}\"", it.getContent()));
+                    .doOnNext(it ->  log.info("Received message \"{}\"", it.getContent()));
         }
     }
 

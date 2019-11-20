@@ -5,6 +5,12 @@ import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
 import de.hhu.bsinfo.neutrino.api.message.MessageService;
 import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
 import de.hhu.bsinfo.neutrino.api.util.ServiceProvider;
+import de.hhu.bsinfo.neutrino.verbs.Mtu;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.rsocket.Closeable;
+import io.rsocket.fragmentation.FragmentationDuplexConnection;
+import io.rsocket.frame.FragmentationFlyweight;
 import io.rsocket.transport.ServerTransport;
 import io.rsocket.transport.neutrino.InfinibandDuplexConnection;
 import org.slf4j.Logger;
@@ -15,7 +21,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Objects;
 
-public class InfinibandServerTransport implements ServerTransport<InfinibandDuplexConnection> {
+public class InfinibandServerTransport implements ServerTransport<Closeable> {
 
     private static final Logger log = LoggerFactory.getLogger(InfinibandServerTransport.class);
 
@@ -36,26 +42,24 @@ public class InfinibandServerTransport implements ServerTransport<InfinibandDupl
     }
 
     @Override
-    public Mono<InfinibandDuplexConnection> start(ConnectionAcceptor acceptor, int mtu) {
+    public Mono<Closeable> start(ConnectionAcceptor acceptor, int mtu) {
         Objects.requireNonNull(acceptor, "acceptor must not be null");
-        log.info("Server transport start called");
 
-        var duplexConnection = connectionService.connect(connection, remote)
+        var mtuEnum = Mtu.fromValue(mtu);
+        log.info("Server connection mtu set to {}", mtuEnum.getMtuValue());
+        var duplexConnection = connectionService.connect(connection, remote, mtuEnum)
                 .map(it -> new InfinibandDuplexConnection(it, messageService))
                 .block();
 
-        log.info("Server connection created");
+        var fragmentationDuplexConnection = new FragmentationDuplexConnection(
+                duplexConnection,
+                ByteBufAllocator.DEFAULT,
+                mtuEnum.getMtuValue(),
+                false,
+                "server");
 
-        acceptor.apply(duplexConnection).subscribe();
-        return Mono.just(duplexConnection);
-//        return Mono.create(sink -> {
-//            connectionService.connect(connection, remote)
-//                    .map(it -> new InfinibandDuplexConnection(it, messageService))
-//                    .doOnNext(it -> {
-//                        acceptor.apply(it).doOnNext(v -> log.info("Connection processed")).subscribe();
-//
-//                        sink.success(it);
-//                    });
-//        });
+        acceptor.apply(fragmentationDuplexConnection).subscribe(ignored -> log.info("Client connection processed"));
+
+        return Mono.just(fragmentationDuplexConnection);
     }
 }
