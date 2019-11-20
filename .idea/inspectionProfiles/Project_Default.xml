@@ -609,7 +609,7 @@
       <option name="m_minLength" value="3" />
       <option name="m_maxLength" value="64" />
     </inspection_tool>
-    <inspection_tool class="ClassNestingDepth" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="ClassNestingDepth" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="m_limit" value="1" />
     </inspection_tool>
     <inspection_tool class="ClassNewInstance" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -717,6 +717,7 @@
     <inspection_tool class="ConstantOnLHSOfComparisonJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstantOnRHSOfComparison" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="ConstantOnRHSOfComparisonJS" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="ConstantOnWrongSideOfComparison" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstantStringIntern" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstantValueVariableUse" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstraintValidatorCreator" enabled="false" level="ERROR" enabled_by_default="false" />
@@ -1423,7 +1424,6 @@
     <inspection_tool class="InjectedReferences" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="InjectionNotApplicable" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="InjectionValueTypeInspection" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="InnerClassMayBeStatic" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="InnerClassOnInterface" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="m_ignoreInnerInterfaces" value="false" />
     </inspection_tool>
@@ -1841,6 +1841,7 @@
     </inspection_tool>
     <inspection_tool class="MultipleTopLevelClassesInFile" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="MultipleTypedDeclaration" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="MultipleVariablesInDeclaration" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="MultiplyOrDivideByPowerOfTwo" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="checkDivision" value="false" />
     </inspection_tool>
@@ -2033,7 +2034,7 @@
     <inspection_tool class="PagesFileModelInspection" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="PagesModelInspection" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="ParameterCanBeLocal" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="ParameterHidingMemberVariable" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="ParameterHidingMemberVariable" enabled="false" level="ERROR" enabled_by_default="false">
       <option name="m_ignoreInvisibleFields" value="true" />
       <option name="m_ignoreStaticMethodParametersHidingInstanceFields" value="true" />
       <option name="m_ignoreForConstructors" value="true" />
@@ -2677,7 +2678,6 @@
     <inspection_tool class="TestNGDataProvider" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="TestNGMethodNamingConvention" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="TestOnlyProblems" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="TextLabelInSwitchStatement" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="TextLabelInSwitchStatementJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ThisEscapedInConstructor" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ThisExpressionReferencesGlobalObjectJS" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -2685,7 +2685,6 @@
     <inspection_tool class="ThreadDumpStack" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ThreadLocalNotStaticFinal" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreadPriority" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="ThreadRun" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreadStartInConstruction" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreadStopSuspendResume" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreadWithDefaultRunMethod" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -2996,7 +2995,6 @@
     <inspection_tool class="WebflowModelInspection" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="WebflowSetupInspection" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="Weblogic" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="WhenWithOnlyElse" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="WhileCanBeForeach" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="WhileLoopSpinsOnField" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoreNonEmtpyLoops" value="false" />
