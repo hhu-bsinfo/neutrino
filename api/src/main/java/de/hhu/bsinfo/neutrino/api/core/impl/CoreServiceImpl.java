@@ -15,6 +15,7 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     private ProtectionDomain protectionDomain;
     private DeviceAttributes deviceAttributes;
     private PortAttributes portAttributes;
+    private CompletionChannel completionChannel;
 
     private static final AccessFlag[] DEFAULT_ACCESS_FLAGS = {
             AccessFlag.LOCAL_WRITE,
@@ -29,6 +30,7 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
         deviceAttributes = assertNotNull(context.queryDevice(), "Querying device failed");
         portAttributes = assertNotNull(context.queryPort(config.getPortNumber()), "Querying device port failed");
         protectionDomain = assertNotNull(context.allocateProtectionDomain(), "Allocating protection domain failed");
+        completionChannel = assertNotNull(context.createCompletionChannel(), "Creating completion channel failed");
     }
 
     @Override
@@ -80,7 +82,7 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
 
     @Override
     public CompletionQueue createCompletionQueue(int capacity) {
-        return context.createCompletionQueue(capacity);
+        return context.createCompletionQueue(capacity, completionChannel);
     }
 
     @Override
@@ -96,5 +98,10 @@ public class CoreServiceImpl extends Service<CoreServiceConfig> implements Inter
     @Override
     public RegisteredBuffer allocateMemory(long capacity, AccessFlag... flags) {
         return protectionDomain.allocateMemory(capacity, flags);
+    }
+
+    @Override
+    public CompletionChannel getCompletionChannel() {
+        return completionChannel;
     }
 }

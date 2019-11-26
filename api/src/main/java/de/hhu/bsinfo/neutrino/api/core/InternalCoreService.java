@@ -36,4 +36,9 @@ public interface InternalCoreService extends CoreService {
      * Creates a new {@link RegisteredBuffer} used for RDMA operations.
      */
     RegisteredBuffer allocateMemory(long capacity, AccessFlag... flags);
+
+    /**
+     * The {@link CompletionChannel} associated with all {@link QueuePair} instances.
+     */
+    CompletionChannel getCompletionChannel();
 }

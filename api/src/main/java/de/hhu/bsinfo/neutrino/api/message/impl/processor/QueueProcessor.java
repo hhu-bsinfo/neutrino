@@ -16,7 +16,7 @@ public class QueueProcessor extends Thread implements Closeable {
         QUEUE, CHANNEL
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueueProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(QueueProcessor.class);
 
     private final CompletionQueue[] completionQueues;
     private final CompletionChannel completionChannel;
@@ -51,7 +51,7 @@ public class QueueProcessor extends Thread implements Closeable {
     public void run() {
         pollQueue();
         pollChannel();
-        LOGGER.info("Queue processor finished");
+        log.info("Queue processor finished");
     }
 
     private void pollQueue() {
@@ -95,7 +95,7 @@ public class QueueProcessor extends Thread implements Closeable {
     }
 
     private void notifyComplete(final long id) {
-        Schedulers.computation(() -> handler.onComplete(id));
+        handler.onComplete(id);
     }
 
     private void notifyError(final long id, final WorkCompletion.Status status) {

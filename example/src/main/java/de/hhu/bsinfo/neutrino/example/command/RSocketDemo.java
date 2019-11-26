@@ -102,19 +102,10 @@ public class RSocketDemo implements Runnable {
             var client = new EchoServiceClient(rsocket);
             var disposable = Flux.range(0, messageCount)
                 .map(second -> SimpleMessage.newBuilder().setContent("Hello Infiniworld! (" + second + ")").build())
-                .delayElements(Duration.ofMillis(10))
                 .compose(client::streamingRequestAndResponse)
                 .doOnNext(response -> log.info("Received echo message \"{}\"", response.getContent()))
                 .doOnError(error -> log.error("{}", error.getMessage()))
                 .subscribe();
-
-            var disposable = Mono.just("Hello Infiniworld")
-                    .repeat()
-                    .take(4096)
-                    .collect(Collectors.joining(" "))
-                    .map(message -> SimpleMessage.newBuilder().setContent(message).build())
-                    .flatMap(client::fireAndForget)
-                    .subscribe();
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
