@@ -41,7 +41,7 @@ public class NativeString extends NativeDataType {
 
     private int length() {
         for(int i = 0; i < size(); i++) {
-            if (getByteBuffer().get(i) == ZERO) {
+            if (getByteBuffer().get(getOffset() + i) == ZERO) {
                 return i;
             }
         }
