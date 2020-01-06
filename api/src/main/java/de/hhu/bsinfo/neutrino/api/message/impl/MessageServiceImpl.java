@@ -42,7 +42,7 @@ public class MessageServiceImpl extends Service<NullConfig> implements MessageSe
 
         var element = new ScatterGatherElement(sendBuffer.getHandle(), (int) object.getNativeSize(), sendBuffer.getLocalKey());
 
-        queuePair.postSend(new SendWorkRequest.Builder(OpCode.SEND, element).build());
+        queuePair.postSend(new SendWorkRequest.MessageBuilder(OpCode.SEND, element).build());
     }
 
     @Override
@@ -74,6 +74,6 @@ public class MessageServiceImpl extends Service<NullConfig> implements MessageSe
     private void fillUp(QueuePair queuePair, RegisteredBuffer receiveBuffer) {
         var element = new ScatterGatherElement(receiveBuffer.getHandle(), (int) receiveBuffer.capacity(), receiveBuffer.getLocalKey());
 
-        queuePair.postReceive(new ReceiveWorkRequest.Builder(element).build());
+        queuePair.postReceive(new ReceiveWorkRequest.Builder().withScatterGatherElement(element).build());
     }
 }

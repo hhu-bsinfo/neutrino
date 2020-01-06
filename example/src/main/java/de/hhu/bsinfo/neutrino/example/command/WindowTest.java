@@ -78,7 +78,8 @@ public class WindowTest implements Callable<Void> {
             context.getLocalBuffer().putInt(i, i / WINDOW_SIZE);
         }
 
-        sendRemoteKeyRequest = new SendWorkRequest.Builder(SendWorkRequest.OpCode.SEND_WITH_IMM)
+        sendRemoteKeyRequest = new SendWorkRequest.Builder()
+                .withOpCode(SendWorkRequest.OpCode.SEND_WITH_IMM)
                 .withSendFlags(SendWorkRequest.SendFlag.SIGNALED)
                 .build();
 
@@ -86,7 +87,9 @@ public class WindowTest implements Callable<Void> {
 
         readRemoteWindowElement = new ScatterGatherElement(context.getReadBuffer().getHandle(), WINDOW_SIZE, context.getReadBuffer().getLocalKey());
 
-        readRemoteWindowRequest = new SendWorkRequest.Builder(SendWorkRequest.OpCode.RDMA_READ, readRemoteWindowElement)
+        readRemoteWindowRequest = new SendWorkRequest.Builder()
+                .withOpCode(SendWorkRequest.OpCode.RDMA_READ)
+                .withScatterGatherElement(readRemoteWindowElement)
                 .withSendFlags(SendWorkRequest.SendFlag.SIGNALED)
                 .build();
 

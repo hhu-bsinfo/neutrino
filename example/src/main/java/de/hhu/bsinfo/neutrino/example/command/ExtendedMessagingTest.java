@@ -89,7 +89,8 @@ public class ExtendedMessagingTest implements Callable<Void> {
 
         receiveWorkRequests = new ReceiveWorkRequest[queueSize];
 
-        var receiveBuilder = new ReceiveWorkRequest.Builder(scatterGatherElement);
+        var receiveBuilder = new ReceiveWorkRequest.Builder()
+                .withScatterGatherElement(scatterGatherElement);
 
         for(int i = 0; i < queueSize; i++) {
             receiveWorkRequests[i] = receiveBuilder.build();

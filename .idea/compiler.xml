@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+    </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="api_main" target="11" />
       <module name="api_test" target="11" />
@@ -22,6 +25,8 @@
       <module name="neutrino-example_test" target="11" />
       <module name="neutrino-neutrino_main" target="11" />
       <module name="neutrino-neutrino_test" target="11" />
+      <module name="neutrino.api.main" target="11" />
+      <module name="neutrino.api.test" target="11" />
       <module name="neutrino.benchmark.jmh" target="11" />
       <module name="neutrino.benchmark.main" target="11" />
       <module name="neutrino.benchmark.test" target="11" />
