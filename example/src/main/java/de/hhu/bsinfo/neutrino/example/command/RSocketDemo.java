@@ -1,24 +1,21 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.api.Neutrino;
-import de.hhu.bsinfo.neutrino.api.connection.Connection;
-import de.hhu.bsinfo.neutrino.api.connection.ConnectionService;
-import de.hhu.bsinfo.neutrino.api.core.CoreService;
+import de.hhu.bsinfo.neutrino.api.network.NetworkService;
 import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
-import de.hhu.bsinfo.neutrino.example.service.*;
-import io.netty.buffer.ByteBuf;
-import io.rsocket.*;
+import io.rsocket.AbstractRSocket;
+import io.rsocket.Payload;
+import io.rsocket.RSocketFactory;
 import io.rsocket.frame.decoder.PayloadDecoder;
-import io.rsocket.rpc.rsocket.RequestHandlingRSocket;
 import io.rsocket.transport.neutrino.client.InfinibandClientTransport;
 import io.rsocket.transport.neutrino.server.InfinibandServerTransport;
 import io.rsocket.util.DefaultPayload;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import picocli.CommandLine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -27,12 +24,10 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.Duration;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-import java.util.stream.Collectors;
 
 @Slf4j
+@Component
 @CommandLine.Command(
         name = "rsocket",
         description = "Demonstrates rsocket using neutrino as a transport.%n",
@@ -40,11 +35,9 @@ import java.util.stream.Collectors;
         separator = " ")
 public class RSocketDemo implements Runnable {
 
-
-    private static final byte PORT_NUMBER = 1;
     private static final int DEFAULT_SERVER_PORT = 2998;
-    private static final int DEFAULT_MESSAGE_COUNT = 1024 * 1024;
     private static final int DEFAULT_MTU = 4096;
+    private static final long MICRO_SECOND = 1000000;
 
     @CommandLine.Option(
             names = "--server",
@@ -61,16 +54,8 @@ public class RSocketDemo implements Runnable {
             description = "The port the server will listen on.")
     private int port = DEFAULT_SERVER_PORT;
 
-    @CommandLine.Option(
-            names = {"-m", "--messages"},
-            description = "The number of messages to send.")
-    private int messageCount = DEFAULT_MESSAGE_COUNT;
-
-    private static final QueuePairAddress DUMMY_ADDRESS = QueuePairAddress.builder().build();
-
-    private final Neutrino neutrino = Neutrino.newInstance();
-    private final CoreService coreService = neutrino.getService(CoreService.class);
-    private final ConnectionService connectionService = neutrino.getService(ConnectionService.class);
+    @Autowired
+    private NetworkService networkService;
 
     @Override
     public void run() {
@@ -82,30 +67,34 @@ public class RSocketDemo implements Runnable {
     }
 
     private void startClient() {
-        // TODO(krakowski): Implement connection via URI string
-        //  var clientTransport = UriTransportRegistry.clientForUri(connectionString);
-
-        log.info("Connecting to {}", serverAddress);
+        // Create a socket to exchange queue pair information with the server
         try (var socket = new Socket(serverAddress.getAddress(), serverAddress.getPort())) {
-            var connection = connectionService.newConnection().block();
-            var remoteAddress = connect(socket, connection);
-            var transport = InfinibandClientTransport.create(connection, remoteAddress, neutrino);
-            var serviceServer = new EchoServiceServer(new EchoServiceImpl(), Optional.empty(), Optional.empty());
-            var rsocket = RSocketFactory.connect()
+
+            // Create RSocket infiniband client transport using neutrino
+            var transport = new InfinibandClientTransport(networkService, address -> connect(socket, address));
+
+            // Configure and create a RSocket passing it the infiniband transport and connect to the server
+            RSocketFactory.connect()
                     .fragment(DEFAULT_MTU)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
-                    .acceptor(rSocket -> new RequestHandlingRSocket(serviceServer))
+                    .acceptor(rSocket -> new EmptyMessageHandler())
                     .transport(transport)
                     .start()
-                    .block();
+                    .flatMapMany(rsocket -> {
+                        // Create a payload (once) and send it (multiple times) to the server
+                        var payload = DefaultPayload.create("ping");
+                        return rsocket.requestChannel(Flux.just(payload).repeat())
+                                .doOnNext(Payload::release);
+                    })
+                    .window(Duration.ofSeconds(1))
+                    .flatMap(Flux::count)
+                    .subscribe(count -> {
+                        if (count != 0) {
+                            log.info("Received {} messages ({} us/m)", count, MICRO_SECOND/count);
+                        }
+                    });
 
-            var client = new EchoServiceClient(rsocket);
-            var disposable = Flux.range(0, messageCount)
-                .map(second -> SimpleMessage.newBuilder().setContent("Hello Infiniworld! (" + second + ")").build())
-                .compose(client::streamingRequestAndResponse)
-                .doOnNext(response -> log.info("Received echo message \"{}\"", response.getContent()))
-                .doOnError(error -> log.error("{}", error.getMessage()))
-                .subscribe();
+            LockSupport.parkNanos(Duration.ofSeconds(600).toNanos());
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
@@ -113,76 +102,53 @@ public class RSocketDemo implements Runnable {
 
     private void startServer() {
         log.info("Waiting for incoming connections on port {}", port);
+
+        // Create a server socket to exchange queue pair information with the client
         try (var serverSocket = new ServerSocket(port);
              var socket = serverSocket.accept()) {
 
-            var connection = connectionService.newConnection().block();
-            var remoteAddress = connect(socket, connection);
-            var transport = InfinibandServerTransport.create(connection, remoteAddress, neutrino);
-            var serviceServer = new EchoServiceServer(new EchoServiceImpl(), Optional.empty(), Optional.empty());
+            // Create RSocket infiniband server transport using neutrino
+            var transport = new InfinibandServerTransport(networkService, address -> connect(socket, address));
+
+            // Configure and create an RSocket passing it the infiniband transport
             var rsocket = RSocketFactory.receive()
                     .fragment(DEFAULT_MTU)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
-                    .acceptor((setup, reactiveSocket) -> Mono.just(new RequestHandlingRSocket(serviceServer)))
+                    .acceptor((setup, reactiveSocket) ->  Mono.just(new MessageHandler()))
                     .transport(transport)
                     .start()
                     .subscribe();
+
+            // Block the main thread
+            LockSupport.parkNanos(Duration.ofSeconds(600).toNanos());
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
     }
 
-    private static final class EchoServiceImpl implements EchoService {
-
-        @Override
-        public Mono<Empty> fireAndForget(SimpleMessage message, ByteBuf metadata) {
-            log.info("Received message \"{}\"", message.getContent());
-            return Mono.just(Empty.getDefaultInstance());
-        }
-
-        @Override
-        public Mono<SimpleMessage> requestReply(SimpleMessage message, ByteBuf metadata) {
-            log.info("Received message \"{}\"", message.getContent());
-            return Mono.just(message);
-        }
-
-        @Override
-        public Flux<SimpleMessage> requestStream(SimpleMessage message, ByteBuf metadata) {
-            log.info("Received message \"{}\"", message.getContent());
-            return Flux.just(message).repeat(DEFAULT_MESSAGE_COUNT);
-        }
-
-        @Override
-        public Mono<SimpleMessage> streamingRequestSingleResponse(Publisher<SimpleMessage> messages, ByteBuf metadata) {
-            return Flux.from(messages)
-                    .doOnNext(it ->  log.info("Received message \"{}\"", it.getContent()))
-                    .map(SimpleMessage::getContent)
-                    .collect(Collectors.joining(", ", "[", "]"))
-                    .map(it -> SimpleMessage.newBuilder().setContent(it).build());
-        }
-
-        @Override
-        public Flux<SimpleMessage> streamingRequestAndResponse(Publisher<SimpleMessage> messages, ByteBuf metadata) {
-            return Flux.from(messages)
-                    .doOnNext(it ->  log.info("Received message \"{}\"", it.getContent()));
-        }
-    }
-
-    private QueuePairAddress connect(Socket socket, Connection connection) {
-        var queuePair = connection.getQueuePair();
-        var localInfo = QueuePairAddress.builder()
-                .localId(coreService.getLocalId())
-                .queuePairNumber(queuePair.getQueuePairNumber())
-                .portNumber(PORT_NUMBER)
-                .build();
-
+    private static QueuePairAddress connect(Socket socket, QueuePairAddress local) {
+        // Create input and output streams to exchange queue pair information
         try (var out = new ObjectOutputStream(socket.getOutputStream());
              var in = new ObjectInputStream(socket.getInputStream())) {
 
-            out.writeObject(localInfo);
+            // Send local queue pair information
+            out.writeObject(local);
+
+            // Receive remote queue pair information
             return (QueuePairAddress) in.readObject();
         } catch (IOException | ClassNotFoundException e) {
             return null;
         }
     }
+
+    private static class MessageHandler extends AbstractRSocket {
+
+        @Override
+        public Flux<Payload> requestChannel(Publisher<Payload> payloads) {
+            // Relay back all received payloads to their sender
+            return Flux.from(payloads);
+        }
+    }
+
+    private static class EmptyMessageHandler extends AbstractRSocket {}
 }

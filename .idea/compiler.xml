@@ -42,6 +42,8 @@
       <module name="rsocket-transport-local_test" target="11" />
       <module name="rsocket-transport-netty_main" target="11" />
       <module name="rsocket-transport-netty_test" target="11" />
+      <module name="rsocket-transport-neutrino_main" target="11" />
+      <module name="rsocket-transport-neutrino_test" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>

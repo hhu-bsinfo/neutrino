@@ -1,0 +1,16 @@
+logging:
+  level:
+    root: ERROR
+    de.hhu.bsinfo: INFO
+
+infiniband:
+
+  device:
+    deviceNumber: 0
+    portNumber: 1
+
+  network:
+    queuePairSize: 16351
+    sharedReceiveQueueSize: 16383
+    completionQueueSize: 4194303
+    maxScatterGatherElements: 10

@@ -1,7 +1,7 @@
 package de.hhu.bsinfo.neutrino.api.memory;
 
-import de.hhu.bsinfo.neutrino.api.connection.Connection;
-import de.hhu.bsinfo.neutrino.api.connection.impl.ConnectionImpl;
+import de.hhu.bsinfo.neutrino.api.network.Connection;
+import de.hhu.bsinfo.neutrino.api.network.impl.ConnectionImpl;
 
 public class RemoteHandle {
 

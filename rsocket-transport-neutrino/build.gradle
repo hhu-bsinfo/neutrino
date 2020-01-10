@@ -30,6 +30,10 @@ dependencies {
 
     testImplementation 'io.rsocket:rsocket-test:1.0.0-RC5'
     testImplementation 'org.assertj:assertj-core:3.11.1'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.10'
+    annotationProcessor 'org.projectlombok:lombok:1.18.10'
 }
 
 description = 'Neutrino RSocket transport implementation'

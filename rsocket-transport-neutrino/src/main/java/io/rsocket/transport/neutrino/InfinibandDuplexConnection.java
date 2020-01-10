@@ -1,9 +1,8 @@
 package io.rsocket.transport.neutrino;
 
-import de.hhu.bsinfo.neutrino.api.connection.Connection;
-import de.hhu.bsinfo.neutrino.api.message.MessageService;
+import de.hhu.bsinfo.neutrino.api.network.Connection;
+import de.hhu.bsinfo.neutrino.api.network.NetworkService;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.rsocket.internal.BaseDuplexConnection;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -12,11 +11,11 @@ import reactor.core.publisher.Mono;
 public class InfinibandDuplexConnection extends BaseDuplexConnection {
 
     private final Connection connection;
-    private final MessageService messageService;
+    private final NetworkService networkService;
 
-    public InfinibandDuplexConnection(Connection connection, MessageService messageService) {
+    public InfinibandDuplexConnection(Connection connection, NetworkService networkService) {
         this.connection = connection;
-        this.messageService = messageService;
+        this.networkService = networkService;
     }
 
     @Override
@@ -26,12 +25,12 @@ public class InfinibandDuplexConnection extends BaseDuplexConnection {
 
     @Override
     public Mono<Void> send(Publisher<ByteBuf> frames) {
-        return messageService.send(connection, frames);
+        return networkService.send(connection, frames);
     }
 
     @Override
     public Flux<ByteBuf> receive() {
-        return messageService.receive(connection);
+        return networkService.receive(connection);
     }
 
 }

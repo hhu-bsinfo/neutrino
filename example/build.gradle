@@ -1,7 +1,14 @@
 plugins {
+    // Base Plugins
+    id 'java'
     id 'idea'
-    id 'application'
-    id "com.google.protobuf" version "0.8.10"
+
+    // Google Protobuf Plugin
+//    id "com.google.protobuf" version "0.8.10"
+
+    // Spring Boot Plugins
+    id 'org.springframework.boot' version '2.2.0.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.8.RELEASE'
 }
 
 compileJava {
@@ -10,83 +17,52 @@ compileJava {
     options.encoding = 'UTF-8'
 }
 
+bootJar {
+    archiveFileName = 'neutrino.jar'
+}
+
 group = 'de.hhu.bsinfo'
 version = getProperty('projectVersion')
-
-mainClassName = 'de.hhu.bsinfo.neutrino.example.App'
-applicationName = 'neutrino'
-
-applicationDefaultJvmArgs = [
-        "-Djava.library.path=${System.getProperty('java.library.path')}:EXAMPLES_HOME/jni",
-]
-
-run.jvmArgs = [
-        "-Djava.library.path=${System.getProperty('java.library.path')}:EXAMPLES_HOME/jni:${project(':jni').buildDir}/lib/main/debug",
-]
-
-project.startScripts.with {
-    doLast {
-        unixScript.text = unixScript.text.replace('EXAMPLES_HOME', '\$APP_HOME')
-    }
-}
-
-task debugStartScripts(type: CreateStartScripts) {
-    applicationName = 'neutrino-dbg'
-    mainClassName = startScripts.mainClassName
-    defaultJvmOpts = startScripts.defaultJvmOpts + "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"
-    classpath = startScripts.classpath
-    outputDir = startScripts.outputDir
-}
-
-project.debugStartScripts.with {
-    doLast {
-        unixScript.text = unixScript.text.replace('EXAMPLES_HOME', '\$APP_HOME')
-    }
-}
-
-startScripts.dependsOn(debugStartScripts)
-
-installDist.doLast {
-    project.file("$project.buildDir/install/$project.name/jni").mkdir()
-    project.copy {
-        from file("${project(':jni').buildDir}/lib/main/debug/libneutrino.so")
-        into file("$project.buildDir/install/$applicationName/jni")
-    }
-}
 
 repositories {
     mavenCentral()
 }
 
-protobuf {
-    protoc {
-        artifact = 'com.google.protobuf:protoc:3.10.0'
-    }
-    plugins {
-        rsocketRpc {
-            artifact = 'io.rsocket.rpc:rsocket-rpc-protobuf:0.2.19'
-        }
-    }
-    generateProtoTasks {
-        all()*.plugins {
-            rsocketRpc {}
-        }
-    }
-}
+//protobuf {
+//    protoc {
+//        artifact = 'com.google.protobuf:protoc:3.10.0'
+//    }
+//    plugins {
+//        rsocketRpc {
+//            artifact = 'io.rsocket.rpc:rsocket-rpc-protobuf:0.2.19'
+//        }
+//    }
+//    generateProtoTasks {
+//        all()*.plugins {
+//            rsocketRpc {}
+//        }
+//    }
+//}
 
-idea {
-    module {
-        sourceDirs += file("src/main/proto")
-        sourceDirs += file("src/generated/main/java")
-        sourceDirs += file("src/generated/main/rsocketRpc")
-
-        generatedSourceDirs += file('src/generated/main/java')
-        generatedSourceDirs += file('src/generated/main/rsocketRpc')
-    }
-}
+//idea {
+//    module {
+//        sourceDirs += file("src/main/proto")
+//        sourceDirs += file("src/generated/main/java")
+//        sourceDirs += file("src/generated/main/rsocketRpc")
+//
+//        generatedSourceDirs += file('src/generated/main/java')
+//        generatedSourceDirs += file('src/generated/main/rsocketRpc')
+//    }
+//}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Spring Boot starter with Actuator support
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    // Spring Boot picocli starter
+    implementation 'info.picocli:picocli-spring-boot-starter:4.0.4'
 
     implementation project(':api')
     implementation project(':rsocket-transport-neutrino')
@@ -94,12 +70,9 @@ dependencies {
     implementation('io.rsocket.rpc:rsocket-rpc-core:0.2.17') {
         exclude group: 'org.slf4j', module: ''
     }
+
     implementation 'com.google.protobuf:protobuf-java:3.10.0'
-
     implementation 'io.netty:netty-buffer:4.1.43.Final'
-
-    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.12.1'
-    implementation 'info.picocli:picocli:3.9.6'
 
     testImplementation 'com.greghaskins:spectrum:1.2.0'
     testImplementation 'org.assertj:assertj-core:3.12.2'

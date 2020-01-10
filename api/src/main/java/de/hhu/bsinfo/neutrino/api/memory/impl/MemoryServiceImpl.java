@@ -1,35 +1,15 @@
 package de.hhu.bsinfo.neutrino.api.memory.impl;
 
-import de.hhu.bsinfo.neutrino.api.connection.InternalConnectionService;
-import de.hhu.bsinfo.neutrino.api.core.InternalCoreService;
 import de.hhu.bsinfo.neutrino.api.memory.MemoryService;
 import de.hhu.bsinfo.neutrino.api.memory.RemoteHandle;
-import de.hhu.bsinfo.neutrino.api.util.NullConfig;
-import de.hhu.bsinfo.neutrino.api.util.service.Service;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
-import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
-
-public class MemoryServiceImpl extends Service<NullConfig> implements MemoryService {
-
-    @Inject
-    private InternalCoreService coreService;
-
-    @Inject
-    private InternalConnectionService connectionService;
-
-    @Override
-    protected void onInit(final NullConfig config) {
-
-    }
-
-    @Override
-    protected void onShutdown() {
-
-    }
+@Slf4j
+@Service
+public class MemoryServiceImpl implements MemoryService {
 
     @Override
     public void read(RemoteHandle source, RegisteredBuffer target) {
