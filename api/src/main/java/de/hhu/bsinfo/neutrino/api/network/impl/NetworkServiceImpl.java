@@ -24,9 +24,11 @@ import de.hhu.bsinfo.neutrino.verbs.Verbs;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
+import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -48,11 +50,19 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private final CompletionChannel receiveCompletionChannel;
     private final SharedReceiveQueue sharedReceiveQueue;
 
-    public NetworkServiceImpl(NetworkServiceConfig config, InfinibandDevice device, InfinibandDeviceConfig deviceConfig) {
+    private final NetworkStatistics statistics;
+    private final AtomicLong sendWorkRequests;
+    private final AtomicLong receiveWorkRequests;
+
+    public NetworkServiceImpl(InfinibandDevice device, InfinibandDeviceConfig deviceConfig, NetworkStatistics statistics, NetworkServiceConfig config) {
         super(config);
 
         this.device = device;
         this.deviceConfig = deviceConfig;
+
+        this.statistics = statistics;
+        sendWorkRequests = statistics.getSendRequests();
+        receiveWorkRequests = statistics.getReceiveRequests();
 
         sendCompletionChannel = Objects.requireNonNull(device.createCompletionChannel());
         receiveCompletionChannel = Objects.requireNonNull(device.createCompletionChannel());
@@ -71,7 +81,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private Disposable sendDisposable;
     private Disposable receiveDisposable;
     private Disposable eventDisposable;
-//    private Disposable logDisposable;
+    private Disposable logDisposable;
 
     private BufferPool sendBufferPool;
     private BufferPool receiveBufferPool;
@@ -81,9 +91,6 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private int fillUpRate;
     private SharedReceiveQueue.Attributes limitAttributes;
     private static final SharedReceiveQueue.AttributeFlag[] LIMIT_FLAGS = { SharedReceiveQueue.AttributeFlag.LIMIT };
-
-//    private final AtomicLong sendWorkRequests = new AtomicLong();
-//    private final AtomicLong receiveWorkRequests = new AtomicLong();
 
     @Override
     protected void onStart() {
@@ -108,7 +115,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
                 .subscribeOn(sendProcessorScheduler)
                 .subscribe(this::onSendCompletion);
 
-//        logDisposable = Flux.interval(Duration.ofSeconds(1))
+//        logDisposable = Flux.interval(Duration.ofMillis(10))
 //                .subscribeOn(Schedulers.parallel())
 //                .subscribe(ignored -> log.info("Send: {}, Receive: {}", sendWorkRequests.get(), receiveWorkRequests.get()));
     }
@@ -187,11 +194,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
         var queuePair = connection.getQueuePair();
         return Flux.from(frames)
                 .doOnNext(source -> {
-                        var then = System.currentTimeMillis();
                         var target = sendBufferPool.leaseNext();
-                        if (System.currentTimeMillis() - then > Duration.ofSeconds(1).toMillis()) {
-                            log.warn("Leasing send buffer took {} seconds", (System.currentTimeMillis() - then) / 1000);
-                        }
 
                         // Remember number of bytes to send
                         var messageSize = source.readableBytes();
@@ -222,7 +225,9 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
                         sendRequest.setListLength(1);
 
                         var isSuccess = queuePair.postSend(sendRequest);
-//                        sendWorkRequests.incrementAndGet();
+                        if (isSuccess) {
+                            sendWorkRequests.incrementAndGet();
+                        }
 
                         element.releaseInstance();
                         sendRequest.releaseInstance();
@@ -238,11 +243,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
 
     private void fillUpReceiveQueue(int count) {
         for (int i = 0; i < count; i++) {
-            var then = System.currentTimeMillis();
             var buffer = receiveBufferPool.leaseNext();
-            if (System.currentTimeMillis() - then > Duration.ofSeconds(1).toMillis()) {
-                log.warn("Leasing receive buffer took {} seconds", (System.currentTimeMillis() - then) / 1000);
-            }
 
             var element = Verbs.getPoolableInstance(ScatterGatherElement.class);
 
@@ -259,7 +260,9 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
             receiveRequest.setListLength(1);
 
             var isSuccess = sharedReceiveQueue.postReceive(receiveRequest);
-//            receiveWorkRequests.incrementAndGet();
+            if (isSuccess) {
+                receiveWorkRequests.incrementAndGet();
+            }
 
             element.releaseInstance();
             receiveRequest.releaseInstance();
@@ -275,7 +278,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private void handleReceiveCompletion(WorkCompletion workCompletion) {
         var id = workCompletion.getId();
         var status = workCompletion.getStatus();
-//        receiveWorkRequests.decrementAndGet();
+        receiveWorkRequests.decrementAndGet();
 
         if (status != WorkCompletion.Status.SUCCESS) {
             log.error("Receive work completion {} failed with status {}: {}", (int) id, status, workCompletion.getStatusMessage());
@@ -300,7 +303,8 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private void handleSendCompletion(WorkCompletion workCompletion) {
         var id = workCompletion.getId();
         var status = workCompletion.getStatus();
-//        sendWorkRequests.decrementAndGet();
+        sendWorkRequests.decrementAndGet();
+
 
         if (status != WorkCompletion.Status.SUCCESS) {
             log.error("Send work completion {} failed with status {}: {}", (int) id, status, workCompletion.getStatusMessage());
@@ -347,12 +351,12 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
         return Flux.create(sink -> {
             while (!sink.isCancelled()) {
                 var completionQueue = completionChannel.getCompletionEvent();
-                completionQueue.poll(completionArray);
-
-                sink.next(completionArray);
 
                 completionQueue.acknowledgeEvents(1);
                 completionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
+                completionQueue.poll(completionArray);
+
+                sink.next(completionArray);
             }
         });
     }
