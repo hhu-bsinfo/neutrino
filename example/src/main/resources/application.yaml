@@ -10,7 +10,7 @@ infiniband:
     portNumber: 1
 
   network:
-    queuePairSize: 20
-    sharedReceiveQueueSize: 20
-    completionQueueSize: 20
+    queuePairSize: 32
+    sharedReceiveQueueSize: 2048
+    completionQueueSize: 2048
     maxScatterGatherElements: 4

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Component
-public class NetworkStatistics {
+public class NetworkMetrics {
 
     private final AtomicLong sendRequests = new AtomicLong();
     private final Gauge sendRequestsGauge;
@@ -15,7 +15,7 @@ public class NetworkStatistics {
     private final AtomicLong receiveRequests = new AtomicLong();
     private final Gauge receiveRequestsGauge;
 
-    public NetworkStatistics(MeterRegistry meterRegistry) {
+    public NetworkMetrics(MeterRegistry meterRegistry) {
         sendRequestsGauge = Gauge.builder("network.sendRequests", sendRequests::get)
                 .description("The number of send work requests on the queue pair")
                 .register(meterRegistry);
@@ -25,11 +25,27 @@ public class NetworkStatistics {
                 .register(meterRegistry);
     }
 
-    public AtomicLong getSendRequests() {
-        return sendRequests;
+    public long getSendRequests() {
+        return sendRequests.get();
     }
 
-    public AtomicLong getReceiveRequests() {
-        return receiveRequests;
+    public void incrementSendRequests() {
+        sendRequests.incrementAndGet();
+    }
+
+    public void decrementSendRequests() {
+        sendRequests.decrementAndGet();
+    }
+
+    public long getReceiveRequests() {
+        return receiveRequests.get();
+    }
+
+    public void incrementReceiveRequests() {
+        receiveRequests.incrementAndGet();
+    }
+
+    public void decrementReceiveRequests() {
+        receiveRequests.decrementAndGet();
     }
 }

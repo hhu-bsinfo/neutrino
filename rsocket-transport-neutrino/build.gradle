@@ -18,6 +18,12 @@ plugins {
     id 'java-library'
 }
 
+compileJava {
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+    options.encoding = 'UTF-8'
+}
+
 repositories {
     maven {
         url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'

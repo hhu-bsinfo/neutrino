@@ -24,53 +24,86 @@ import de.hhu.bsinfo.neutrino.verbs.Verbs;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Service
 public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implements NetworkService {
 
+    /**
+     * The Infiniband device used for communication.
+     */
     private final InfinibandDevice device;
+
+    /**
+     * The Infiniband devices configuration.
+     */
     private final InfinibandDeviceConfig deviceConfig;
 
+    /**
+     * The shared send completion queue.
+     */
+    private final CompletionQueue sendCompletionQueue;
+
+    /**
+     * The shared send completion channel.
+     */
     private final CompletionChannel sendCompletionChannel;
+
+    /**
+     * The shared receive completion queue.
+     */
+    private final CompletionQueue receiveCompletionQueue;
+
+    /**
+     * The shared receive completion channel.
+     */
     private final CompletionChannel receiveCompletionChannel;
+
+    /**
+     * The shared receive queue.
+     */
     private final SharedReceiveQueue sharedReceiveQueue;
 
-    private final NetworkStatistics statistics;
-    private final AtomicLong sendWorkRequests;
-    private final AtomicLong receiveWorkRequests;
+    /**
+     * The pool containing registered chunks of memory for receive operations.
+     */
+    private final BufferPool receiveBufferPool;
 
-    public NetworkServiceImpl(InfinibandDevice device, InfinibandDeviceConfig deviceConfig, NetworkStatistics statistics, NetworkServiceConfig config) {
-        super(config);
+    /**
+     * The number of connections issued by this service.
+     */
+    private final AtomicInteger connectionCounter = new AtomicInteger();
 
-        this.device = device;
-        this.deviceConfig = deviceConfig;
+    /**
+     * All connections issued by this service.
+     */
+    private final Connection[] connections = new Connection[1024];
 
-        this.statistics = statistics;
-        sendWorkRequests = statistics.getSendRequests();
-        receiveWorkRequests = statistics.getReceiveRequests();
+    /**
+     * Metrics collected by the network service.
+     */
+    private final NetworkMetrics metrics;
 
-        sendCompletionChannel = Objects.requireNonNull(device.createCompletionChannel());
-        receiveCompletionChannel = Objects.requireNonNull(device.createCompletionChannel());
-        sharedReceiveQueue = Objects.requireNonNull(device.createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes.Builder(
-                config.getSharedReceiveQueueSize(),
-                config.getMaxScatterGatherElements()
-        ).build()), "Creating shared receive queue failed");
-    }
+    /**
+     * The processor used for signaling incoming buffers.
+     */
+    private final EmitterProcessor<ByteBuf> in = EmitterProcessor.create();
 
     private final Scheduler asyncScheduler = Schedulers.newSingle("event");
     private final Scheduler sendScheduler = Schedulers.newSingle("send");
@@ -82,42 +115,78 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private Disposable receiveDisposable;
     private Disposable eventDisposable;
     private Disposable logDisposable;
+    private Disposable outDisposable;
 
-    private BufferPool sendBufferPool;
-    private BufferPool receiveBufferPool;
-
-    private final EmitterProcessor<ByteBuf> in = EmitterProcessor.create();
-
-    private int fillUpRate;
-    private SharedReceiveQueue.Attributes limitAttributes;
+    private final int fillUpRate;
+    private final SharedReceiveQueue.Attributes limitAttributes;
     private static final SharedReceiveQueue.AttributeFlag[] LIMIT_FLAGS = { SharedReceiveQueue.AttributeFlag.LIMIT };
+
+    public NetworkServiceImpl(InfinibandDevice device, InfinibandDeviceConfig deviceConfig, NetworkMetrics metrics, NetworkServiceConfig config) {
+        super(config);
+
+        this.device = device;
+        this.deviceConfig = deviceConfig;
+        this.metrics = metrics;
+
+        sendCompletionChannel = Objects.requireNonNull(
+            device.createCompletionChannel(),
+            "Creating send completion channel failed"
+        );
+        receiveCompletionChannel = Objects.requireNonNull(
+            device.createCompletionChannel(),
+            "Creating receive completion channel failed"
+        );
+
+        sendCompletionQueue = Objects.requireNonNull(
+            device.createCompletionQueue(getConfig().getCompletionQueueSize(), sendCompletionChannel),
+            "Creating send completion queue failed"
+        );
+
+        receiveCompletionQueue = Objects.requireNonNull(
+            device.createCompletionQueue(getConfig().getCompletionQueueSize(), receiveCompletionChannel),
+            "Creating receive completion queue failed"
+        );
+
+        sendCompletionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
+        receiveCompletionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
+
+        sharedReceiveQueue = Objects.requireNonNull(
+            device.createSharedReceiveQueue(new SharedReceiveQueue.InitialAttributes.Builder(
+                config.getSharedReceiveQueueSize(),
+                config.getMaxScatterGatherElements()
+            ).build()),
+            "Creating shared receive queue failed");
+
+        var attributes = Objects.requireNonNull(
+            sharedReceiveQueue.queryAttributes(),
+            "Querying shared receive queue attributes failed"
+        );
+
+        var maxMtu = device.getPortAttributes().getMaxMtu().getMtuValue();
+        var maxWorkRequests = attributes.getMaxWorkRequests();
+        receiveBufferPool = BufferPool.create(maxMtu, maxWorkRequests, device::wrapRegion);
+
+        fillUpRate = maxWorkRequests / 4;
+        limitAttributes = new SharedReceiveQueue.Attributes.Builder()
+                .withLimit(maxWorkRequests / 2)
+                .build();
+
+        fillUpReceiveQueue(maxWorkRequests);
+    }
 
     @Override
     protected void onStart() {
-        var attributes = sharedReceiveQueue.queryAttributes();
-
-        sendBufferPool = BufferPool.create(4096, attributes.getMaxWorkRequests(), device::wrapRegion);
-        receiveBufferPool = BufferPool.create(4096, attributes.getMaxWorkRequests(), device::wrapRegion);
-        fillUpRate = attributes.getMaxWorkRequests() / 4;
-        limitAttributes = new SharedReceiveQueue.Attributes.Builder().withLimit(attributes.getMaxWorkRequests() / 2).build();
-
-        fillUpReceiveQueue(attributes.getMaxWorkRequests());
-
         eventDisposable = asyncEvents(device)
                 .subscribeOn(asyncScheduler)
                 .subscribe(this::handleAsyncEvent);
 
-        receiveDisposable = workCompletions(receiveCompletionChannel, getConfig().getCompletionQueueSize())
+        receiveDisposable = workCompletions(receiveCompletionChannel, receiveCompletionQueue, getConfig().getCompletionQueueSize())
                 .subscribeOn(receiveProcessorScheduler)
                 .subscribe(this::onReceiveCompletion);
 
-        sendDisposable = workCompletions(sendCompletionChannel, getConfig().getCompletionQueueSize())
+        sendDisposable = workCompletions(sendCompletionChannel, sendCompletionQueue, getConfig().getCompletionQueueSize())
                 .subscribeOn(sendProcessorScheduler)
                 .subscribe(this::onSendCompletion);
-
-//        logDisposable = Flux.interval(Duration.ofMillis(10))
-//                .subscribeOn(Schedulers.parallel())
-//                .subscribe(ignored -> log.info("Send: {}, Receive: {}", sendWorkRequests.get(), receiveWorkRequests.get()));
     }
 
     @Override
@@ -130,16 +199,10 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     @Override
     public Mono<Connection> connect(Negotiator negotiator, Mtu mtu) {
         return Mono.fromCallable(() -> {
-            var sendQueue = device.createCompletionQueue(getConfig().getCompletionQueueSize(), sendCompletionChannel);
-            var receiveQueue = device.createCompletionQueue(getConfig().getCompletionQueueSize(), receiveCompletionChannel);
-
-            sendQueue.requestNotification(CompletionQueue.ALL_EVENTS);
-            receiveQueue.requestNotification(CompletionQueue.ALL_EVENTS);
-
             var initialAttributes = new QueuePair.InitialAttributes.Builder(
                     QueuePair.Type.RC,
-                    sendQueue,
-                    receiveQueue,
+                    sendCompletionQueue,
+                    receiveCompletionQueue,
                     getConfig().getQueuePairSize(),
                     getConfig().getQueuePairSize(),
                     getConfig().getMaxScatterGatherElements(),
@@ -148,19 +211,24 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
                     .build();
 
             var queuePair = device.createQueuePair(initialAttributes);
-
             queuePair.modify(new QueuePair.Attributes.Builder()
                     .withState(QueuePair.State.INIT)
                     .withPartitionKeyIndex((short) 0)
                     .withPortNumber(deviceConfig.getPortNumber())
                     .withAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ));
 
+            var attributes = queuePair.queryAttributes(QueuePair.AttributeFlag.CAP);
+            var maxMtu = device.getPortAttributes().getMaxMtu().getMtuValue();
+            var bufferPool = BufferPool.create(maxMtu, attributes.capabilities.getMaxSendWorkRequests(), device::wrapRegion);
+
             var connection = ConnectionImpl.builder()
+                    .id(connectionCounter.getAndIncrement())
                     .localId(device.getPortAttributes().getLocalId())
                     .portNumber(deviceConfig.getPortNumber())
                     .queuePair(queuePair)
-                    .sendCompletionQueue(sendQueue)
-                    .receiveCompletionQueue(receiveQueue)
+                    .sendCompletionQueue(sendCompletionQueue)
+                    .receiveCompletionQueue(receiveCompletionQueue)
+                    .bufferPool(bufferPool)
                     .build();
 
             var remote = negotiator.exchange(QueuePairAddress.builder()
@@ -185,6 +253,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
 
             log.debug("Established connection with {}:{}", remote.getLocalId(), remote.getQueuePairNumber());
 
+            connections[connection.getId()] = connection;
             return connection;
         });
     }
@@ -192,9 +261,10 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     @Override
     public Mono<Void> send(Connection connection, Publisher<ByteBuf> frames) {
         var queuePair = connection.getQueuePair();
+        var bufferPool = connection.getBufferPool();
         return Flux.from(frames)
                 .doOnNext(source -> {
-                        var target = sendBufferPool.leaseNext();
+                        var target = bufferPool.leaseNext();
 
                         // Remember number of bytes to send
                         var messageSize = source.readableBytes();
@@ -218,15 +288,15 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
                         var sendRequest = Verbs.getPoolableInstance(SendWorkRequest.class);
 
                         sendRequest.clear();
-                        sendRequest.setId(target.getIndex());
+                        sendRequest.setId((long) connection.getId() << 32 | target.getIndex());
                         sendRequest.setOpCode(OpCode.SEND);
                         sendRequest.setFlags(SendWorkRequest.SendFlag.SIGNALED);
                         sendRequest.setListHandle(element.getHandle());
                         sendRequest.setListLength(1);
 
-                        var isSuccess = queuePair.postSend(sendRequest);
-                        if (isSuccess) {
-                            sendWorkRequests.incrementAndGet();
+                        var success = queuePair.postSend(sendRequest);
+                        if (success) {
+                            metrics.incrementSendRequests();
                         }
 
                         element.releaseInstance();
@@ -259,17 +329,12 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
             receiveRequest.setListHandle(element.getHandle());
             receiveRequest.setListLength(1);
 
-            var isSuccess = sharedReceiveQueue.postReceive(receiveRequest);
-            if (isSuccess) {
-                receiveWorkRequests.incrementAndGet();
+            if (sharedReceiveQueue.postReceive(receiveRequest)) {
+                metrics.incrementReceiveRequests();
             }
 
             element.releaseInstance();
             receiveRequest.releaseInstance();
-
-            if (!isSuccess) {
-                break;
-            }
         }
 
         armSharedReceiveQueue();
@@ -278,8 +343,6 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private void handleReceiveCompletion(WorkCompletion workCompletion) {
         var id = workCompletion.getId();
         var status = workCompletion.getStatus();
-        receiveWorkRequests.decrementAndGet();
-
         if (status != WorkCompletion.Status.SUCCESS) {
             log.error("Receive work completion {} failed with status {}: {}", (int) id, status, workCompletion.getStatusMessage());
             receiveBufferPool.release((int) id);
@@ -303,14 +366,11 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private void handleSendCompletion(WorkCompletion workCompletion) {
         var id = workCompletion.getId();
         var status = workCompletion.getStatus();
-        sendWorkRequests.decrementAndGet();
-
-
         if (status != WorkCompletion.Status.SUCCESS) {
             log.error("Send work completion {} failed with status {}: {}", (int) id, status, workCompletion.getStatusMessage());
         }
 
-        sendBufferPool.release((int) id);
+        connections[(int) (id >> 32)].getBufferPool().release((int) id);
     }
 
     private void handleAsyncEvent(AsyncEvent asyncEvent) {
@@ -329,6 +389,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private void onReceiveCompletion(CompletionQueue.WorkCompletionArray workCompletions) {
         var workCompletionCount = workCompletions.getLength();
         for (int i = 0; i < workCompletionCount; i++) {
+            metrics.decrementReceiveRequests();
             handleReceiveCompletion(workCompletions.get(i));
         }
     }
@@ -336,6 +397,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private void onSendCompletion(CompletionQueue.WorkCompletionArray workCompletions) {
         var workCompletionCount = workCompletions.getLength();
         for (int i = 0; i < workCompletionCount; i++) {
+            metrics.decrementSendRequests();
             handleSendCompletion(workCompletions.get(i));
         }
     }
@@ -346,17 +408,29 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
         }
     }
 
-    private static Flux<CompletionQueue.WorkCompletionArray> workCompletions(CompletionChannel completionChannel, int pollCount) {
+    private static Flux<CompletionQueue.WorkCompletionArray> workCompletions(
+            final CompletionChannel completionChannel,
+            final CompletionQueue completionQueue,
+            final int pollCount) {
         var completionArray = new CompletionQueue.WorkCompletionArray(pollCount);
         return Flux.create(sink -> {
             while (!sink.isCancelled()) {
-                var completionQueue = completionChannel.getCompletionEvent();
-
-                completionQueue.acknowledgeEvents(1);
-                completionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
                 completionQueue.poll(completionArray);
+                if (completionArray.getLength() != 0) {
+                    sink.next(completionArray);
+                    continue;
+                }
 
-                sink.next(completionArray);
+                completionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
+
+                completionQueue.poll(completionArray);
+                if (completionArray.getLength() != 0) {
+                    sink.next(completionArray);
+                    continue;
+                }
+
+                completionChannel.getCompletionEvent();
+                completionQueue.acknowledgeEvents(1);
             }
         });
     }
