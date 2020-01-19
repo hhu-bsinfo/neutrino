@@ -1,16 +1,16 @@
 package de.hhu.bsinfo.neutrino.api.memory;
 
 import de.hhu.bsinfo.neutrino.api.network.Connection;
-import de.hhu.bsinfo.neutrino.api.network.impl.ConnectionImpl;
 
 public class RemoteHandle {
 
-    private final ConnectionImpl connection;
+    private final Connection connection;
+
     private final long address;
     private final long capacity;
     private final int key;
 
-    public RemoteHandle(ConnectionImpl connection, long address, long capacity, int key) {
+    public RemoteHandle(Connection connection, long address, long capacity, int key) {
         this.connection = connection;
         this.address = address;
         this.capacity = capacity;

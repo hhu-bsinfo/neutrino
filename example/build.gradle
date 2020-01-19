@@ -4,7 +4,7 @@ plugins {
     id 'idea'
 
     // Google Protobuf Plugin
-//    id "com.google.protobuf" version "0.8.10"
+    id "com.google.protobuf" version "0.8.10"
 
     // Spring Boot Plugins
     id 'org.springframework.boot' version '2.2.0.RELEASE'
@@ -28,32 +28,32 @@ repositories {
     mavenCentral()
 }
 
-//protobuf {
-//    protoc {
-//        artifact = 'com.google.protobuf:protoc:3.10.0'
-//    }
-//    plugins {
-//        rsocketRpc {
-//            artifact = 'io.rsocket.rpc:rsocket-rpc-protobuf:0.2.19'
-//        }
-//    }
-//    generateProtoTasks {
-//        all()*.plugins {
-//            rsocketRpc {}
-//        }
-//    }
-//}
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.10.0'
+    }
+    plugins {
+        rsocketRpc {
+            artifact = 'io.rsocket.rpc:rsocket-rpc-protobuf:0.2.19'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            rsocketRpc {}
+        }
+    }
+}
 
-//idea {
-//    module {
-//        sourceDirs += file("src/main/proto")
-//        sourceDirs += file("src/generated/main/java")
-//        sourceDirs += file("src/generated/main/rsocketRpc")
-//
-//        generatedSourceDirs += file('src/generated/main/java')
-//        generatedSourceDirs += file('src/generated/main/rsocketRpc')
-//    }
-//}
+idea {
+    module {
+        sourceDirs += file("src/main/proto")
+        sourceDirs += file("src/generated/main/java")
+        sourceDirs += file("src/generated/main/rsocketRpc")
+
+        generatedSourceDirs += file('src/generated/main/java')
+        generatedSourceDirs += file('src/generated/main/rsocketRpc')
+    }
+}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])

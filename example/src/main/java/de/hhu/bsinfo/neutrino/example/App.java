@@ -6,9 +6,15 @@ import java.net.InetSocketAddress;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import picocli.CommandLine;
 
 @SpringBootApplication(scanBasePackages = "de.hhu.bsinfo.neutrino")
+@ComponentScan(basePackages = "de.hhu.bsinfo.neutrino",
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.REGEX,
+                pattern = "de\\.hhu\\.bsinfo\\.neutrino\\.example\\.service\\..*"))
 public class App {
 
     @SuppressWarnings("CallToSystemExit")
