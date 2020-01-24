@@ -272,7 +272,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
                         sendRequest.clear();
                         sendRequest.setId((long) connection.getId() << 32 | target.getIndex());
                         sendRequest.setOpCode(OpCode.SEND);
-                        sendRequest.setFlags(SendWorkRequest.SendFlag.SIGNALED);
+                        sendRequest.setSendFlags(SendWorkRequest.SendFlag.SIGNALED);
                         sendRequest.setListHandle(element.getHandle());
                         sendRequest.setListLength(1);
 
