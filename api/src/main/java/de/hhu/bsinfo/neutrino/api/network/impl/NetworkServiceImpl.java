@@ -2,26 +2,13 @@ package de.hhu.bsinfo.neutrino.api.network.impl;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDeviceConfig;
-import de.hhu.bsinfo.neutrino.api.network.Connection;
-import de.hhu.bsinfo.neutrino.api.network.Negotiator;
-import de.hhu.bsinfo.neutrino.api.network.NetworkService;
-import de.hhu.bsinfo.neutrino.api.network.NetworkServiceConfig;
+import de.hhu.bsinfo.neutrino.api.network.*;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.util.BaseService;
+import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
-import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.AsyncEvent;
-import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
-import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
-import de.hhu.bsinfo.neutrino.verbs.Mtu;
-import de.hhu.bsinfo.neutrino.verbs.QueuePair;
-import de.hhu.bsinfo.neutrino.verbs.ReceiveWorkRequest;
-import de.hhu.bsinfo.neutrino.verbs.ScatterGatherElement;
-import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
+import de.hhu.bsinfo.neutrino.verbs.*;
 import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest.OpCode;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
-import de.hhu.bsinfo.neutrino.verbs.Verbs;
-import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
@@ -30,16 +17,11 @@ import reactor.core.Disposable;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Service
@@ -309,6 +291,16 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     @Override
     public Flux<ByteBuf> receive(Connection connection) {
         return in.publishOn(receiveScheduler);
+    }
+
+    @Override
+    public Mono<Void> write(Buffer buffer, RemoteHandle handle) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    @Override
+    public Mono<Void> read(Buffer buffer, RemoteHandle handle) {
+        throw new UnsupportedOperationException("not implemented");
     }
 
     private void fillUpReceiveQueue(int count) {

@@ -1,5 +1,6 @@
 package de.hhu.bsinfo.neutrino.api.network;
 
+import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
 import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Publisher;
@@ -13,4 +14,8 @@ public interface NetworkService {
     Mono<Void> send(Connection connection, Publisher<ByteBuf> frames);
 
     Flux<ByteBuf> receive(Connection connection);
+
+    Mono<Void> write(Buffer buffer, RemoteHandle handle);
+
+    Mono<Void> read(Buffer buffer, RemoteHandle handle);
 }

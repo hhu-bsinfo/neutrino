@@ -1,5 +1,6 @@
 package de.hhu.bsinfo.neutrino.api.device;
 
+import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.AsyncEvent;
@@ -27,7 +28,7 @@ public interface InfinibandDevice {
     /**
      * Creates a new {@link RegisteredBuffer} used for RDMA operations.
      */
-    RegisteredBuffer allocateMemory(long capacity, AccessFlag... accessFlags);
+    Buffer allocateMemory(int capacity);
 
     /**
      * Wraps the specified chunk of memory within a {@link MemoryRegion}.

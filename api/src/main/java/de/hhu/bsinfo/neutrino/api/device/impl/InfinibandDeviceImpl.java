@@ -2,6 +2,7 @@ package de.hhu.bsinfo.neutrino.api.device.impl;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDeviceConfig;
+import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
 import de.hhu.bsinfo.neutrino.verbs.AsyncEvent;
@@ -46,8 +47,8 @@ public class InfinibandDeviceImpl implements InfinibandDevice {
     }
 
     @Override
-    public RegisteredBuffer allocateMemory(long capacity, AccessFlag... accessFlags) {
-        return protectionDomain.allocateMemory(capacity, accessFlags);
+    public Buffer allocateMemory(int capacity) {
+        return Buffer.allocate(capacity, this::wrapRegion);
     }
 
     @Override

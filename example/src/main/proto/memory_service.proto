@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package de.hhu.bsinfo.neutrino.example.service;
+
+option java_package = "de.hhu.bsinfo.neutrino.example.service";
+option java_outer_classname = "MemoryServiceProto";
+option java_multiple_files = true;
+
+service MemoryService {
+    rpc AllocateBuffer (BufferRequest) returns (RemoteHandle) {}
+}
+
+message BufferRequest {
+    int32 capacity = 1;
+}
+
+message RemoteHandle {
+    int64 address = 1;
+    int32 capacity = 2;
+    int32 key = 3;
+}
