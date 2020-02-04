@@ -1,7 +1,7 @@
 package de.hhu.bsinfo.neutrino.api.network.impl;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
-import de.hhu.bsinfo.neutrino.api.network.NetworkServiceConfig;
+import de.hhu.bsinfo.neutrino.api.network.NetworkConfiguration;
 import de.hhu.bsinfo.neutrino.verbs.DeviceAttributes;
 import de.hhu.bsinfo.neutrino.verbs.PortAttributes;
 import lombok.Getter;
@@ -16,7 +16,7 @@ import javax.annotation.PostConstruct;
 @Configuration
 @ConfigurationProperties(prefix = "infiniband.network")
 @Getter @Setter
-public class NetworkServiceConfigImpl implements NetworkServiceConfig  {
+public class NetworkConfigurationImpl implements NetworkConfiguration {
     private int mtu = 4096;
     private int sharedReceiveQueueSize = 16383;
     private int maxScatterGatherElements = 10;
@@ -33,7 +33,7 @@ public class NetworkServiceConfigImpl implements NetworkServiceConfig  {
     private final DeviceAttributes deviceAttributes;
     private final PortAttributes portAttributes;
 
-    public NetworkServiceConfigImpl(InfinibandDevice device) {
+    public NetworkConfigurationImpl(InfinibandDevice device) {
         deviceAttributes = device.getDeviceAttributes();
         portAttributes = device.getPortAttributes();
     }

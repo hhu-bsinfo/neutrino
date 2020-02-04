@@ -1,6 +1,6 @@
 package de.hhu.bsinfo.neutrino.api.network;
 
-public interface NetworkServiceConfig {
+public interface NetworkConfiguration {
     int getMtu();
     int getSharedReceiveQueueSize();
     int getMaxScatterGatherElements();

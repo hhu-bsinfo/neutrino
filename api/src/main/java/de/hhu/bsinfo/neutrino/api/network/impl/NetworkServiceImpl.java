@@ -11,6 +11,8 @@ import de.hhu.bsinfo.neutrino.verbs.*;
 import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest.OpCode;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.reactivestreams.Publisher;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
@@ -25,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
-public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implements NetworkService {
+public class NetworkServiceImpl extends BaseService<NetworkConfiguration> implements NetworkService {
 
     /**
      * The Infiniband device used for communication.
@@ -103,7 +105,7 @@ public class NetworkServiceImpl extends BaseService<NetworkServiceConfig> implem
     private final SharedReceiveQueue.Attributes limitAttributes;
     private static final SharedReceiveQueue.AttributeFlag[] LIMIT_FLAGS = { SharedReceiveQueue.AttributeFlag.LIMIT };
 
-    public NetworkServiceImpl(InfinibandDevice device, InfinibandDeviceConfig deviceConfig, NetworkMetrics metrics, NetworkServiceConfig config) {
+    public NetworkServiceImpl(InfinibandDevice device, InfinibandDeviceConfig deviceConfig, NetworkMetrics metrics, NetworkConfiguration config) {
         super(config);
 
         this.device = device;
