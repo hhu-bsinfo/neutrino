@@ -3,6 +3,7 @@ package de.hhu.bsinfo.neutrino.benchmark;
 import de.hhu.bsinfo.neutrino.benchmark.pool.QueuePool;
 import de.hhu.bsinfo.neutrino.benchmark.pool.QueuePool.QueueType;
 import de.hhu.bsinfo.neutrino.struct.Result;
+import de.hhu.bsinfo.neutrino.util.NativeLibrary;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
@@ -10,7 +11,7 @@ import org.openjdk.jmh.annotations.State;
 public class LinkedQueueResultPoolBenchmark {
 
     static {
-        System.loadLibrary("neutrino");
+        NativeLibrary.load("neutrino");
     }
 
     private static final int THREADS = 1;

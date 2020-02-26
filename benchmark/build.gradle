@@ -1,6 +1,5 @@
 plugins {
     id 'java'
-    id "me.champeau.gradle.jmh"
 }
 
 apply plugin: "me.champeau.gradle.jmh"
@@ -14,13 +13,22 @@ compileJava {
 group = 'de.hhu.bsinfo'
 version = getProperty('projectVersion')
 
+jmh {
+    include = ['JniCallBenchmark']
+}
+
 jmh.jvmArgs = [
-        "-Djava.library.path=${System.getProperty('java.library.path')}:${System.getProperty('user.dir')}/build/jni/lib/main/debug/".toString()
+        "-Djava.library.path=${System.getProperty('java.library.path')}:${project(':jni').buildDir}/lib/main/debug".toString()
 ]
 
-jmhJar {
+task benchmarkJar(type: Jar, dependsOn: jmhJar) {
     manifest {
-        attributes 'Main-Class': 'de.hhu.bsinfo.neutrino.benchmark.BenchmarkApp'
+        attributes 'Main-Class': 'org.openjdk.jmh.Main'
+    }
+    classifier = 'benchmark'
+    from {
+        (jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime)
+                .collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
 

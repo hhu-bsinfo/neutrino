@@ -4,6 +4,7 @@ import de.hhu.bsinfo.neutrino.example.command.Root;
 import de.hhu.bsinfo.neutrino.example.util.InetSocketAddressConverter;
 import java.net.InetSocketAddress;
 
+import de.hhu.bsinfo.neutrino.util.NativeLibrary;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
@@ -16,6 +17,10 @@ import picocli.CommandLine;
                 type = FilterType.REGEX,
                 pattern = "de\\.hhu\\.bsinfo\\.neutrino\\.example\\.service\\..*"))
 public class App {
+
+    static{
+        NativeLibrary.load("neutrino");
+    }
 
     @SuppressWarnings("CallToSystemExit")
     public static void main(String... args) {

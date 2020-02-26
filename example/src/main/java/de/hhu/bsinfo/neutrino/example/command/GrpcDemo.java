@@ -1,10 +1,12 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
+import com.google.protobuf.ByteString;
 import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.api.network.Connection;
 import de.hhu.bsinfo.neutrino.api.network.NetworkService;
 import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
 import de.hhu.bsinfo.neutrino.example.service.*;
+import de.hhu.bsinfo.neutrino.example.util.Result;
 import io.netty.buffer.ByteBuf;
 import io.rsocket.RSocketFactory;
 import io.rsocket.frame.decoder.PayloadDecoder;
@@ -17,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import picocli.CommandLine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.ParallelFlux;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -26,6 +30,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
@@ -38,9 +44,14 @@ import java.util.stream.Collectors;
 public class GrpcDemo implements Runnable {
 
     private static final int DEFAULT_SERVER_PORT = 2998;
+
     private static final int DEFAULT_MTU = 4096;
-    private static final long MICRO_SECOND = 1000000;
-    private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
+
+    private static final long DEFAULT_MESSAGE_COUNT = 50_000_000;
+
+    private static final int DEFAULT_MESSAGE_SIZE = 64;
+
+    private static final int DEFAULT_CONNECTION_COUNT = 1;
 
     @CommandLine.Option(
             names = "--server",
@@ -56,6 +67,21 @@ public class GrpcDemo implements Runnable {
             names = {"-p", "--port"},
             description = "The port the server will listen on.")
     private int port = DEFAULT_SERVER_PORT;
+
+    @CommandLine.Option(
+            names = {"-m", "--messages"},
+            description = "The number of messages.")
+    private long messageCount = DEFAULT_MESSAGE_COUNT;
+
+    @CommandLine.Option(
+            names = {"-b", "--bytes"},
+            description = "The number of bytes per message.")
+    private int messageSize = DEFAULT_MESSAGE_SIZE;
+
+    @CommandLine.Option(
+            names = {"--connections"},
+            description = "The number of connections.")
+    private long connectionCount = DEFAULT_CONNECTION_COUNT;
 
     @Autowired
     private Neutrino neutrino;
@@ -82,28 +108,36 @@ public class GrpcDemo implements Runnable {
 
             // Create gRPC service server
             var echoServer = new EchoServiceServer(new EchoServiceImpl(), Optional.empty(), Optional.empty());
-            var memoryServer = new MemoryServiceServer(new MemoryServiceImpl(neutrino), Optional.empty(), Optional.empty());
 
-            var localBuffer = neutrino.allocate(DEFAULT_BUFFER_SIZE);
+            // Create message
+            final var data = new byte[messageSize];
+            ThreadLocalRandom.current().nextBytes(data);
+            final var message = BinaryMessage.newBuilder().setData(ByteString.copyFrom(data)).build();
+            final var actualSize = message.getSerializedSize();
+            final var messageFlux = Flux.just(message).repeat(messageCount);
+
+            var startTime = new AtomicLong();
 
             // Configure and create a RSocket passing it the infiniband transport and connect to the server
             RSocketFactory.connect()
                     .fragment(DEFAULT_MTU)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
-                    .acceptor(rSocket -> new RequestHandlingRSocket(echoServer, memoryServer))
+                    .acceptor(rSocket -> new RequestHandlingRSocket(echoServer))
                     .transport(transport)
                     .start()
                     .doOnNext(ignored -> log.info("Client connected"))
-                    .map(MemoryServiceClient::new)
-                    .flatMap(client -> client.allocateBuffer(BufferRequest.newBuilder()
-                                                                            .setCapacity(DEFAULT_BUFFER_SIZE)
-                                                                            .build()))
-                    .flatMap(remoteHandle -> localBuffer.flatMap(buffer -> neutrino.write(buffer, convert(null, remoteHandle))))
-                    .subscribe(ignored -> {
-                        log.info("Written data into remote buffer");
-                    });
+                    .map(EchoServiceClient::new)
+                    .flatMapMany(client -> messageFlux.flatMap(client::binaryFireAndForget))
+                    .doFirst(() -> startTime.set(System.nanoTime()))
+                    .blockLast();
 
-            LockSupport.parkNanos(Duration.ofSeconds(600).toNanos());
+            var result = new Result(messageCount, actualSize, System.nanoTime() - startTime.get());
+
+            System.out.println();
+            System.out.println();
+            System.out.println(result);
+            System.out.println();
+
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
@@ -121,22 +155,20 @@ public class GrpcDemo implements Runnable {
 
             // Create gRPC service server
             var echoServer = new EchoServiceServer(new EchoServiceImpl(), Optional.empty(), Optional.empty());
-            var memoryServer = new MemoryServiceServer(new MemoryServiceImpl(neutrino), Optional.empty(), Optional.empty());
 
             // Configure and create an RSocket passing it the infiniband transport
-            var rsocket = RSocketFactory.receive()
+            var server = RSocketFactory.receive()
                     .fragment(DEFAULT_MTU)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
                     .acceptor((setup, reactiveSocket) -> {
                         log.info("Client connection accepted");
-                        return Mono.just(new RequestHandlingRSocket(echoServer, memoryServer));
+                        return Mono.just(new RequestHandlingRSocket(echoServer));
                     })
                     .transport(transport)
                     .start()
-                    .subscribe();
+                    .block();
 
-            // Block the main thread
-            LockSupport.parkNanos(Duration.ofSeconds(600).toNanos());
+            server.onClose().block();
         } catch (IOException e) {
             log.error("An unexpected error occured", e);
         }
@@ -144,9 +176,11 @@ public class GrpcDemo implements Runnable {
 
     private static final class EchoServiceImpl implements EchoService {
 
+        private static final Mono<Empty> EMPTY_MONO = Mono.just(Empty.getDefaultInstance()).cache();
+
         @Override
         public Mono<Empty> fireAndForget(SimpleMessage message, ByteBuf metadata) {
-            return Mono.just(Empty.getDefaultInstance());
+            return EMPTY_MONO;
         }
 
         @Override
@@ -170,6 +204,32 @@ public class GrpcDemo implements Runnable {
         @Override
         public Flux<SimpleMessage> streamingRequestAndResponse(Publisher<SimpleMessage> messages, ByteBuf metadata) {
             return Flux.from(messages);
+        }
+
+        @Override
+        public Mono<BinaryMessage> binaryRequestReply(BinaryMessage message, ByteBuf metadata) {
+            return Mono.empty();
+        }
+
+        @Override
+        public Mono<Empty> binaryFireAndForget(BinaryMessage message, ByteBuf metadata) {
+            log.info("Received message");
+            return EMPTY_MONO;
+        }
+
+        @Override
+        public Flux<BinaryMessage> binaryRequestStream(BinaryMessage message, ByteBuf metadata) {
+            return Flux.empty();
+        }
+
+        @Override
+        public Mono<BinaryMessage> binaryStreamingRequestSingleResponse(Publisher<BinaryMessage> messages, ByteBuf metadata) {
+            return Mono.empty();
+        }
+
+        @Override
+        public Flux<BinaryMessage> binaryStreamingRequestAndResponse(Publisher<BinaryMessage> messages, ByteBuf metadata) {
+            return Flux.empty();
         }
     }
 

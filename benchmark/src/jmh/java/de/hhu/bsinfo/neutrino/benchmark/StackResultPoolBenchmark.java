@@ -2,6 +2,7 @@ package de.hhu.bsinfo.neutrino.benchmark;
 
 import de.hhu.bsinfo.neutrino.benchmark.pool.StackPool;
 import de.hhu.bsinfo.neutrino.struct.Result;
+import de.hhu.bsinfo.neutrino.util.NativeLibrary;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
@@ -9,7 +10,7 @@ import org.openjdk.jmh.annotations.State;
 public class StackResultPoolBenchmark {
 
     static {
-        System.loadLibrary("neutrino");
+        NativeLibrary.load("neutrino");
     }
 
     @State(Scope.Benchmark)

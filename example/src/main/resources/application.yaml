@@ -1,7 +1,7 @@
 logging:
   level:
     root: ERROR
-    de.hhu.bsinfo: INFO
+    de.hhu.bsinfo: DEBUG
 
 infiniband:
 
@@ -10,7 +10,7 @@ infiniband:
     portNumber: 1
 
   network:
-    queuePairSize: 32
-    sharedReceiveQueueSize: 2048
-    completionQueueSize: 2048
-    maxScatterGatherElements: 4
+    queuePairSize: 128
+    sharedReceiveQueueSize: 12800
+    completionQueueSize: 12800
+    maxScatterGatherElements: 1

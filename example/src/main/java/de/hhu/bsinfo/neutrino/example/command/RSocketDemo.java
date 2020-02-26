@@ -1,7 +1,12 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
 import de.hhu.bsinfo.neutrino.api.network.NetworkService;
+import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
+import de.hhu.bsinfo.neutrino.example.util.Result;
+import de.hhu.bsinfo.neutrino.verbs.Mtu;
+import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCounted;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.RSocketFactory;
@@ -18,12 +23,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 @Slf4j
@@ -35,9 +43,12 @@ import java.util.concurrent.locks.LockSupport;
         separator = " ")
 public class RSocketDemo implements Runnable {
 
+    private static final int DEFAULT_MESSAGE_SIZE = 64;
     private static final int DEFAULT_SERVER_PORT = 2998;
     private static final int DEFAULT_MTU = 4096;
     private static final long MICRO_SECOND = 1000000;
+
+    private static final long DEFAULT_MESSAGE_COUNT = 50_000_000;
 
     @CommandLine.Option(
             names = "--server",
@@ -53,6 +64,16 @@ public class RSocketDemo implements Runnable {
             names = {"-p", "--port"},
             description = "The port the server will listen on.")
     private int port = DEFAULT_SERVER_PORT;
+
+    @CommandLine.Option(
+            names = {"-b", "--bytes"},
+            description = "The number of bytes per message.")
+    private int messageSize = DEFAULT_MESSAGE_SIZE;
+
+    @CommandLine.Option(
+            names = {"-m", "--messages"},
+            description = "The number of messages.")
+    private long messageCount = DEFAULT_MESSAGE_COUNT;
 
     @Autowired
     private NetworkService networkService;
@@ -70,34 +91,40 @@ public class RSocketDemo implements Runnable {
         // Create a socket to exchange queue pair information with the server
         try (var socket = new Socket(serverAddress.getAddress(), serverAddress.getPort())) {
 
+            log.info("Connected with {}", socket.getInetAddress());
+
             // Create RSocket infiniband client transport using neutrino
             var transport = new InfinibandClientTransport(networkService, address -> connect(socket, address));
 
-            // Configure and create a RSocket passing it the infiniband transport and connect to the server
-            RSocketFactory.connect()
+            // Create payload
+            final var data = new byte[messageSize];
+            ThreadLocalRandom.current().nextBytes(data);
+            final var payload = DefaultPayload.create(data);
+
+            var startTime = new AtomicLong();
+
+            var disposable = RSocketFactory.connect()
                     .fragment(DEFAULT_MTU)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
                     .acceptor(rSocket -> new EmptyMessageHandler())
                     .transport(transport)
                     .start()
-                    .flatMapMany(rsocket -> {
-                        // Create a payload (once) and send it (multiple times) to the server
-                        var payload = DefaultPayload.create("ping");
-                        return rsocket.requestChannel(Flux.just(payload).repeat())
-                                .doOnNext(Payload::release);
-                    })
-                    .window(Duration.ofSeconds(1))
-                    .flatMap(Flux::count)
-                    .subscribe(count -> {
-                        if (count != 0) {
-                            log.info("Received {} messages ({} us/m)", count, MICRO_SECOND/count);
-                        }
-                    });
+                    .flatMapMany(rsocket -> Flux.just(payload).repeat(messageCount).flatMap(rsocket::fireAndForget))
+                    .doFirst(() -> startTime.set(System.nanoTime()))
+                    .blockLast();
 
-            LockSupport.parkNanos(Duration.ofSeconds(600).toNanos());
-        } catch (IOException e) {
+            var result = new Result(messageCount, messageSize, System.nanoTime() - startTime.get());
+
+            System.out.println();
+            System.out.println();
+            System.out.println(result);
+            System.out.println();
+
+        } catch (Throwable e) {
             log.error("An unexpected error occured", e);
         }
+
+        log.info("Client exit");
     }
 
     private void startServer() {
@@ -107,23 +134,27 @@ public class RSocketDemo implements Runnable {
         try (var serverSocket = new ServerSocket(port);
              var socket = serverSocket.accept()) {
 
+            log.info("Accepted new connection from {}", socket.getInetAddress());
+
+
             // Create RSocket infiniband server transport using neutrino
             var transport = new InfinibandServerTransport(networkService, address -> connect(socket, address));
 
             // Configure and create an RSocket passing it the infiniband transport
-            var rsocket = RSocketFactory.receive()
+            var server = RSocketFactory.receive()
                     .fragment(DEFAULT_MTU)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
                     .acceptor((setup, reactiveSocket) ->  Mono.just(new MessageHandler()))
                     .transport(transport)
                     .start()
-                    .subscribe();
+                    .block();
 
-            // Block the main thread
-            LockSupport.parkNanos(Duration.ofSeconds(600).toNanos());
-        } catch (IOException e) {
+            server.onClose().block();
+        } catch (Throwable e) {
             log.error("An unexpected error occured", e);
         }
+
+        log.info("Server exit");
     }
 
     private static QueuePairAddress connect(Socket socket, QueuePairAddress local) {
@@ -142,6 +173,12 @@ public class RSocketDemo implements Runnable {
     }
 
     private static class MessageHandler extends AbstractRSocket {
+
+        @Override
+        public Mono<Void> fireAndForget(Payload payload) {
+            payload.release();
+            return Mono.empty();
+        }
 
         @Override
         public Flux<Payload> requestChannel(Publisher<Payload> payloads) {

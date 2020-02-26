@@ -7,20 +7,21 @@ option java_outer_classname = "EchoServiceProto";
 option java_multiple_files = true;
 
 service EchoService {
-    // Request / Response
     rpc RequestReply (SimpleMessage) returns (SimpleMessage) {}
-
-    // Fire-and-Forget
     rpc FireAndForget (SimpleMessage) returns (Empty) {}
-
-    // Single Request / Streaming Response
     rpc RequestStream (SimpleMessage) returns (stream SimpleMessage) {}
-
-    // Streaming Request / Single Response
     rpc StreamingRequestSingleResponse (stream SimpleMessage) returns (SimpleMessage) {}
-
-    // Streaming Request / Streaming Response
     rpc StreamingRequestAndResponse (stream SimpleMessage) returns (stream SimpleMessage) {}
+
+    rpc BinaryRequestReply (BinaryMessage) returns (BinaryMessage) {}
+    rpc BinaryFireAndForget (BinaryMessage) returns (Empty) {}
+    rpc BinaryRequestStream (BinaryMessage) returns (stream BinaryMessage) {}
+    rpc BinaryStreamingRequestSingleResponse (stream BinaryMessage) returns (BinaryMessage) {}
+    rpc BinaryStreamingRequestAndResponse (stream BinaryMessage) returns (stream BinaryMessage) {}
+}
+
+message BinaryMessage {
+    bytes data = 1;
 }
 
 message SimpleMessage {

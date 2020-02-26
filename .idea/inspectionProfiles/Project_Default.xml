@@ -697,7 +697,10 @@
     <inspection_tool class="ConstantConditionalExpression" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstantConditionalExpressionJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstantConditions" enabled="false" level="WARNING" enabled_by_default="true">
-      <scope name="Tests" level="WARNING" enabled="false" />
+      <scope name="Tests" level="WARNING" enabled="false">
+        <option name="SUGGEST_NULLABLE_ANNOTATIONS" value="false" />
+        <option name="DONT_REPORT_TRUE_ASSERT_STATEMENTS" value="false" />
+      </scope>
       <option name="SUGGEST_NULLABLE_ANNOTATIONS" value="false" />
       <option name="DONT_REPORT_TRUE_ASSERT_STATEMENTS" value="false" />
     </inspection_tool>
@@ -1720,7 +1723,7 @@
     <inspection_tool class="MVCPathVariableInspection" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="MagicCharacter" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="MagicConstant" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="MagicNumber" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="MagicNumber" enabled="false" level="ERROR" enabled_by_default="false">
       <scope name="Tests" level="ERROR" enabled="false" />
     </inspection_tool>
     <inspection_tool class="MagicNumberJS" enabled="true" level="ERROR" enabled_by_default="true" />
@@ -1812,7 +1815,7 @@
       <option name="ignoreAnonymousClassMethods" value="false" />
     </inspection_tool>
     <inspection_tool class="MissortedModifiers" enabled="true" level="ERROR" enabled_by_default="true">
-      <option name="m_requireAnnotationsFirst" value="true" />
+      <option name="m_requireAnnotationsFirst" value="false" />
     </inspection_tool>
     <inspection_tool class="MisspelledCompareTo" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="MisspelledEquals" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -2187,7 +2190,9 @@
     <inspection_tool class="RedundantArrayCreation" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="RedundantCast" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="RedundantExplicitType" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="RedundantFieldInitialization" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="RedundantFieldInitialization" enabled="true" level="ERROR" enabled_by_default="true">
+      <option name="onlyWarnOnNull" value="true" />
+    </inspection_tool>
     <inspection_tool class="RedundantGetter" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="RedundantIf" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="RedundantImplements" enabled="true" level="ERROR" enabled_by_default="true">

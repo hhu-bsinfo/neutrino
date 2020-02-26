@@ -8,7 +8,11 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.concurrent.ThreadSafe;
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Slf4j
+@ThreadSafe
 public class BufferPool {
 
     @FunctionalInterface
@@ -21,15 +25,19 @@ public class BufferPool {
         void release(int index);
     }
 
+    private final String name;
+
     private final IndexedByteBuf[] indexedBuffers;
+
     private final AtomicIntegerStack stack;
 
-    private BufferPool(final IndexedByteBuf[] indexedBuffers, final AtomicIntegerStack stack) {
+    private BufferPool(final IndexedByteBuf[] indexedBuffers, final AtomicIntegerStack stack, final String name) {
         this.indexedBuffers = indexedBuffers;
         this.stack = stack;
+        this.name = name;
     }
 
-    public static BufferPool create(int mtu, int count, BufferRegistrator registrator) {
+    public static BufferPool create(String name, int mtu, int count, BufferRegistrator registrator) {
         var buffers = new IndexedByteBuf[count];
         var stack = new AtomicIntegerStack();
         for (int i = 0; i < buffers.length; i++) {
@@ -37,7 +45,7 @@ public class BufferPool {
             stack.push(i);
         }
 
-        var bufferPool = new BufferPool(buffers, stack);
+        var bufferPool = new BufferPool(buffers, stack, name);
         for (int i = 0; i < buffers.length; i++) {
             buffers[i].setReleaser(bufferPool::release);
         }
@@ -50,7 +58,7 @@ public class BufferPool {
         long then = System.currentTimeMillis();
         while ((index = stack.pop()) == -1) {
             if (System.currentTimeMillis() - then > 2000) {
-                log.warn("Waiting over 2 seconds for buffer lease");
+                log.warn("[{}] Waiting over 2 seconds for buffer lease", name);
                 then = System.currentTimeMillis();
             }
         }
@@ -58,6 +66,7 @@ public class BufferPool {
     }
 
     public void release(int index) {
+        log.trace("[{}] Releasing buffer at index {}", name, index);
         indexedBuffers[index].clear();
         stack.push(index);
     }
@@ -96,7 +105,6 @@ public class BufferPool {
 
         @Override
         protected void deallocate() {
-            log.debug("Deallocating buffer at index {}", index);
             setRefCnt(1);
             releaser.release(index);
         }

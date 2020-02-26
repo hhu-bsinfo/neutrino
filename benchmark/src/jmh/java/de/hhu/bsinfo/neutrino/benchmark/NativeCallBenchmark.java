@@ -1,13 +1,14 @@
 package de.hhu.bsinfo.neutrino.benchmark;
 
 import de.hhu.bsinfo.neutrino.struct.Result;
+import de.hhu.bsinfo.neutrino.util.NativeLibrary;
 import de.hhu.bsinfo.neutrino.verbs.Verbs;
 import org.openjdk.jmh.annotations.Benchmark;
 
 public class NativeCallBenchmark {
 
     static {
-        System.loadLibrary("neutrino");
+        NativeLibrary.load("neutrino");
     }
 
     @Benchmark

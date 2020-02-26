@@ -28,7 +28,7 @@ public final class EventLoop implements AutoCloseable {
 
     public EventLoop(String name, IdleStrategy idleStrategy) {
         compositeAgent = new DynamicCompositeAgent(name);
-        runner = new AgentRunner(idleStrategy, err -> {/* ignored */}, null, compositeAgent);
+        runner = new AgentRunner(idleStrategy, EventLoop::errorHandler, null, compositeAgent);
         thread = AgentRunner.startOnThread(runner);
     }
 
@@ -53,5 +53,9 @@ public final class EventLoop implements AutoCloseable {
     @Override
     public void close() {
         CloseHelper.quietClose(runner);
+    }
+
+    private static void errorHandler(Throwable throwable) {
+        log.error("Encountered unexpected error", throwable);
     }
 }

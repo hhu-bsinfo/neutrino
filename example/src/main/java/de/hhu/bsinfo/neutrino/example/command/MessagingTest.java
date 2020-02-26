@@ -26,7 +26,7 @@ public class MessagingTest implements Callable<Void> {
     private static final int DEFAULT_SERVER_PORT = 2998;
     private static final int DEFAULT_QUEUE_SIZE = 100;
     private static final int DEFAULT_MESSAGE_SIZE = 1024;
-    private static final int DEFAULT_MESSAGE_COUNT = 1048576;
+    private static final int DEFAULT_MESSAGE_COUNT = 104857600;
 
     @CommandLine.Option(
             names = "--server",
