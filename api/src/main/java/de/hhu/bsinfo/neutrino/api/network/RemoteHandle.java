@@ -1,12 +1,7 @@
 package de.hhu.bsinfo.neutrino.api.network;
+import lombok.Value;
 
-public interface RemoteHandle {
-
-    Connection getConnection();
-
-    long getAddress();
-
-    int getCapacity();
-
-    int getRemoteKey();
+public @Value class RemoteHandle {
+    private final long address;
+    private final int key;
 }

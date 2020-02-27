@@ -1,5 +1,6 @@
 package io.rsocket.transport.neutrino.client;
 
+import de.hhu.bsinfo.neutrino.api.network.Connection;
 import de.hhu.bsinfo.neutrino.api.network.Negotiator;
 import de.hhu.bsinfo.neutrino.api.network.NetworkService;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
@@ -19,13 +20,16 @@ public final class InfinibandClientTransport implements ClientTransport {
     private final NetworkService networkService;
     private final Negotiator negotiator;
 
+    private Connection connection;
+
     @Override
     public Mono<DuplexConnection> connect(int mtu) {
         var mtuEnum = Mtu.fromValue(mtu);
         log.info("Client connection mtu set to {}", mtuEnum.getMtuValue());
         return  networkService.connect(negotiator, mtuEnum)
-                .map(it -> {
-                    var duplexConnection = new InfinibandDuplexConnection(it, networkService);
+                .map(con -> {
+                    connection = con;
+                    var duplexConnection = new InfinibandDuplexConnection(con, networkService);
                     return new FragmentationDuplexConnection(
                             duplexConnection,
                             ByteBufAllocator.DEFAULT,
@@ -34,5 +38,9 @@ public final class InfinibandClientTransport implements ClientTransport {
                             "client"
                     );
                 });
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 }

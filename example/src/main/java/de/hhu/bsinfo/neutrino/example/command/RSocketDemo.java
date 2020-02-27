@@ -13,6 +13,7 @@ import io.rsocket.RSocketFactory;
 import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.transport.neutrino.client.InfinibandClientTransport;
 import io.rsocket.transport.neutrino.server.InfinibandServerTransport;
+import io.rsocket.transport.neutrino.socket.InfinibandSocket;
 import io.rsocket.util.DefaultPayload;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
@@ -109,7 +110,8 @@ public class RSocketDemo implements Runnable {
                     .acceptor(rSocket -> new EmptyMessageHandler())
                     .transport(transport)
                     .start()
-                    .flatMapMany(rsocket -> Flux.just(payload).repeat(messageCount).flatMap(rsocket::fireAndForget))
+                    .map(rsocket -> InfinibandSocket.create(rsocket, transport.getConnection(), networkService))
+                    .flatMapMany(rsocket -> Flux.just(payload).repeat(messageCount - 1).flatMap(rsocket::fireAndForget))
                     .doFirst(() -> startTime.set(System.nanoTime()))
                     .blockLast();
 
@@ -176,6 +178,7 @@ public class RSocketDemo implements Runnable {
 
         @Override
         public Mono<Void> fireAndForget(Payload payload) {
+            log.info("Received payload with size {}", payload.data().readableBytes());
             payload.release();
             return Mono.empty();
         }

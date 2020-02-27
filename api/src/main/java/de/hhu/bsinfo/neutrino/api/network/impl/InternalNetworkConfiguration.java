@@ -16,7 +16,7 @@ import javax.annotation.PostConstruct;
 @Configuration
 @ConfigurationProperties(prefix = "infiniband.network")
 @Getter @Setter
-public class NetworkConfigurationImpl implements NetworkConfiguration {
+public class InternalNetworkConfiguration implements NetworkConfiguration {
 
     /**
      * The maximum transmission unit used for new connections.
@@ -143,6 +143,11 @@ public class NetworkConfigurationImpl implements NetworkConfiguration {
     private byte retryCount = 7;
 
     /**
+     * The number of buffers pooled for network operations.
+     */
+    private int poolSize = 1024;
+
+    /**
      * The Infiniband device's attributes.
      */
     private final DeviceAttributes deviceAttributes;
@@ -152,7 +157,7 @@ public class NetworkConfigurationImpl implements NetworkConfiguration {
      */
     private final PortAttributes portAttributes;
 
-    public NetworkConfigurationImpl(InfinibandDevice device) {
+    public InternalNetworkConfiguration(InfinibandDevice device) {
         deviceAttributes = device.getDeviceAttributes();
         portAttributes = device.getPortAttributes();
     }
@@ -177,6 +182,11 @@ public class NetworkConfigurationImpl implements NetworkConfiguration {
         if (queuePairSize > deviceAttributes.getMaxQueuePairSize()) {
             queuePairSize = deviceAttributes.getMaxQueuePairSize();
             log.warn("Set queue pair size to maximum value of {}", deviceAttributes.getMaxQueuePairSize());
+        }
+
+        if (mtu > portAttributes.getMaxMtu().getMtuValue()) {
+            mtu = portAttributes.getMaxMtu().getMtuValue();
+            log.warn("Set mtu to maximum value of {}", portAttributes.getMaxMtu().getMtuValue());
         }
     }
 }

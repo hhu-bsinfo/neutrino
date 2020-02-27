@@ -36,11 +36,11 @@ public class Neutrino {
         return networkService.receive(connection);
     }
 
-    public Mono<Void> write(Buffer buffer, RemoteHandle remoteHandle) {
-        return networkService.write(buffer, remoteHandle);
+    public Mono<Void> write(Connection connection, Buffer buffer, RemoteHandle remoteHandle) {
+        return networkService.write(connection, buffer, remoteHandle);
     }
 
-    public Mono<Void> read(Buffer buffer, RemoteHandle remoteHandle) {
-        return networkService.read(buffer, remoteHandle);
+    public Mono<Void> read(Connection connection, Buffer buffer, RemoteHandle remoteHandle) {
+        return networkService.read(connection, buffer, remoteHandle);
     }
 }

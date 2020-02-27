@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "infiniband.device")
 @Getter @Setter
-public class InfinibandDeviceConfigImpl implements InfinibandDeviceConfig {
+public class InternalInfinibandDeviceConfig implements InfinibandDeviceConfig {
     private int deviceNumber;
     private byte portNumber = 1;
 }

@@ -266,28 +266,4 @@ public class GrpcDemo implements Runnable {
             return null;
         }
     }
-
-    private static de.hhu.bsinfo.neutrino.api.network.RemoteHandle convert(Connection connection, RemoteHandle handle) {
-        return new de.hhu.bsinfo.neutrino.api.network.RemoteHandle() {
-            @Override
-            public Connection getConnection() {
-                return connection;
-            }
-
-            @Override
-            public long getAddress() {
-                return handle.getAddress();
-            }
-
-            @Override
-            public int getCapacity() {
-                return handle.getCapacity();
-            }
-
-            @Override
-            public int getRemoteKey() {
-                return handle.getKey();
-            }
-        };
-    }
 }

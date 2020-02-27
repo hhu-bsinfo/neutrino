@@ -1,5 +1,6 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.util;
 
+import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.util.Epoll;
 import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
 import de.hhu.bsinfo.neutrino.util.FileDescriptor;
@@ -13,50 +14,63 @@ import java.util.function.Consumer;
 @NotThreadSafe
 public class EpollWatchList  {
 
+    public enum Mode {
+        SEND, RECEIVE
+    }
+
     private static final long NOTIFIER_DATA = -1;
 
     private final Epoll epoll;
 
     private final Epoll.EventArray events;
 
-    private final ManagedChannel[] channels;
+    private final InternalConnection[] connections;
 
     private final EventFileDescriptor notifier;
 
-    private int channelIndex = 0;
+    private final Mode mode;
 
-    public EpollWatchList(int capacity) {
+    private int index = 0;
+
+    public EpollWatchList(int capacity, Mode mode) {
         epoll = Epoll.create(capacity);
         notifier = EventFileDescriptor.create(EventFileDescriptor.OpenMode.NONBLOCK);
         events = new Epoll.EventArray(capacity);
-        channels = new ManagedChannel[capacity];
+        connections = new InternalConnection[capacity];
+        this.mode = mode;
 
         // Register notifier so that we can wake up this watch list when needed
         epoll.add(notifier, NOTIFIER_DATA, Epoll.EventType.EPOLLIN);
     }
 
-    public void add(CompletionChannel channel) {
+    public void add(InternalConnection connection) {
 
         // Add channel to array of known channels
-        var managedChannel = new ManagedChannel(channel);
-        channels[channelIndex] = managedChannel;
+        connections[index] = connection;
 
-        // Set completion channel mode to NONBLOCK
-        var descriptor = managedChannel.getFileDescriptor();
-        descriptor.setMode(FileDescriptor.OpenMode.NONBLOCK);
+        // Get file descriptor corresponding to the configured mode
+        FileDescriptor fileDescriptor = null;
+        switch (mode) {
+            case RECEIVE:
+                fileDescriptor = connection.getResources().getReceiveFileDescriptor();
+                break;
+            case SEND:
+                fileDescriptor = connection.getResources().getSendFileDescriptor();
+                break;
+        }
 
         // Add channel to epoll watch list
-        epoll.add(descriptor, channelIndex, Epoll.EventType.EPOLLIN);
+        epoll.add(fileDescriptor, index, Epoll.EventType.EPOLLIN);
 
         // Increment channel index
-        channelIndex++;
+        index++;
     }
 
     public void wake() {
         notifier.increment();
     }
 
-    public int forEach(int timeout, Consumer<CompletionChannel> operation) {
+    public int forEach(int timeout, Consumer<InternalConnection> operation) {
 
         // Wait for events
         epoll.wait(events, timeout);
@@ -73,10 +87,10 @@ public class EpollWatchList  {
             }
 
             // Get the associated completion channel
-            var channel = channels[(int) data].getCompletionChannel();
+            var connection = connections[(int) data];
 
             // Perform operation on the completion channel
-            operation.accept(channel);
+            operation.accept(connection);
         });
 
         return events.getLength();

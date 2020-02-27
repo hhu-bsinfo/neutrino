@@ -1,16 +1,20 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 
 import de.hhu.bsinfo.neutrino.api.network.Connection;
-import de.hhu.bsinfo.neutrino.api.network.impl.NetworkResources;
-import de.hhu.bsinfo.neutrino.api.network.impl.NeutrinoOutbound;
+import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
+import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.NeutrinoOutbound;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.EpollWatchList;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePoller;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.WorkRequestAggregator;
 import de.hhu.bsinfo.neutrino.verbs.*;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.QueuedPipe;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
@@ -24,6 +28,8 @@ import java.util.function.Consumer;
 @Slf4j
 public class SendAgent implements Agent, NeutrinoOutbound {
 
+    private static final int MAX_CONNECTIONS = 128;
+
     private static final AtomicReferenceFieldUpdater<SendAgent, BufferPublisher[]> PUBLISHER =
             AtomicReferenceFieldUpdater.newUpdater(SendAgent.class, BufferPublisher[].class, "publishers");
 
@@ -35,7 +41,7 @@ public class SendAgent implements Agent, NeutrinoOutbound {
 
     private final QueuePair queuePair;
 
-    private final Connection connection;
+    private final InternalConnection connection;
 
     private final CompletionQueue completionQueue;
 
@@ -46,20 +52,30 @@ public class SendAgent implements Agent, NeutrinoOutbound {
     private int pendingRequests = 0;
 
     /**
-     * An array of work completions used for polling the completion queue.
+     * Watches over completion channels associated with this agent.
      */
-    private final CompletionQueue.WorkCompletionArray completions;
+    private final EpollWatchList watchList = new EpollWatchList(MAX_CONNECTIONS, EpollWatchList.Mode.SEND);
 
-    public SendAgent(NetworkResources resources, Connection connection) {
+    /**
+     * Helper object used to poll completion queues.
+     */
+    private final QueuePoller queuePoller;
+
+    /**
+     * Incoming connections which should be watched by this agent.
+     */
+    private final QueuedPipe<Connection> channelPipe = new ManyToOneConcurrentArrayQueue<>(MAX_CONNECTIONS);
+
+    public SendAgent(SharedResources sharedResources, InternalConnection connection) {
         this.connection = connection;
-        bufferPool = connection.getBufferPool();
+        completionQueue = connection.getResources().getSendCompletionQueue();
         queuePair = connection.getQueuePair();
-        completionQueue = resources.sendCompletionQueue();
-        completions = new CompletionQueue.WorkCompletionArray(completionQueue.getMaxElements());
 
-        var attributes = queuePair.queryAttributes(QueuePair.AttributeFlag.CAP);
+        var attributes = connection.getQueuePair().queryAttributes(QueuePair.AttributeFlag.CAP);
         maxRequests = attributes.capabilities.getMaxSendWorkRequests();
         aggregator = new WorkRequestAggregator(maxRequests);
+        bufferPool = sharedResources.bufferPool();
+        queuePoller = new QueuePoller(completionQueue.getMaxElements());
     }
 
     @Override
@@ -113,7 +129,8 @@ public class SendAgent implements Agent, NeutrinoOutbound {
         var postedWorkRequests = aggregator.commit(queuePair);
 
         // Process work completions
-        var processedCompletions = processCompletionQueue();
+
+        var processedCompletions = queuePoller.drain(completionQueue, this::handleSendCompletion);
         pendingRequests -= processedCompletions;
 
         return postedWorkRequests + processedCompletions;
@@ -132,12 +149,6 @@ public class SendAgent implements Agent, NeutrinoOutbound {
     @Override
     public String roleName() {
         return "send";
-    }
-
-    private int processCompletionQueue() {
-        completionQueue.poll(completions);
-        completions.forEach(this::handleSendCompletion);
-        return completions.getLength();
     }
 
     private void handleSendCompletion(WorkCompletion workCompletion) {
@@ -253,79 +264,6 @@ public class SendAgent implements Agent, NeutrinoOutbound {
             } while (!PUBLISHER.compareAndSet(agent, oldArray, newArray));
 
             onDispose.onComplete();
-        }
-    }
-
-    private static final class WorkRequestAggregator implements Consumer<BufferPool.IndexedByteBuf> {
-
-        private int index;
-
-        private SendWorkRequest currentWorkRequest;
-
-        private SendWorkRequest previousWorkRequest;
-
-        private ScatterGatherElement currentElement;
-
-        private final SendWorkRequest[] workRequestPool;
-
-        private final ScatterGatherElement[] scatterGatherPool;
-
-        private WorkRequestAggregator(int capacity) {
-            var builder = new SendWorkRequest.Builder()
-                    .withOpCode(SendWorkRequest.OpCode.SEND)
-                    .withSendFlags(SendWorkRequest.SendFlag.SIGNALED);
-
-            workRequestPool = new SendWorkRequest[capacity];
-            scatterGatherPool = new ScatterGatherElement[capacity];
-            for (int i = 0; i < workRequestPool.length; i++) {
-                workRequestPool[i] = builder.build();
-                scatterGatherPool[i] = new ScatterGatherElement();
-            }
-        }
-
-        @Override
-        public void accept(BufferPool.IndexedByteBuf data) {
-            currentWorkRequest = workRequestPool[index];
-            currentElement = scatterGatherPool[index];
-
-            // Remember number of bytes to send
-            var messageSize = data.readableBytes();
-
-            // Advance send buffer by number of written bytes
-            var memoryAddress = data.memoryAddress() + data.readerIndex();
-            data.readerIndex(data.writerIndex());
-
-            currentElement.setAddress(memoryAddress);
-            currentElement.setLength(messageSize);
-            currentElement.setLocalKey(data.getLocalKey());
-
-            currentWorkRequest.setId(data.getIndex());
-            currentWorkRequest.setListHandle(currentElement.getHandle());
-            currentWorkRequest.setListLength(1);
-
-            if (previousWorkRequest != null) {
-                previousWorkRequest.linkWith(currentWorkRequest);
-            }
-
-            previousWorkRequest = currentWorkRequest;
-            index++;
-        }
-
-        private void reset() {
-            currentWorkRequest = null;
-            previousWorkRequest = null;
-            currentElement = null;
-            index = 0;
-        }
-
-        private int commit(QueuePair queuePair) {
-            if (index == 0) {
-                return 0;
-            }
-
-            currentWorkRequest.unlink();
-            queuePair.postSend(workRequestPool[0]);
-            return index;
         }
     }
 }

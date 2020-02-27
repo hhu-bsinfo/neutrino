@@ -15,7 +15,7 @@ public interface NetworkService {
 
     Flux<ByteBuf> receive(Connection connection);
 
-    Mono<Void> write(Buffer buffer, RemoteHandle handle);
+    Mono<Void> write(Connection connection, Buffer buffer, RemoteHandle handle);
 
-    Mono<Void> read(Buffer buffer, RemoteHandle handle);
+    Mono<Void> read(Connection connection, Buffer buffer, RemoteHandle handle);
 }

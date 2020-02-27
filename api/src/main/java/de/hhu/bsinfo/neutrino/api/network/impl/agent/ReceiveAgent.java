@@ -1,7 +1,8 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 
-import de.hhu.bsinfo.neutrino.api.network.impl.NetworkResources;
-import de.hhu.bsinfo.neutrino.api.network.impl.NeutrinoInbound;
+import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
+import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.NeutrinoInbound;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.EpollWatchList;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueueFiller;
@@ -75,25 +76,25 @@ public class ReceiveAgent implements Agent, NeutrinoInbound {
     private final QueueFiller queueFiller;
 
     /**
-     * Incoming completion channels which should be watched by this agent.
+     * Incoming connections which should be watched by this agent.
      */
-    private final QueuedPipe<CompletionChannel> channelPipe = new ManyToOneConcurrentArrayQueue<>(MAX_CHANNELS);
+    private final QueuedPipe<InternalConnection> connectionPipe = new ManyToOneConcurrentArrayQueue<>(MAX_CHANNELS);
 
     /**
      * Watches over completion channels associated with this agent.
      */
-    private final EpollWatchList watchList = new EpollWatchList(MAX_CHANNELS);
+    private final EpollWatchList watchList = new EpollWatchList(MAX_CHANNELS, EpollWatchList.Mode.RECEIVE);
 
     /**
      * Helper object used to poll completion queues.
      */
     private final QueuePoller queuePoller;
 
-    public ReceiveAgent(NetworkResources resources) {
+    public ReceiveAgent(SharedResources resources) {
         receiveQueue = resources.sharedReceiveQueue();
-        bufferPool = resources.receiveBufferPool();
+        bufferPool = resources.bufferPool();
         queuePoller = new QueuePoller(POLL_COUNT);
-        queueFiller = new QueueFiller(resources.receiveBufferPool(), receiveQueue.queryAttributes().getMaxWorkRequests());
+        queueFiller = new QueueFiller(resources.bufferPool(), receiveQueue.queryAttributes().getMaxWorkRequests());
         queueFiller.fillUp(receiveQueue);
     }
 
@@ -111,20 +112,20 @@ public class ReceiveAgent implements Agent, NeutrinoInbound {
     @Override
     public int doWork() {
 
-        // Add new channels to our watch list
-        channelPipe.drain(watchList::add);
+        // Add new connections to our watch list
+        connectionPipe.drain(watchList::add);
 
         // Process events
-        return watchList.forEach(EPOLL_TIMEOUT, this::processChannel);
+        return watchList.forEach(EPOLL_TIMEOUT, this::processConnection);
     }
 
     /**
-     * Adds the competion channel to this agent's watch list.
+     * Adds the connection to this agent's watch list.
      */
-    public void add(CompletionChannel channel) {
+    public void add(InternalConnection connection) {
 
-        // Add channel so it will be picked up and added on the next work cycle
-        while (!channelPipe.offer(channel)) {
+        // Add connection so it will be picked up and added on the next work cycle
+        while (!connectionPipe.offer(connection)) {
             ThreadHints.onSpinWait();
         }
 
@@ -132,7 +133,14 @@ public class ReceiveAgent implements Agent, NeutrinoInbound {
         watchList.wake();
     }
 
-    private void processChannel(CompletionChannel channel) {
+    private void processConnection(InternalConnection connection) {
+
+        // Get the completion channel
+        var channel = connection.getResources().getReceiveCompletionChannel();
+
+        // TODO(krakowski):
+        //  Do we really need to get the completion queue when we already have it?
+        //  var queue = connection.getResources().getReceiveCompletionQueue();
 
         // Get the completion queue
         var queue = channel.getCompletionEvent();

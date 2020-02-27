@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.neutrino.api.network.impl;
+package de.hhu.bsinfo.neutrino.api.network.impl.util;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.util.OnDisposable;

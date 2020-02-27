@@ -1,16 +1,36 @@
 logging:
+
   level:
+
+    # Log error messages within all other packages
     root: ERROR
+
+    # Log debug messages within the project's package
     de.hhu.bsinfo: DEBUG
 
 infiniband:
 
   device:
+
+    # Only relevant for systems with more than one Infiniband NIC.
     deviceNumber: 0
+
+    # The NIC's port number.
     portNumber: 1
 
   network:
+
+    # The maximum number of work requests within a queue pair.
     queuePairSize: 128
-    sharedReceiveQueueSize: 12800
-    completionQueueSize: 12800
+
+    # The shared receive queue's size.
+    sharedReceiveQueueSize: 128
+
+    # The maximum number of completion events within a completion queue.
+    completionQueueSize: 128
+
+    # The maximum number of scatter-gather elements per work request.
     maxScatterGatherElements: 1
+
+    # The number of buffers pooled for network operations.
+    poolSize: 1024

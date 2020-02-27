@@ -14,14 +14,10 @@ import lombok.experimental.Accessors;
 
 @Builder
 @Accessors(fluent = true)
-public @Value class NetworkResources {
+public @Value class SharedResources {
     private final InfinibandDevice device;
     private final InfinibandDeviceConfig deviceConfig;
     private final NetworkConfiguration networkConfig;
     private final SharedReceiveQueue sharedReceiveQueue;
-    private final BufferPool receiveBufferPool;
-    private final CompletionQueue receiveCompletionQueue;
-    private final CompletionChannel receiveCompletionChannel;
-    private final CompletionQueue sendCompletionQueue;
-    private final CompletionChannel sendCompletionChannel;
+    private final BufferPool bufferPool;
 }

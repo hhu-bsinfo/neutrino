@@ -22,14 +22,14 @@ import java.util.Objects;
 
 @Slf4j
 @Component
-public class InfinibandDeviceImpl implements InfinibandDevice {
+public class InternalInfinibandDevice implements InfinibandDevice {
 
     private final Context context;
     private final PortAttributes portAttributes;
     private final DeviceAttributes deviceAttributes;
     private final ProtectionDomain protectionDomain;
 
-    public InfinibandDeviceImpl(InfinibandDeviceConfig config) {
+    public InternalInfinibandDevice(InfinibandDeviceConfig config) {
         context = Objects.requireNonNull(Context.openDevice(config.getDeviceNumber()), "Opening device context failed");
         deviceAttributes = Objects.requireNonNull(context.queryDevice(), "Querying device failed");
         portAttributes = Objects.requireNonNull(context.queryPort(config.getPortNumber()), "Querying device port failed");
@@ -53,27 +53,27 @@ public class InfinibandDeviceImpl implements InfinibandDevice {
 
     @Override
     public MemoryRegion wrapRegion(long handle, long capacity, AccessFlag... accessFlags) {
-        return protectionDomain.registerMemoryRegion(handle, capacity, accessFlags);
+        return Objects.requireNonNull(protectionDomain.registerMemoryRegion(handle, capacity, accessFlags), "Registering memory region failed");
     }
 
     @Override
     public QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes) {
-        return protectionDomain.createQueuePair(initialAttributes);
+        return Objects.requireNonNull(protectionDomain.createQueuePair(initialAttributes), "Creating queue pair failed");
     }
 
     @Override
     public SharedReceiveQueue createSharedReceiveQueue(SharedReceiveQueue.InitialAttributes initialAttributes) {
-        return protectionDomain.createSharedReceiveQueue(initialAttributes);
+        return Objects.requireNonNull(protectionDomain.createSharedReceiveQueue(initialAttributes), "Creating shared receive queue failed");
     }
 
     @Override
     public CompletionQueue createCompletionQueue(int capacity, @Nullable CompletionChannel channel) {
-        return context.createCompletionQueue(capacity, channel);
+        return Objects.requireNonNull(context.createCompletionQueue(capacity, channel), "Creating completion queue failed");
     }
 
     @Override
     public CompletionChannel createCompletionChannel() {
-        return context.createCompletionChannel();
+        return Objects.requireNonNull(context.createCompletionChannel(), "Creating completion channel failed");
     }
 
     @Override
