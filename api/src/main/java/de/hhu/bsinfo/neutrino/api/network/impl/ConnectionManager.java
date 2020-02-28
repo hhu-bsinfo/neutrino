@@ -7,9 +7,14 @@ import de.hhu.bsinfo.neutrino.api.network.Negotiator;
 import de.hhu.bsinfo.neutrino.api.network.NetworkConfiguration;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;
 import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
-import de.hhu.bsinfo.neutrino.verbs.*;
+import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
+import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
+import de.hhu.bsinfo.neutrino.verbs.Mtu;
+import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -105,12 +110,19 @@ public class ConnectionManager {
     }
 
     private InternalConnection createConnection(QueuePair queuePair, QueuePairResources queuePairResources) {
+        var attributes = queuePair.queryAttributes(QueuePair.AttributeFlag.CAP);
+        var state = new QueuePairState(attributes.capabilities.getMaxSendWorkRequests(), 0);
+        var buffers = new ManyToOneConcurrentArrayQueue<BufferPool.IndexedByteBuf>(attributes.capabilities.getMaxSendWorkRequests());
+        var queueDescriptor = EventFileDescriptor.create(attributes.capabilities.getMaxSendWorkRequests(), EventFileDescriptor.OpenMode.NONBLOCK);
         return InternalConnection.builder()
                 .id(connectionCounter.getAndIncrement())
                 .localId(device.getPortAttributes().getLocalId())
                 .portNumber(deviceConfig.getPortNumber())
                 .queuePair(queuePair)
                 .resources(queuePairResources)
+                .state(state)
+                .buffers(buffers)
+                .queueFileDescriptor(queueDescriptor)
                 .build();
     }
 

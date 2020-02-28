@@ -56,7 +56,15 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
      */
     private final ConnectionManager connectionManager;
 
+    /**
+     * Agent used for sending messages.
+     */
     private ReceiveAgent receiveAgent;
+
+    /**
+     * Agent used for receiving messages.
+     */
+    private SendAgent sendAgent;
 
     /**
      * The event loop group used for handling outbound network operations.
@@ -117,6 +125,10 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
         // Register receive agent within event loop group
         receiveAgent = new ReceiveAgent(sharedResources);
         receiveGroup.next().add(receiveAgent);
+
+        // Register receive agent within event loop group
+        sendAgent = new SendAgent(sharedResources);
+        sendGroup.next().add(sendAgent);
     }
 
     @Override
@@ -127,33 +139,46 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
     @Override
     public Mono<Connection> connect(Negotiator negotiator, Mtu mtu) {
         return Mono.fromCallable(() -> {
+
+            // Connect to the remote
             var connection = connectionManager.connect(negotiator, mtu);
 
-            // TODO(krakowski):
-            //  Create send agent upfront (like receive agent) and add connection(s) to its watch list
-            var sendAgent = new SendAgent(sharedResources, connection);
-
+            // Assign send agent to connection
             connection.setSendAgent(sendAgent);
+            sendAgent.add(connection);
+
+            // Assign receive agent to connection
             connection.setReceiveAgent(receiveAgent);
-
             receiveAgent.add(connection);
-            sendGroup.next().add(sendAgent);
 
+            // Return connection handle
             return new Connection(connection.getId());
         });
     }
 
     @Override
     public Mono<Void> send(Connection connection, Publisher<ByteBuf> frames) {
+
+        // Retrieve actual connection
         var internalConnection = connectionManager.get(connection);
+
+        // Get associated send agent
         var agent = internalConnection.getSendAgent();
-        return agent.send(frames);
+
+        // Send frames using agent
+        return agent.send(internalConnection, frames);
     }
 
     @Override
     public Flux<ByteBuf> receive(Connection connection) {
+
+        // Retrieve actual connection
         var internalConnection = connectionManager.get(connection);
+
+        // Get associated receive agent
         var agent = internalConnection.getReceiveAgent();
+
+        // Receive frames using agent
         return agent.receive();
     }
 

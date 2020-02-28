@@ -2,6 +2,7 @@ package de.hhu.bsinfo.neutrino.api.network.impl.util;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.network.NetworkConfiguration;
+import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
 import de.hhu.bsinfo.neutrino.util.FileDescriptor;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;

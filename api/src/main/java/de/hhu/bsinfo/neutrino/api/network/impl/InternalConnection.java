@@ -4,12 +4,15 @@ import de.hhu.bsinfo.neutrino.api.network.impl.agent.ReceiveAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.SendAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;
+import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
 import de.hhu.bsinfo.neutrino.util.FileDescriptor;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 import lombok.Builder;
 import lombok.Data;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -25,6 +28,12 @@ public @Data class InternalConnection {
     private final QueuePair queuePair;
 
     private final QueuePairResources resources;
+
+    private final QueuePairState state;
+
+    private final EventFileDescriptor queueFileDescriptor;
+
+    private final ManyToOneConcurrentArrayQueue<BufferPool.IndexedByteBuf> buffers;
 
     private volatile SendAgent sendAgent;
     private static final AtomicReferenceFieldUpdater<InternalConnection, SendAgent> SEND_AGENT =

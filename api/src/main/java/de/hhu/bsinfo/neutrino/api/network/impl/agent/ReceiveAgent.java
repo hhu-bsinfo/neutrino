@@ -2,11 +2,8 @@ package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.NeutrinoInbound;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.EpollWatchList;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.QueueFiller;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePoller;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
@@ -26,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 @Slf4j
-public class ReceiveAgent implements Agent, NeutrinoInbound {
+public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
 
     private static final int MAX_CHANNELS = 128;
 
@@ -76,21 +73,12 @@ public class ReceiveAgent implements Agent, NeutrinoInbound {
     private final QueueFiller queueFiller;
 
     /**
-     * Incoming connections which should be watched by this agent.
-     */
-    private final QueuedPipe<InternalConnection> connectionPipe = new ManyToOneConcurrentArrayQueue<>(MAX_CHANNELS);
-
-    /**
-     * Watches over completion channels associated with this agent.
-     */
-    private final EpollWatchList watchList = new EpollWatchList(MAX_CHANNELS, EpollWatchList.Mode.RECEIVE);
-
-    /**
      * Helper object used to poll completion queues.
      */
     private final QueuePoller queuePoller;
 
     public ReceiveAgent(SharedResources resources) {
+        super(EpollEvent.RECEIVE_READY);
         receiveQueue = resources.sharedReceiveQueue();
         bufferPool = resources.bufferPool();
         queuePoller = new QueuePoller(POLL_COUNT);
@@ -110,30 +98,7 @@ public class ReceiveAgent implements Agent, NeutrinoInbound {
     }
 
     @Override
-    public int doWork() {
-
-        // Add new connections to our watch list
-        connectionPipe.drain(watchList::add);
-
-        // Process events
-        return watchList.forEach(EPOLL_TIMEOUT, this::processConnection);
-    }
-
-    /**
-     * Adds the connection to this agent's watch list.
-     */
-    public void add(InternalConnection connection) {
-
-        // Add connection so it will be picked up and added on the next work cycle
-        while (!connectionPipe.offer(connection)) {
-            ThreadHints.onSpinWait();
-        }
-
-        // Wake up watch list
-        watchList.wake();
-    }
-
-    private void processConnection(InternalConnection connection) {
+    protected void processConnection(InternalConnection connection, EpollEvent event) {
 
         // Get the completion channel
         var channel = connection.getResources().getReceiveCompletionChannel();
