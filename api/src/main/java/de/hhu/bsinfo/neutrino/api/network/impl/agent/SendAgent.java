@@ -1,6 +1,5 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 
-import de.hhu.bsinfo.neutrino.api.network.Connection;
 import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
@@ -8,33 +7,14 @@ import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.verbs.*;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
-import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.QueuedPipe;
-import org.agrona.hints.ThreadHints;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
-import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.UnicastProcessor;
-
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Consumer;
 
 @Slf4j
 public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
     private static final int MAX_BATCH_SIZE = 100;
-
-    /**
-     * Publishers emitting new buffers to send.
-     */
-    private volatile BufferPublisher[] publishers = new BufferPublisher[0];
-    private static final AtomicReferenceFieldUpdater<SendAgent, BufferPublisher[]> PUBLISHER =
-            AtomicReferenceFieldUpdater.newUpdater(SendAgent.class, BufferPublisher[].class, "publishers");
 
     /**
      * The buffer pool used by this agent.
@@ -61,7 +41,8 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     @Override
     public Mono<Void> send(InternalConnection connection, Publisher<ByteBuf> data) {
         return Mono.defer(() -> {
-            var subscriber = new BufferPublisher(this, connection);
+            var subscriber = new BufferSubscriber(bufferPool);
+            connection.addPublisher(subscriber);
             data.subscribe(subscriber);
             return subscriber.onDispose();
         });
@@ -69,40 +50,76 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
     @Override
     protected void processConnection(InternalConnection connection, EpollEvent event) {
+        switch (event) {
+            case QUEUE_READY:
+                onQueueReady(connection);
+                break;
+            case SEND_READY:
+                onSendReady(connection);
+                break;
+            case RECEIVE_READY:
+            default:
+                throw new IllegalStateException("Unexpected value: " + event);
+        }
+    }
+
+    private void onSendReady(InternalConnection connection) {
+
+        // Get connection resources and state
+        var resources = connection.getResources();
+        var state = connection.getState();
+
+        // Get the completion queue on which the event occured
+        var channel = resources.getSendCompletionChannel();
+        var queue = channel.getCompletionEvent();
+
+        // Acknowledge the event and request further notifications
+        queue.acknowledgeEvent();
+        queue.requestNotification();
+
+        // Drain the completion queue
+        var processed = queuePoller.drain(queue, this::handleSendCompletion);
+
+        // Increment free slots
+        connection.incrementFreeSlots(processed);
+    }
+
+    private void onQueueReady(InternalConnection connection) {
 
         var state = connection.getState();
 
         // Return early if no publisher is registered
-        var currentPublishers = publishers;
-        if (currentPublishers.length == 0 && pendingRequests == 0) {
-            return 0;
+        var currentPublishers = connection.getPublishers();
+        if (currentPublishers.length == 0 && state.getPending() == 0) {
+            return;
         }
+
+        // Get the number of free slots. This operation
+        // will reset the counter's value.
+        var freeSlots = connection.getFreeSlots();
 
         // Reset the aggregator
         aggregator.reset();
 
         // Iterate over all publishers and post their buffers in form of send work requests
         // onto the queue pair's send work request queue.
-        for (BufferPublisher publisher : currentPublishers) {
-
-            var connection = publisher.connection;
-            var state = connection.getState();
+        for (BufferSubscriber publisher : currentPublishers) {
 
             // Calculate the next batch size
-            var batchSize = state.getPending();
-            if (batchSize == 0) {
+            if (freeSlots == 0) {
                 break;
             }
 
             // Remove the current publisher if it has completed
             if (publisher.hasCompleted()) {
-                publisher.hookOut();
+                connection.removePublisher(publisher);
+                publisher.onRemove();
                 continue;
             }
 
             // Drain the current publishers buffer queue
-            var bufferCount = publisher.drain(aggregator, Math.min(batchSize, MAX_BATCH_SIZE));
-            pendingRequests += bufferCount;
+            var bufferCount = publisher.drain(aggregator, Math.min(freeSlots, MAX_BATCH_SIZE));
+            freeSlots -= bufferCount;
 
             // Request more buffers
             if (bufferCount > 0) {
@@ -111,14 +128,13 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         }
 
         // Post the aggregated work requests to the queue pair
+        var queuePair = connection.getQueuePair();
         var postedWorkRequests = aggregator.commit(queuePair);
 
-        // Process work completions
-
-        var processedCompletions = queuePoller.drain(completionQueue, this::handleSendCompletion);
-        pendingRequests -= processedCompletions;
-
-        return postedWorkRequests + processedCompletions;
+        // Write back free slots
+        if (freeSlots > 0) {
+            connection.incrementFreeSlots(freeSlots);
+        }
     }
 
     private void handleSendCompletion(WorkCompletion workCompletion) {
@@ -144,106 +160,5 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     @Override
     public String roleName() {
         return "send";
-    }
-
-    private static final class BufferPublisher extends BaseSubscriber<ByteBuf> {
-
-        private enum Status {
-            NONE, SUBSCRIBE, CANCEL, ERROR, COMPLETE
-        }
-
-        /**
-         * This publisher's current status.
-         */
-        private volatile Status status = Status.NONE;
-        private static final AtomicReferenceFieldUpdater<BufferPublisher, Status> STATUS =
-                AtomicReferenceFieldUpdater.newUpdater(BufferPublisher.class, Status.class, "status");
-
-        /**
-         * The agent this processor is linked with.
-         */
-        private final SendAgent agent;
-
-        /**
-         * Emits a sinal on disposal.
-         */
-        private final MonoProcessor<Void> onDispose = MonoProcessor.create();
-
-        /**
-         * The connection used by this publisher.
-         */
-        private final InternalConnection connection;
-
-        private BufferPublisher(SendAgent agent, InternalConnection connection) {
-            this.agent = agent;
-            this.connection = connection;
-            hookIn();
-        }
-
-        private Mono<Void> onDispose() {
-            return onDispose;
-        }
-
-        @Override
-        protected void hookOnSubscribe(Subscription subscription) {
-            // Event loop will request elements
-        }
-
-        @Override
-        protected void hookOnNext(ByteBuf buffer) {
-            var buffers = connection.getBuffers();
-            var target = agent.bufferPool.leaseNext();
-
-            // Remember number of bytes to send
-            var messageSize = buffer.readableBytes();
-
-            // Copy bytes into send buffer
-            target.writeBytes(buffer);
-            buffer.release();
-
-            if (!buffers.offer(target)) {
-                throw Exceptions.failWithOverflow();
-            }
-        }
-
-        @Override
-        protected void hookOnError(Throwable throwable) {
-            onDispose.onError(throwable);
-        }
-
-        @Override
-        protected void hookOnComplete() {
-            STATUS.set(this, Status.COMPLETE);
-        }
-
-        private boolean hasCompleted() {
-            return status == Status.COMPLETE && buffers.isEmpty();
-        }
-
-        private boolean isEmpty() {
-            return buffers.isEmpty();
-        }
-
-        private void hookIn() {
-            BufferPublisher[] oldArray;
-            BufferPublisher[] newArray;
-
-            do {
-                oldArray = agent.publishers;
-                newArray = ArrayUtil.add(oldArray, this);
-            } while (!PUBLISHER.compareAndSet(agent, oldArray, newArray));
-        }
-
-        private void hookOut() {
-            BufferPublisher[] oldArray;
-            BufferPublisher[] newArray;
-
-            do {
-                oldArray = agent.publishers;
-                newArray = ArrayUtil.remove(oldArray, this);
-            } while (!PUBLISHER.compareAndSet(agent, oldArray, newArray));
-
-            onDispose.onComplete();
-        }
     }
 }
