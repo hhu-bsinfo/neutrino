@@ -41,6 +41,7 @@ public @Data class InternalConnection {
     /**
      * Publishers emitting new buffers to send.
      */
+    @Builder.Default
     private volatile BufferSubscriber[] publishers = new BufferSubscriber[0];
     private static final AtomicReferenceFieldUpdater<InternalConnection, BufferSubscriber[]> PUBLISHER =
             AtomicReferenceFieldUpdater.newUpdater(InternalConnection.class, BufferSubscriber[].class, "publishers");

@@ -25,6 +25,8 @@
       <module name="neutrino.benchmark.test" target="11" />
       <module name="neutrino.codegen.main" target="11" />
       <module name="neutrino.codegen.test" target="11" />
+      <module name="neutrino.core.main" target="11" />
+      <module name="neutrino.core.test" target="11" />
       <module name="neutrino.example.main" target="11" />
       <module name="neutrino.example.test" target="11" />
       <module name="neutrino.neutrino.main" target="11" />

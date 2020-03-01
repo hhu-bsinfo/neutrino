@@ -121,7 +121,6 @@ public class ConnectionManager {
                 .queuePair(queuePair)
                 .resources(queuePairResources)
                 .state(state)
-                .buffers(buffers)
                 .queueFileDescriptor(queueDescriptor)
                 .build();
     }

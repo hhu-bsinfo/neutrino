@@ -40,7 +40,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
 
     // Public libraries
-    api project(':neutrino')
+    api project(':core')
     api 'io.projectreactor:reactor-core'
 
     // Utilities

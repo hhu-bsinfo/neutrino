@@ -18,7 +18,7 @@ jmh {
 }
 
 jmh.jvmArgs = [
-        "-Djava.library.path=${System.getProperty('java.library.path')}:${project(':jni').buildDir}/lib/main/debug".toString()
+        "-Djava.library.path=${System.getProperty('java.library.path')}:${project(':native').buildDir}/lib/main/debug".toString()
 ]
 
 task benchmarkJar(type: Jar, dependsOn: jmhJar) {
@@ -39,7 +39,7 @@ repositories {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     
-    implementation project(':neutrino')
+    implementation project(':core')
 
     implementation group: 'info.picocli', name: 'picocli', version: '0.9.5'
     

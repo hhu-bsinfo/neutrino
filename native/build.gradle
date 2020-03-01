@@ -10,10 +10,6 @@ version = getProperty('projectVersion')
 library {
     baseName = 'neutrino'
     targetMachines = [machines.linux]
-    
-    source.from "${project(':neutrino').file('src/main/cpp')}"
-    
-    publicHeaders.from "${project(':neutrino').file('src/main/cpp/include')}"
                         
     privateHeaders.from "${Jvm.current().javaHome}/include",
                         "${Jvm.current().javaHome}/include/linux"

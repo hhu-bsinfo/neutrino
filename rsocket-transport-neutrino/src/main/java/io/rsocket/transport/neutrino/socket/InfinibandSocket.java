@@ -4,7 +4,6 @@ import de.hhu.bsinfo.neutrino.api.network.Connection;
 import de.hhu.bsinfo.neutrino.api.network.NetworkService;
 import de.hhu.bsinfo.neutrino.api.network.RemoteHandle;
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
-import de.hhu.bsinfo.neutrino.buffer.RemoteBuffer;
 import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import org.reactivestreams.Publisher;
