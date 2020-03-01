@@ -27,12 +27,16 @@
       <module name="neutrino.codegen.test" target="11" />
       <module name="neutrino.core.main" target="11" />
       <module name="neutrino.core.test" target="11" />
+      <module name="neutrino.engine.main" target="11" />
+      <module name="neutrino.engine.test" target="11" />
       <module name="neutrino.example.main" target="11" />
       <module name="neutrino.example.test" target="11" />
       <module name="neutrino.neutrino.main" target="11" />
       <module name="neutrino.neutrino.test" target="11" />
       <module name="neutrino.rsocket-transport-neutrino.main" target="11" />
       <module name="neutrino.rsocket-transport-neutrino.test" target="11" />
+      <module name="neutrino.rsocket.main" target="11" />
+      <module name="neutrino.rsocket.test" target="11" />
       <module name="rsocket-core_jmh" target="11" />
       <module name="rsocket-core_main" target="11" />
       <module name="rsocket-core_test" target="11" />

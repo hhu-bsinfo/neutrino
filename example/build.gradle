@@ -65,7 +65,7 @@ dependencies {
     implementation 'info.picocli:picocli-spring-boot-starter:4.0.4'
 
     implementation project(':api')
-    implementation project(':rsocket-transport-neutrino')
+    implementation project(':rsocket')
     implementation 'io.rsocket:rsocket-core:1.0.0-RC5'
     implementation('io.rsocket.rpc:rsocket-rpc-core:0.2.17') {
         exclude group: 'org.slf4j', module: ''
