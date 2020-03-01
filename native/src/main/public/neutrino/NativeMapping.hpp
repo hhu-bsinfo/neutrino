@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <infiniband/verbs.h>
 
-class ReflectionUtility {
+class NativeMapping {
 
 public:
 
@@ -20,13 +20,13 @@ public:
         MemberInfo *memberInfos;
     } __attribute__ ((packed));
 
-    ReflectionUtility() = delete;
+    NativeMapping() = delete;
 
     static StructInfo* getStructInfo(const std::string& identifier);
 
 private:
 
-    static std::unordered_map<std::string, ReflectionUtility::StructInfo*> structInfos;
+    static std::unordered_map<std::string, NativeMapping::StructInfo*> structInfos;
 
 };
 

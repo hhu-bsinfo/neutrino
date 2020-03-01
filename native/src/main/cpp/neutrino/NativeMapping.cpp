@@ -1,11 +1,10 @@
-#include <neutrino/ReflectionUtility.hpp>
+#include <neutrino/NativeMapping.hpp>
 #include <infiniband/verbs.h>
 #include <sys/epoll.h>
 
-#define GET_MEMBER_INFO(structName, memberName) ReflectionUtility::MemberInfo{#memberName, offsetof(struct structName, memberName)}
-#define GET_UNION_MEMBER_INFO(unionName, memberName) ReflectionUtility::MemberInfo{#memberName, offsetof(unionName, memberName)}
+#define GET_MEMBER_INFO(structName, memberName) NativeMapping::MemberInfo{#memberName, offsetof(structName, memberName)}
 
-ReflectionUtility::MemberInfo ibv_device_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_device_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_device_attr, fw_ver),
     GET_MEMBER_INFO(ibv_device_attr, node_guid),
     GET_MEMBER_INFO(ibv_device_attr, sys_image_guid),
@@ -48,13 +47,13 @@ ReflectionUtility::MemberInfo ibv_device_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_device_attr, phys_port_cnt)
 };
 
-ReflectionUtility::StructInfo ibv_device_attr_struct_info {
+NativeMapping::StructInfo ibv_device_attr_struct_info {
     sizeof(ibv_device_attr),
-    sizeof(ibv_device_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_device_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_device_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_port_attr_member_infos[] {
+NativeMapping::MemberInfo ibv_port_attr_member_infos[] {
     GET_MEMBER_INFO(ibv_port_attr, state),
     GET_MEMBER_INFO(ibv_port_attr, max_mtu),
     GET_MEMBER_INFO(ibv_port_attr, active_mtu),
@@ -79,13 +78,13 @@ ReflectionUtility::MemberInfo ibv_port_attr_member_infos[] {
     GET_MEMBER_INFO(ibv_port_attr, port_cap_flags2),
 };
 
-ReflectionUtility::StructInfo ibv_port_attr_struct_info {
+NativeMapping::StructInfo ibv_port_attr_struct_info {
     sizeof(ibv_port_attr),
-    sizeof(ibv_port_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_port_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_port_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_async_event_member_infos[] = {
+NativeMapping::MemberInfo ibv_async_event_member_infos[] = {
     GET_MEMBER_INFO(ibv_async_event, element.cq),
     GET_MEMBER_INFO(ibv_async_event, element.qp),
     GET_MEMBER_INFO(ibv_async_event, element.srq),
@@ -94,25 +93,25 @@ ReflectionUtility::MemberInfo ibv_async_event_member_infos[] = {
     GET_MEMBER_INFO(ibv_async_event, event_type)
 };
 
-ReflectionUtility::StructInfo ibv_async_event_struct_info {
+NativeMapping::StructInfo ibv_async_event_struct_info {
     sizeof(ibv_async_event),
-    sizeof(ibv_async_event_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_async_event_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_async_event_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_comp_channel_member_infos[] = {
+NativeMapping::MemberInfo ibv_comp_channel_member_infos[] = {
     GET_MEMBER_INFO(ibv_comp_channel, context),
     GET_MEMBER_INFO(ibv_comp_channel, fd),
     GET_MEMBER_INFO(ibv_comp_channel, refcnt)
 };
 
-ReflectionUtility::StructInfo ibv_comp_channel_struct_info {
+NativeMapping::StructInfo ibv_comp_channel_struct_info {
     sizeof(ibv_comp_channel),
-    sizeof(ibv_comp_channel_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_comp_channel_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_comp_channel_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_cq_member_infos[] {
+NativeMapping::MemberInfo ibv_cq_member_infos[] {
     GET_MEMBER_INFO(ibv_cq, context),
     GET_MEMBER_INFO(ibv_cq, channel),
     GET_MEMBER_INFO(ibv_cq, cq_context),
@@ -124,13 +123,13 @@ ReflectionUtility::MemberInfo ibv_cq_member_infos[] {
     GET_MEMBER_INFO(ibv_cq, async_events_completed),
 };
 
-ReflectionUtility::StructInfo ibv_cq_struct_info {
+NativeMapping::StructInfo ibv_cq_struct_info {
     sizeof(ibv_cq),
-    sizeof(ibv_cq_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_cq_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_cq_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_wc_member_infos[] = {
+NativeMapping::MemberInfo ibv_wc_member_infos[] = {
     GET_MEMBER_INFO(ibv_wc, wr_id),
     GET_MEMBER_INFO(ibv_wc, status),
     GET_MEMBER_INFO(ibv_wc, opcode),
@@ -147,25 +146,25 @@ ReflectionUtility::MemberInfo ibv_wc_member_infos[] = {
     GET_MEMBER_INFO(ibv_wc, dlid_path_bits)
 };
 
-ReflectionUtility::StructInfo ibv_wc_struct_info {
+NativeMapping::StructInfo ibv_wc_struct_info {
     sizeof(ibv_wc),
-    sizeof(ibv_wc_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_wc_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_wc_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_sge_member_infos[] = {
+NativeMapping::MemberInfo ibv_sge_member_infos[] = {
     GET_MEMBER_INFO(ibv_sge, addr),
     GET_MEMBER_INFO(ibv_sge, length),
     GET_MEMBER_INFO(ibv_sge, lkey)
 };
 
-ReflectionUtility::StructInfo ibv_sge_struct_info {
+NativeMapping::StructInfo ibv_sge_struct_info {
     sizeof(ibv_sge),
-    sizeof(ibv_sge_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_sge_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_sge_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_send_wr_member_infos[] = {
+NativeMapping::MemberInfo ibv_send_wr_member_infos[] = {
     GET_MEMBER_INFO(ibv_send_wr, wr_id),
     GET_MEMBER_INFO(ibv_send_wr, next),
     GET_MEMBER_INFO(ibv_send_wr, sg_list),
@@ -192,49 +191,49 @@ ReflectionUtility::MemberInfo ibv_send_wr_member_infos[] = {
     GET_MEMBER_INFO(ibv_send_wr, tso.mss)
 };
 
-ReflectionUtility::StructInfo ibv_send_wr_struct_info {
+NativeMapping::StructInfo ibv_send_wr_struct_info {
     sizeof(ibv_send_wr),
-    sizeof(ibv_send_wr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_send_wr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_send_wr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_recv_wr_member_infos[] = {
+NativeMapping::MemberInfo ibv_recv_wr_member_infos[] = {
     GET_MEMBER_INFO(ibv_recv_wr, wr_id),
     GET_MEMBER_INFO(ibv_recv_wr, next),
     GET_MEMBER_INFO(ibv_recv_wr, sg_list),
     GET_MEMBER_INFO(ibv_recv_wr, num_sge)
 };
 
-ReflectionUtility::StructInfo ibv_recv_wr_struct_info {
+NativeMapping::StructInfo ibv_recv_wr_struct_info {
     sizeof(ibv_recv_wr),
-    sizeof(ibv_recv_wr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_recv_wr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_recv_wr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_srq_init_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_srq_init_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_srq_init_attr, srq_context),
     GET_MEMBER_INFO(ibv_srq_init_attr, attr)
 };
 
-ReflectionUtility::StructInfo ibv_srq_init_attr_struct_info {
+NativeMapping::StructInfo ibv_srq_init_attr_struct_info {
     sizeof(ibv_srq_init_attr),
-    sizeof(ibv_srq_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_srq_init_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_srq_init_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_srq_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_srq_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_srq_attr, max_wr),
     GET_MEMBER_INFO(ibv_srq_attr, max_sge),
     GET_MEMBER_INFO(ibv_srq_attr, srq_limit)
 };
 
-ReflectionUtility::StructInfo ibv_srq_attr_struct_info {
+NativeMapping::StructInfo ibv_srq_attr_struct_info {
     sizeof(ibv_srq_attr),
-    sizeof(ibv_srq_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_srq_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_srq_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_qp_init_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_qp_init_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_qp_init_attr, qp_context),
     GET_MEMBER_INFO(ibv_qp_init_attr, send_cq),
     GET_MEMBER_INFO(ibv_qp_init_attr, recv_cq),
@@ -244,13 +243,13 @@ ReflectionUtility::MemberInfo ibv_qp_init_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_qp_init_attr, sq_sig_all)
 };
 
-ReflectionUtility::StructInfo ibv_qp_init_attr_struct_info {
+NativeMapping::StructInfo ibv_qp_init_attr_struct_info {
     sizeof(ibv_qp_init_attr),
-    sizeof(ibv_qp_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_qp_init_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_qp_init_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_srq_member_infos[] = {
+NativeMapping::MemberInfo ibv_srq_member_infos[] = {
     GET_MEMBER_INFO(ibv_srq, context),
     GET_MEMBER_INFO(ibv_srq, srq_context),
     GET_MEMBER_INFO(ibv_srq, pd),
@@ -260,25 +259,25 @@ ReflectionUtility::MemberInfo ibv_srq_member_infos[] = {
     GET_MEMBER_INFO(ibv_srq, events_completed)
 };
 
-ReflectionUtility::StructInfo ibv_srq_struct_info {
+NativeMapping::StructInfo ibv_srq_struct_info {
     sizeof(ibv_srq),
-    sizeof(ibv_srq_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_srq_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_srq_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_ah_member_infos[] = {
+NativeMapping::MemberInfo ibv_ah_member_infos[] = {
     GET_MEMBER_INFO(ibv_ah, context),
     GET_MEMBER_INFO(ibv_ah, pd),
     GET_MEMBER_INFO(ibv_ah, handle)
 };
 
-ReflectionUtility::StructInfo ibv_ah_struct_info {
+NativeMapping::StructInfo ibv_ah_struct_info {
     sizeof(ibv_ah),
-    sizeof(ibv_ah_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_ah_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_ah_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_ah_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_ah_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_ah_attr, grh),
     GET_MEMBER_INFO(ibv_ah_attr, dlid),
     GET_MEMBER_INFO(ibv_ah_attr, sl),
@@ -288,14 +287,14 @@ ReflectionUtility::MemberInfo ibv_ah_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_ah_attr, port_num)
 };
 
-ReflectionUtility::StructInfo ibv_ah_attr_struct_info {
+NativeMapping::StructInfo ibv_ah_attr_struct_info {
     sizeof(ibv_ah_attr),
-    sizeof(ibv_ah_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_ah_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_ah_attr_member_infos
 };
 
 
-ReflectionUtility::MemberInfo ibv_global_route_member_infos[] = {
+NativeMapping::MemberInfo ibv_global_route_member_infos[] = {
     GET_MEMBER_INFO(ibv_global_route, dgid),
     GET_MEMBER_INFO(ibv_global_route, flow_label),
     GET_MEMBER_INFO(ibv_global_route, sgid_index),
@@ -303,13 +302,13 @@ ReflectionUtility::MemberInfo ibv_global_route_member_infos[] = {
     GET_MEMBER_INFO(ibv_global_route, traffic_class)
 };
 
-ReflectionUtility::StructInfo ibv_global_route_struct_info {
+NativeMapping::StructInfo ibv_global_route_struct_info {
     sizeof(ibv_global_route),
-    sizeof(ibv_global_route_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_global_route_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_global_route_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_qp_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_qp_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_qp_attr, qp_state),
     GET_MEMBER_INFO(ibv_qp_attr, cur_qp_state),
     GET_MEMBER_INFO(ibv_qp_attr, path_mtu),
@@ -338,13 +337,13 @@ ReflectionUtility::MemberInfo ibv_qp_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_qp_attr, rate_limit)
 };
 
-ReflectionUtility::StructInfo ibv_qp_attr_struct_info {
+NativeMapping::StructInfo ibv_qp_attr_struct_info {
     sizeof(ibv_qp_attr),
-    sizeof(ibv_qp_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_qp_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_qp_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_qp_cap_member_infos[] = {
+NativeMapping::MemberInfo ibv_qp_cap_member_infos[] = {
     GET_MEMBER_INFO(ibv_qp_cap, max_send_wr),
     GET_MEMBER_INFO(ibv_qp_cap, max_recv_wr),
     GET_MEMBER_INFO(ibv_qp_cap, max_send_sge),
@@ -352,13 +351,13 @@ ReflectionUtility::MemberInfo ibv_qp_cap_member_infos[] = {
     GET_MEMBER_INFO(ibv_qp_cap, max_inline_data)
 };
 
-ReflectionUtility::StructInfo ibv_qp_cap_struct_info {
+NativeMapping::StructInfo ibv_qp_cap_struct_info {
     sizeof(ibv_qp_cap),
-    sizeof(ibv_qp_cap_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_qp_cap_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_qp_cap_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_qp_member_infos[] = {
+NativeMapping::MemberInfo ibv_qp_member_infos[] = {
     GET_MEMBER_INFO(ibv_qp, context),
     GET_MEMBER_INFO(ibv_qp, qp_context),
     GET_MEMBER_INFO(ibv_qp, pd),
@@ -374,36 +373,36 @@ ReflectionUtility::MemberInfo ibv_qp_member_infos[] = {
     GET_MEMBER_INFO(ibv_qp, events_completed)
 };
 
-ReflectionUtility::StructInfo ibv_qp_struct_info {
+NativeMapping::StructInfo ibv_qp_struct_info {
     sizeof(ibv_qp),
-    sizeof(ibv_qp_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_qp_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_qp_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_dm_member_infos[] = {
+NativeMapping::MemberInfo ibv_dm_member_infos[] = {
     GET_MEMBER_INFO(ibv_dm, context),
     GET_MEMBER_INFO(ibv_dm, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_dm_struct_info {
+NativeMapping::StructInfo ibv_dm_struct_info {
     sizeof(ibv_dm),
-    sizeof(ibv_dm_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_dm_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_dm_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_alloc_dm_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_alloc_dm_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_alloc_dm_attr, length),
     GET_MEMBER_INFO(ibv_alloc_dm_attr, log_align_req),
     GET_MEMBER_INFO(ibv_alloc_dm_attr, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_alloc_dm_attr_struct_info {
+NativeMapping::StructInfo ibv_alloc_dm_attr_struct_info {
     sizeof(ibv_alloc_dm_attr),
-    sizeof(ibv_alloc_dm_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_alloc_dm_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_alloc_dm_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_mr_member_infos[] = {
+NativeMapping::MemberInfo ibv_mr_member_infos[] = {
     GET_MEMBER_INFO(ibv_mr, context),
     GET_MEMBER_INFO(ibv_mr, pd),
     GET_MEMBER_INFO(ibv_mr, addr),
@@ -413,13 +412,13 @@ ReflectionUtility::MemberInfo ibv_mr_member_infos[] = {
     GET_MEMBER_INFO(ibv_mr, rkey)
 };
 
-ReflectionUtility::StructInfo ibv_mr_struct_info {
+NativeMapping::StructInfo ibv_mr_struct_info {
     sizeof(ibv_mr),
-    sizeof(ibv_mr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_mr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_mr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_mw_member_infos[] = {
+NativeMapping::MemberInfo ibv_mw_member_infos[] = {
     GET_MEMBER_INFO(ibv_mw, context),
     GET_MEMBER_INFO(ibv_mw, pd),
     GET_MEMBER_INFO(ibv_mw, rkey),
@@ -427,81 +426,81 @@ ReflectionUtility::MemberInfo ibv_mw_member_infos[] = {
     GET_MEMBER_INFO(ibv_mw, type)
 };
 
-ReflectionUtility::StructInfo ibv_mw_struct_info {
+NativeMapping::StructInfo ibv_mw_struct_info {
     sizeof(ibv_mw),
-    sizeof(ibv_mw_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_mw_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_mw_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_mw_bind_member_infos[] = {
+NativeMapping::MemberInfo ibv_mw_bind_member_infos[] = {
     GET_MEMBER_INFO(ibv_mw_bind, wr_id),
     GET_MEMBER_INFO(ibv_mw_bind, send_flags),
     GET_MEMBER_INFO(ibv_mw_bind, bind_info)
 };
 
-ReflectionUtility::StructInfo ibv_mw_bind_struct_info {
+NativeMapping::StructInfo ibv_mw_bind_struct_info {
     sizeof(ibv_mw_bind),
-    sizeof(ibv_mw_bind_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_mw_bind_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_mw_bind_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_mw_bind_info_member_infos[] = {
+NativeMapping::MemberInfo ibv_mw_bind_info_member_infos[] = {
     GET_MEMBER_INFO(ibv_mw_bind_info, mr),
     GET_MEMBER_INFO(ibv_mw_bind_info, addr),
     GET_MEMBER_INFO(ibv_mw_bind_info, length),
     GET_MEMBER_INFO(ibv_mw_bind_info, mw_access_flags)
 };
 
-ReflectionUtility::StructInfo ibv_mw_bind_info_struct_info {
+NativeMapping::StructInfo ibv_mw_bind_info_struct_info {
     sizeof(ibv_mw_bind_info),
-    sizeof(ibv_mw_bind_info_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_mw_bind_info_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_mw_bind_info_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_pd_member_infos[] = {
+NativeMapping::MemberInfo ibv_pd_member_infos[] = {
     GET_MEMBER_INFO(ibv_pd, context),
     GET_MEMBER_INFO(ibv_pd, handle)
 };
 
-ReflectionUtility::StructInfo ibv_pd_struct_info {
+NativeMapping::StructInfo ibv_pd_struct_info {
     sizeof(ibv_pd),
-    sizeof(ibv_pd_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_pd_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_pd_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_td_member_infos[] = {
+NativeMapping::MemberInfo ibv_td_member_infos[] = {
     GET_MEMBER_INFO(ibv_td, context)
 };
 
-ReflectionUtility::StructInfo ibv_td_struct_info {
+NativeMapping::StructInfo ibv_td_struct_info {
     sizeof(ibv_td),
-    sizeof(ibv_td_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_td_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_td_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_td_init_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_td_init_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_td_init_attr, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_td_init_attr_struct_info {
+NativeMapping::StructInfo ibv_td_init_attr_struct_info {
     sizeof(ibv_td_init_attr),
-    sizeof(ibv_td_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_td_init_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_td_init_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_parent_domain_init_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_parent_domain_init_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_parent_domain_init_attr, pd),
     GET_MEMBER_INFO(ibv_parent_domain_init_attr, td),
     GET_MEMBER_INFO(ibv_parent_domain_init_attr, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_parent_domain_init_attr_struct_info {
+NativeMapping::StructInfo ibv_parent_domain_init_attr_struct_info {
     sizeof(ibv_parent_domain_init_attr),
-    sizeof(ibv_parent_domain_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_parent_domain_init_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_parent_domain_init_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_device_attr_ex_member_infos[] = {
+NativeMapping::MemberInfo ibv_device_attr_ex_member_infos[] = {
     GET_MEMBER_INFO(ibv_device_attr_ex, orig_attr),
     GET_MEMBER_INFO(ibv_device_attr_ex, comp_mask),
     GET_MEMBER_INFO(ibv_device_attr_ex, odp_caps),
@@ -520,37 +519,37 @@ ReflectionUtility::MemberInfo ibv_device_attr_ex_member_infos[] = {
     GET_MEMBER_INFO(ibv_device_attr_ex, xrc_odp_caps)
 };
 
-ReflectionUtility::StructInfo ibv_device_attr_ex_struct_info {
+NativeMapping::StructInfo ibv_device_attr_ex_struct_info {
     sizeof(ibv_device_attr_ex),
-    sizeof(ibv_device_attr_ex_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_device_attr_ex_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_device_attr_ex_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_odp_caps_member_infos[] = {
+NativeMapping::MemberInfo ibv_odp_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_odp_caps, general_caps),
     GET_MEMBER_INFO(ibv_odp_caps, per_transport_caps.rc_odp_caps),
     GET_MEMBER_INFO(ibv_odp_caps, per_transport_caps.uc_odp_caps),
     GET_MEMBER_INFO(ibv_odp_caps, per_transport_caps.ud_odp_caps)
 };
 
-ReflectionUtility::StructInfo ibv_odp_caps_struct_info {
+NativeMapping::StructInfo ibv_odp_caps_struct_info {
     sizeof(ibv_odp_caps),
-    sizeof(ibv_odp_caps_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_odp_caps_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_odp_caps_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_tso_caps_member_infos[] = {
+NativeMapping::MemberInfo ibv_tso_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_tso_caps, max_tso),
     GET_MEMBER_INFO(ibv_tso_caps, supported_qpts)
 };
 
-ReflectionUtility::StructInfo ibv_tso_caps_struct_info {
+NativeMapping::StructInfo ibv_tso_caps_struct_info {
     sizeof(ibv_tso_caps),
-    sizeof(ibv_tso_caps_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_tso_caps_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_tso_caps_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_rss_caps_member_infos[] = {
+NativeMapping::MemberInfo ibv_rss_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_rss_caps, supported_qpts),
     GET_MEMBER_INFO(ibv_rss_caps, max_rwq_indirection_tables),
     GET_MEMBER_INFO(ibv_rss_caps, max_rwq_indirection_table_size),
@@ -558,25 +557,25 @@ ReflectionUtility::MemberInfo ibv_rss_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_rss_caps, rx_hash_function)
 };
 
-ReflectionUtility::StructInfo ibv_rss_caps_struct_info {
+NativeMapping::StructInfo ibv_rss_caps_struct_info {
     sizeof(ibv_rss_caps),
-    sizeof(ibv_rss_caps_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_rss_caps_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_rss_caps_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_packet_pacing_caps_member_infos[] = {
+NativeMapping::MemberInfo ibv_packet_pacing_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_packet_pacing_caps, qp_rate_limit_min),
     GET_MEMBER_INFO(ibv_packet_pacing_caps, qp_rate_limit_max),
     GET_MEMBER_INFO(ibv_packet_pacing_caps, supported_qpts)
 };
 
-ReflectionUtility::StructInfo ibv_packet_pacing_caps_struct_info {
+NativeMapping::StructInfo ibv_packet_pacing_caps_struct_info {
     sizeof(ibv_packet_pacing_caps),
-    sizeof(ibv_packet_pacing_caps_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_packet_pacing_caps_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_packet_pacing_caps_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_tm_caps_member_infos[] = {
+NativeMapping::MemberInfo ibv_tm_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_tm_caps, max_rndv_hdr_size),
     GET_MEMBER_INFO(ibv_tm_caps, max_num_tags),
     GET_MEMBER_INFO(ibv_tm_caps, flags),
@@ -584,68 +583,68 @@ ReflectionUtility::MemberInfo ibv_tm_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_tm_caps, max_sge)
 };
 
-ReflectionUtility::StructInfo ibv_tm_caps_struct_info {
+NativeMapping::StructInfo ibv_tm_caps_struct_info {
     sizeof(ibv_tm_caps),
-    sizeof(ibv_tm_caps_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_tm_caps_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_tm_caps_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_cq_moderation_caps_member_infos[] = {
+NativeMapping::MemberInfo ibv_cq_moderation_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_cq_moderation_caps, max_cq_count),
     GET_MEMBER_INFO(ibv_cq_moderation_caps, max_cq_period)
 };
 
-ReflectionUtility::StructInfo ibv_cq_moderation_caps_struct_info {
+NativeMapping::StructInfo ibv_cq_moderation_caps_struct_info {
     sizeof(ibv_cq_moderation_caps),
-    sizeof(ibv_cq_moderation_caps_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_cq_moderation_caps_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_cq_moderation_caps_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_pci_atomic_caps_member_infos[] = {
+NativeMapping::MemberInfo ibv_pci_atomic_caps_member_infos[] = {
     GET_MEMBER_INFO(ibv_pci_atomic_caps, fetch_add),
     GET_MEMBER_INFO(ibv_pci_atomic_caps, swap),
     GET_MEMBER_INFO(ibv_pci_atomic_caps, compare_swap)
 };
 
-ReflectionUtility::StructInfo ibv_pci_atomic_caps_struct_info {
+NativeMapping::StructInfo ibv_pci_atomic_caps_struct_info {
     sizeof(ibv_pci_atomic_caps),
-    sizeof(ibv_pci_atomic_caps_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_pci_atomic_caps_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_pci_atomic_caps_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_query_device_ex_input_member_infos[] = {
+NativeMapping::MemberInfo ibv_query_device_ex_input_member_infos[] = {
     GET_MEMBER_INFO(ibv_query_device_ex_input, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_query_device_ex_input_struct_info {
+NativeMapping::StructInfo ibv_query_device_ex_input_struct_info {
     sizeof(ibv_query_device_ex_input),
-    sizeof(ibv_query_device_ex_input_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_query_device_ex_input_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_query_device_ex_input_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_xrcd_member_infos[] = {
+NativeMapping::MemberInfo ibv_xrcd_member_infos[] = {
     GET_MEMBER_INFO(ibv_xrcd, context)
 };
 
-ReflectionUtility::StructInfo ibv_xrcd_struct_info {
+NativeMapping::StructInfo ibv_xrcd_struct_info {
     sizeof(ibv_xrcd),
-    sizeof(ibv_xrcd_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_xrcd_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_xrcd_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_xrcd_init_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_xrcd_init_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_xrcd_init_attr, comp_mask),
     GET_MEMBER_INFO(ibv_xrcd_init_attr, fd),
     GET_MEMBER_INFO(ibv_xrcd_init_attr, oflags)
 };
 
-ReflectionUtility::StructInfo ibv_xrcd_init_attr_struct_info {
+NativeMapping::StructInfo ibv_xrcd_init_attr_struct_info {
     sizeof(ibv_xrcd_init_attr),
-    sizeof(ibv_xrcd_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_xrcd_init_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_xrcd_init_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_cq_ex_member_infos[] = {
+NativeMapping::MemberInfo ibv_cq_ex_member_infos[] = {
     GET_MEMBER_INFO(ibv_cq_ex, context),
     GET_MEMBER_INFO(ibv_cq_ex, channel),
     GET_MEMBER_INFO(ibv_cq_ex, cq_context),
@@ -660,13 +659,13 @@ ReflectionUtility::MemberInfo ibv_cq_ex_member_infos[] = {
     GET_MEMBER_INFO(ibv_cq_ex, wr_id)
 };
 
-ReflectionUtility::StructInfo ibv_cq_ex_struct_info {
+NativeMapping::StructInfo ibv_cq_ex_struct_info {
     sizeof(ibv_cq_ex),
-    sizeof(ibv_cq_ex_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_cq_ex_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_cq_ex_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_srq_init_attr_ex_member_infos[] = {
+NativeMapping::MemberInfo ibv_srq_init_attr_ex_member_infos[] = {
     GET_MEMBER_INFO(ibv_srq_init_attr_ex, srq_context),
     GET_MEMBER_INFO(ibv_srq_init_attr_ex, attr),
     GET_MEMBER_INFO(ibv_srq_init_attr_ex, comp_mask),
@@ -677,24 +676,24 @@ ReflectionUtility::MemberInfo ibv_srq_init_attr_ex_member_infos[] = {
     GET_MEMBER_INFO(ibv_srq_init_attr_ex, tm_cap)
 };
 
-ReflectionUtility::StructInfo ibv_srq_init_attr_ex_struct_info {
+NativeMapping::StructInfo ibv_srq_init_attr_ex_struct_info {
     sizeof(ibv_srq_init_attr_ex),
-    sizeof(ibv_srq_init_attr_ex_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_srq_init_attr_ex_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_srq_init_attr_ex_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_tm_cap_member_infos[] = {
+NativeMapping::MemberInfo ibv_tm_cap_member_infos[] = {
     GET_MEMBER_INFO(ibv_tm_cap, max_num_tags),
     GET_MEMBER_INFO(ibv_tm_cap, max_ops)
 };
 
-ReflectionUtility::StructInfo ibv_tm_cap_struct_info {
+NativeMapping::StructInfo ibv_tm_cap_struct_info {
     sizeof(ibv_tm_cap),
-    sizeof(ibv_tm_cap_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_tm_cap_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_tm_cap_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_cq_init_attr_ex_member_infos[] = {
+NativeMapping::MemberInfo ibv_cq_init_attr_ex_member_infos[] = {
     GET_MEMBER_INFO(ibv_cq_init_attr_ex, cqe),
     GET_MEMBER_INFO(ibv_cq_init_attr_ex, cq_context),
     GET_MEMBER_INFO(ibv_cq_init_attr_ex, channel),
@@ -704,23 +703,23 @@ ReflectionUtility::MemberInfo ibv_cq_init_attr_ex_member_infos[] = {
     GET_MEMBER_INFO(ibv_cq_init_attr_ex, flags)
 };
 
-ReflectionUtility::StructInfo ibv_cq_init_attr_ex_struct_info {
+NativeMapping::StructInfo ibv_cq_init_attr_ex_struct_info {
     sizeof(ibv_cq_init_attr_ex),
-    sizeof(ibv_cq_init_attr_ex_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_cq_init_attr_ex_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_cq_init_attr_ex_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_poll_cq_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_poll_cq_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_poll_cq_attr, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_poll_cq_attr_struct_info {
+NativeMapping::StructInfo ibv_poll_cq_attr_struct_info {
     sizeof(ibv_poll_cq_attr),
-    sizeof(ibv_poll_cq_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+    sizeof(ibv_poll_cq_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
     ibv_poll_cq_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_wq_member_infos[] = {
+NativeMapping::MemberInfo ibv_wq_member_infos[] = {
         GET_MEMBER_INFO(ibv_wq, context),
         GET_MEMBER_INFO(ibv_wq, wq_context),
         GET_MEMBER_INFO(ibv_wq, pd),
@@ -735,13 +734,13 @@ ReflectionUtility::MemberInfo ibv_wq_member_infos[] = {
         GET_MEMBER_INFO(ibv_wq, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_wq_struct_info {
+NativeMapping::StructInfo ibv_wq_struct_info {
         sizeof(ibv_wq),
-        sizeof(ibv_wq_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_wq_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_wq_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_wq_init_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_wq_init_attr_member_infos[] = {
         GET_MEMBER_INFO(ibv_wq_init_attr, wq_context),
         GET_MEMBER_INFO(ibv_wq_init_attr, wq_type),
         GET_MEMBER_INFO(ibv_wq_init_attr, max_wr),
@@ -752,13 +751,13 @@ ReflectionUtility::MemberInfo ibv_wq_init_attr_member_infos[] = {
         GET_MEMBER_INFO(ibv_wq_init_attr, create_flags)
 };
 
-ReflectionUtility::StructInfo ibv_wq_init_attr_struct_info {
+NativeMapping::StructInfo ibv_wq_init_attr_struct_info {
         sizeof(ibv_wq_init_attr),
-        sizeof(ibv_wq_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_wq_init_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_wq_init_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_wq_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_wq_attr_member_infos[] = {
         GET_MEMBER_INFO(ibv_wq_attr, attr_mask),
         GET_MEMBER_INFO(ibv_wq_attr, wq_state),
         GET_MEMBER_INFO(ibv_wq_attr, curr_wq_state),
@@ -766,51 +765,51 @@ ReflectionUtility::MemberInfo ibv_wq_attr_member_infos[] = {
         GET_MEMBER_INFO(ibv_wq_attr, flags_mask)
 };
 
-ReflectionUtility::StructInfo ibv_wq_attr_struct_info {
+NativeMapping::StructInfo ibv_wq_attr_struct_info {
         sizeof(ibv_wq_attr),
-        sizeof(ibv_wq_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_wq_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_wq_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_rwq_ind_table_member_infos[] = {
+NativeMapping::MemberInfo ibv_rwq_ind_table_member_infos[] = {
         GET_MEMBER_INFO(ibv_rwq_ind_table, context),
         GET_MEMBER_INFO(ibv_rwq_ind_table, ind_tbl_handle),
         GET_MEMBER_INFO(ibv_rwq_ind_table, ind_tbl_num),
         GET_MEMBER_INFO(ibv_rwq_ind_table, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_rwq_ind_table_struct_info {
+NativeMapping::StructInfo ibv_rwq_ind_table_struct_info {
         sizeof(ibv_rwq_ind_table),
-        sizeof(ibv_rwq_ind_table_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_rwq_ind_table_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_rwq_ind_table_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_rwq_ind_table_init_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_rwq_ind_table_init_attr_member_infos[] = {
         GET_MEMBER_INFO(ibv_rwq_ind_table_init_attr, log_ind_tbl_size),
         GET_MEMBER_INFO(ibv_rwq_ind_table_init_attr, ind_tbl),
         GET_MEMBER_INFO(ibv_rwq_ind_table_init_attr, comp_mask)
 };
 
-ReflectionUtility::StructInfo ibv_rwq_ind_table_init_attr_struct_info {
+NativeMapping::StructInfo ibv_rwq_ind_table_init_attr_struct_info {
         sizeof(ibv_rwq_ind_table_init_attr),
-        sizeof(ibv_rwq_ind_table_init_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_rwq_ind_table_init_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_rwq_ind_table_init_attr_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_qp_ex_member_infos[] = {
+NativeMapping::MemberInfo ibv_qp_ex_member_infos[] = {
         GET_MEMBER_INFO(ibv_qp_ex, qp_base),
         GET_MEMBER_INFO(ibv_qp_ex, comp_mask),
         GET_MEMBER_INFO(ibv_qp_ex, wr_id),
         GET_MEMBER_INFO(ibv_qp_ex, wr_flags)
 };
 
-ReflectionUtility::StructInfo ibv_qp_ex_struct_info {
+NativeMapping::StructInfo ibv_qp_ex_struct_info {
         sizeof(ibv_qp_ex),
-        sizeof(ibv_qp_ex_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_qp_ex_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_qp_ex_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_qp_init_attr_ex_member_infos[] = {
+NativeMapping::MemberInfo ibv_qp_init_attr_ex_member_infos[] = {
         GET_MEMBER_INFO(ibv_qp_init_attr_ex, qp_context),
         GET_MEMBER_INFO(ibv_qp_init_attr_ex, send_cq),
         GET_MEMBER_INFO(ibv_qp_init_attr_ex, recv_cq),
@@ -829,38 +828,38 @@ ReflectionUtility::MemberInfo ibv_qp_init_attr_ex_member_infos[] = {
         GET_MEMBER_INFO(ibv_qp_init_attr_ex, send_ops_flags)
 };
 
-ReflectionUtility::StructInfo ibv_qp_init_attr_ex_struct_info {
+NativeMapping::StructInfo ibv_qp_init_attr_ex_struct_info {
         sizeof(ibv_qp_init_attr_ex),
-        sizeof(ibv_qp_init_attr_ex_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_qp_init_attr_ex_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_qp_init_attr_ex_member_infos
 };
 
 
-ReflectionUtility::MemberInfo ibv_rx_hash_conf_member_infos[] = {
+NativeMapping::MemberInfo ibv_rx_hash_conf_member_infos[] = {
         GET_MEMBER_INFO(ibv_rx_hash_conf, rx_hash_function),
         GET_MEMBER_INFO(ibv_rx_hash_conf, rx_hash_key_len),
         GET_MEMBER_INFO(ibv_rx_hash_conf, rx_hash_key),
         GET_MEMBER_INFO(ibv_rx_hash_conf, rx_hash_fields_mask)
 };
 
-ReflectionUtility::StructInfo ibv_rx_hash_conf_struct_info {
+NativeMapping::StructInfo ibv_rx_hash_conf_struct_info {
         sizeof(ibv_rx_hash_conf),
-        sizeof(ibv_rx_hash_conf_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_rx_hash_conf_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_rx_hash_conf_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_data_buf_member_infos[] = {
+NativeMapping::MemberInfo ibv_data_buf_member_infos[] = {
         GET_MEMBER_INFO(ibv_data_buf, addr),
         GET_MEMBER_INFO(ibv_data_buf, length)
 };
 
-ReflectionUtility::StructInfo ibv_data_buf_struct_info {
+NativeMapping::StructInfo ibv_data_buf_struct_info {
         sizeof(ibv_data_buf),
-        sizeof(ibv_data_buf_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_data_buf_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_data_buf_member_infos
 };
 
-ReflectionUtility::MemberInfo ibv_qp_open_attr_member_infos[] = {
+NativeMapping::MemberInfo ibv_qp_open_attr_member_infos[] = {
         GET_MEMBER_INFO(ibv_qp_open_attr, comp_mask),
         GET_MEMBER_INFO(ibv_qp_open_attr, qp_num),
         GET_MEMBER_INFO(ibv_qp_open_attr, xrcd),
@@ -868,35 +867,35 @@ ReflectionUtility::MemberInfo ibv_qp_open_attr_member_infos[] = {
         GET_MEMBER_INFO(ibv_qp_open_attr, qp_type)
 };
 
-ReflectionUtility::StructInfo ibv_qp_open_attr_struct_info {
+NativeMapping::StructInfo ibv_qp_open_attr_struct_info {
         sizeof(ibv_qp_open_attr),
-        sizeof(ibv_qp_open_attr_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(ibv_qp_open_attr_member_infos) / sizeof(NativeMapping::MemberInfo),
         ibv_qp_open_attr_member_infos
 };
 
 // Epoll
 
-ReflectionUtility::MemberInfo epoll_data_t_member_infos[] = {
-        GET_UNION_MEMBER_INFO(epoll_data_t, ptr),
-        GET_UNION_MEMBER_INFO(epoll_data_t, fd),
-        GET_UNION_MEMBER_INFO(epoll_data_t, u32),
-        GET_UNION_MEMBER_INFO(epoll_data_t, u64),
+NativeMapping::MemberInfo epoll_data_t_member_infos[] = {
+        GET_MEMBER_INFO(epoll_data_t, ptr),
+        GET_MEMBER_INFO(epoll_data_t, fd),
+        GET_MEMBER_INFO(epoll_data_t, u32),
+        GET_MEMBER_INFO(epoll_data_t, u64),
 };
 
-ReflectionUtility::StructInfo epoll_data_t_struct_infos {
+NativeMapping::StructInfo epoll_data_t_struct_infos {
         sizeof(epoll_data_t),
-        sizeof(epoll_data_t_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(epoll_data_t_member_infos) / sizeof(NativeMapping::MemberInfo),
         epoll_data_t_member_infos
 };
 
-ReflectionUtility::MemberInfo epoll_event_member_infos[] = {
+NativeMapping::MemberInfo epoll_event_member_infos[] = {
         GET_MEMBER_INFO(epoll_event, events),
         GET_MEMBER_INFO(epoll_event, data)
 };
 
-ReflectionUtility::StructInfo epoll_event_struct_infos {
+NativeMapping::StructInfo epoll_event_struct_infos {
         sizeof(epoll_event),
-        sizeof(epoll_event_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(epoll_event_member_infos) / sizeof(NativeMapping::MemberInfo),
         epoll_event_member_infos
 };
 
@@ -907,19 +906,19 @@ struct complex_t {
     double imaginary;
 };
 
-ReflectionUtility::MemberInfo complex_t_member_infos[] = {
+NativeMapping::MemberInfo complex_t_member_infos[] = {
         GET_MEMBER_INFO(complex_t, real),
         GET_MEMBER_INFO(complex_t, imaginary)
 };
 
-ReflectionUtility::StructInfo complex_t_struct_infos {
+NativeMapping::StructInfo complex_t_struct_infos {
         sizeof(complex_t),
-        sizeof(complex_t_member_infos) / sizeof(ReflectionUtility::MemberInfo),
+        sizeof(complex_t_member_infos) / sizeof(NativeMapping::MemberInfo),
         complex_t_member_infos
 };
 
 
-std::unordered_map<std::string, ReflectionUtility::StructInfo*> ReflectionUtility::structInfos {
+std::unordered_map<std::string, NativeMapping::StructInfo*> NativeMapping::structInfos {
     {"ibv_device_attr", &ibv_device_attr_struct_info},
     {"ibv_port_attr", &ibv_port_attr_struct_info},
     {"ibv_async_event", &ibv_async_event_struct_info},
@@ -980,7 +979,7 @@ std::unordered_map<std::string, ReflectionUtility::StructInfo*> ReflectionUtilit
     {"complex_t", &complex_t_struct_infos}
 };
 
-ReflectionUtility::StructInfo *ReflectionUtility::getStructInfo(const std::string& identifier) {
+NativeMapping::StructInfo *NativeMapping::getStructInfo(const std::string& identifier) {
     if (structInfos.find(identifier) == structInfos.end()) {
         return nullptr;
     }
