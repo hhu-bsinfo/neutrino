@@ -35,14 +35,6 @@ JNIEXPORT jlong JNICALL Java_de_hhu_bsinfo_neutrino_util_EventFileDescriptor_rea
 JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_EventFileDescriptor_increment0
   (JNIEnv *, jclass, jint, jlong);
 
-/*
- * Class:     de_hhu_bsinfo_neutrino_util_EventFileDescriptor
- * Method:    close0
- * Signature: (I)I
- */
-JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_EventFileDescriptor_close0
-  (JNIEnv *, jclass, jint);
-
 #ifdef __cplusplus
 }
 #endif
