@@ -7,7 +7,7 @@ import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
 
 import java.nio.ByteBuffer;
 
-public final class Buffer extends UnpooledUnsafeDirectByteBuf {
+public final class Buffer extends UnpooledUnsafeDirectByteBuf implements Transferable {
 
     private static final boolean PREFER_DIRECT_BUFFER = true;
     private static final ByteBufAllocator ALLOCATOR = new UnpooledByteBufAllocator(PREFER_DIRECT_BUFFER);
@@ -32,11 +32,13 @@ public final class Buffer extends UnpooledUnsafeDirectByteBuf {
         return new Buffer(initialBuffer, registrator);
     }
 
-    public int getLocalKey() {
+    @Override
+    public int localKey() {
         return memoryRegion.getLocalKey();
     }
 
-    public int getRemoteKey() {
+    @Override
+    public int remoteKey() {
         return memoryRegion.getRemoteKey();
     }
 }

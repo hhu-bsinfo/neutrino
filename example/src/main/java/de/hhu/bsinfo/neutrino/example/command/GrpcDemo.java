@@ -2,7 +2,6 @@ package de.hhu.bsinfo.neutrino.example.command;
 
 import com.google.protobuf.ByteString;
 import de.hhu.bsinfo.neutrino.api.Neutrino;
-import de.hhu.bsinfo.neutrino.api.network.Connection;
 import de.hhu.bsinfo.neutrino.api.network.NetworkService;
 import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
 import de.hhu.bsinfo.neutrino.example.service.*;
@@ -19,8 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import picocli.CommandLine;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.ParallelFlux;
-import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -28,11 +25,9 @@ import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -247,7 +242,7 @@ public class GrpcDemo implements Runnable {
                     .map(buffer -> RemoteHandle.newBuilder()
                                         .setAddress(buffer.memoryAddress())
                                         .setCapacity(buffer.capacity())
-                                        .setKey(buffer.getRemoteKey())
+                                        .setKey(buffer.remoteKey())
                                         .build());
         }
     }

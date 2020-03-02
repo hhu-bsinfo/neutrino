@@ -121,6 +121,8 @@ public class RSocketDemo implements Runnable {
             System.out.println();
             System.out.println(result);
             System.out.println();
+
+            Thread.sleep(10000);
         } catch (Throwable e) {
             log.error("An unexpected error occured", e);
         }
@@ -175,9 +177,12 @@ public class RSocketDemo implements Runnable {
 
     private static class MessageHandler extends AbstractRSocket {
 
+        private final AtomicLong counter = new AtomicLong();
+
         @Override
         public Mono<Void> fireAndForget(Payload payload) {
-            log.info("Received payload with size {}", payload.data().readableBytes());
+            counter.getAndIncrement();
+            log.info("Received payload with size {} [{}]", payload.data().readableBytes(), counter.get());
             payload.release();
             return Mono.empty();
         }
