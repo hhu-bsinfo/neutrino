@@ -9,6 +9,8 @@
       <module name="api_test" target="11" />
       <module name="bsinfo-neutrino-neutrino_main" target="11" />
       <module name="bsinfo-neutrino-neutrino_test" target="11" />
+      <module name="core_main" target="11" />
+      <module name="core_test" target="11" />
       <module name="neutrino-benchmark_jmh" target="11" />
       <module name="neutrino-benchmark_main" target="11" />
       <module name="neutrino-benchmark_test" target="11" />
@@ -54,6 +56,8 @@
       <module name="rsocket-transport-netty_test" target="11" />
       <module name="rsocket-transport-neutrino_main" target="11" />
       <module name="rsocket-transport-neutrino_test" target="11" />
+      <module name="rsocket_main" target="11" />
+      <module name="rsocket_test" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>

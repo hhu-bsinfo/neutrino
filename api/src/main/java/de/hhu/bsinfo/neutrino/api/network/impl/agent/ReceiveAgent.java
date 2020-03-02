@@ -4,15 +4,10 @@ import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
-import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.QueuedPipe;
-import org.agrona.hints.ThreadHints;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -78,7 +73,7 @@ public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
     private final QueuePoller queuePoller;
 
     public ReceiveAgent(SharedResources resources) {
-        super(EpollEvent.RECEIVE_READY);
+        super(ConnectionEvent.RECEIVE_READY);
         receiveQueue = resources.sharedReceiveQueue();
         bufferPool = resources.bufferPool();
         queuePoller = new QueuePoller(POLL_COUNT);
@@ -92,13 +87,7 @@ public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
     }
 
     @Override
-    public void onClose() {
-        inbound.cancel();
-        log.debug("Closing");
-    }
-
-    @Override
-    protected void processConnection(InternalConnection connection, EpollEvent event) {
+    protected void processConnection(InternalConnection connection, ConnectionEvent event) {
 
         // Get the completion channel
         var channel = connection.getResources().getReceiveCompletionChannel();
@@ -152,6 +141,17 @@ public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
     @Override
     public String roleName() {
         return "receive";
+    }
+
+    @Override
+    public void onStart() {
+        log.info("Starting agent");
+    }
+
+    @Override
+    public void onClose() {
+        inbound.cancel();
+        log.debug("Closing");
     }
 
     private class FluxReceive extends Flux<ByteBuf> implements Subscription {

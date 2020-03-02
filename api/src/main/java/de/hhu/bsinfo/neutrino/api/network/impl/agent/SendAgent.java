@@ -8,7 +8,6 @@ import de.hhu.bsinfo.neutrino.verbs.*;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -32,7 +31,7 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     private final QueuePoller queuePoller;
 
     public SendAgent(SharedResources sharedResources) {
-        super(EpollEvent.QUEUE_READY, EpollEvent.SEND_READY);
+        super(ConnectionEvent.QUEUE_READY, ConnectionEvent.SEND_READY);
         bufferPool = sharedResources.bufferPool();
         aggregator = new WorkRequestAggregator(MAX_BATCH_SIZE);
         queuePoller = new QueuePoller(MAX_BATCH_SIZE);
@@ -49,7 +48,7 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     }
 
     @Override
-    protected void processConnection(InternalConnection connection, EpollEvent event) {
+    protected void processConnection(InternalConnection connection, ConnectionEvent event) {
         switch (event) {
             case QUEUE_READY:
                 onQueueReady(connection);

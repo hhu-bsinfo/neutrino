@@ -121,7 +121,6 @@ public class RSocketDemo implements Runnable {
             System.out.println();
             System.out.println(result);
             System.out.println();
-
         } catch (Throwable e) {
             log.error("An unexpected error occured", e);
         }
