@@ -59,6 +59,7 @@ public class OperationSubscriber extends DrainableSubscriber<Operation, Operatio
         STATUS.set(this, Status.COMPLETE);
     }
 
+    @Override
     public void onRemove() {
         onDispose.onComplete();
     }

@@ -3,7 +3,6 @@ package de.hhu.bsinfo.neutrino.api.network.impl;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.ReceiveAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.SendAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
-import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.BufferSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.DrainableSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;

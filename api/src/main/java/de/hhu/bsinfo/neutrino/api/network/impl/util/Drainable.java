@@ -7,10 +7,4 @@ public interface Drainable<T> {
     int drain(Consumer<T> consumer);
 
     int drain(Consumer<T> consumer, int limit);
-
-    boolean hasCompleted();
-
-    static <T> Drainable<T> of(T element) {
-        return new SingleDrainable<>(element);
-    }
 }

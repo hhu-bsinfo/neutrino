@@ -7,7 +7,6 @@ import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.ReadOperation;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.SendOperation;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.WriteOperation;
-import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.BufferSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.DrainableSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.ConnectionEvent;
@@ -141,7 +140,7 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
             // Remove the current publisher if it has completed
             if (publisher.hasCompleted()) {
                 connection.removeSubscriber(publisher);
-//                publisher.onRemove();
+                publisher.onRemove();
                 continue;
             }
 
