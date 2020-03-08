@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.neutrino.example.command;
+package de.hhu.bsinfo.neutrino.example.command.rsocket;
 
 import com.google.protobuf.ByteString;
 import de.hhu.bsinfo.neutrino.api.Neutrino;

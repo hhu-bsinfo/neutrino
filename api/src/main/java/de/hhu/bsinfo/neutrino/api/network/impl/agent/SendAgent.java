@@ -92,9 +92,8 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
     private void onSendReady(InternalConnection connection) {
 
-        // Get connection resources and state
+        // Get connection resources
         var resources = connection.getResources();
-        var state = connection.getState();
 
         // Get the completion queue on which the event occured
         var channel = resources.getSendCompletionChannel();
@@ -113,11 +112,9 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
     private void onQueueReady(InternalConnection connection) {
 
-        var state = connection.getState();
-
         // Return early if no publisher is registered
         var currentPublishers = connection.getSubscribers();
-        if (currentPublishers.length == 0 && state.getPending() == 0) {
+        if (currentPublishers.length == 0) {
             return;
         }
 
