@@ -7,6 +7,9 @@ import de.hhu.bsinfo.neutrino.api.network.*;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.ReceiveAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.SendAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.ReadOperation;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.SendOperation;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.WriteOperation;
 import de.hhu.bsinfo.neutrino.api.util.BaseService;
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
@@ -165,8 +168,13 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
         // Get associated send agent
         var agent = internalConnection.getSendAgent();
 
-        // Send frames using agent
-        return agent.send(internalConnection, frames);
+        // Send a single buffer
+        if (frames instanceof Mono) {
+            return agent.send(internalConnection, ((Mono<ByteBuf>) frames).map(agent::copyOf).map(SendOperation::new));
+        }
+
+        // Send a stream of buffers
+        return agent.send(internalConnection, ((Flux<ByteBuf>) frames).map(agent::copyOf).map(SendOperation::new));
     }
 
     @Override
@@ -184,11 +192,32 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
 
     @Override
     public Mono<Void> write(Connection connection, Buffer buffer, RemoteHandle handle) {
-        throw new UnsupportedOperationException("not implemented");
+
+        // Retrieve actual connection
+        var internalConnection = connectionManager.get(connection);
+
+        // Get associated send agent
+        var agent = internalConnection.getSendAgent();
+
+        // Create write operation
+        var operation = new WriteOperation(buffer, handle);
+
+        // Queue write operation within the associated agent
+        return agent.write(internalConnection, Mono.just(operation));
     }
 
     @Override
     public Mono<Void> read(Connection connection, Buffer buffer, RemoteHandle handle) {
-        throw new UnsupportedOperationException("not implemented");
+        // Retrieve actual connection
+        var internalConnection = connectionManager.get(connection);
+
+        // Get associated send agent
+        var agent = internalConnection.getSendAgent();
+
+        // Create write operation
+        var operation = new ReadOperation(buffer, handle);
+
+        // Queue write operation within the associated agent
+        return agent.read(internalConnection, Mono.just(operation));
     }
 }

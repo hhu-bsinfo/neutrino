@@ -2,9 +2,19 @@ package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
-import de.hhu.bsinfo.neutrino.verbs.*;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.ReadOperation;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.SendOperation;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.WriteOperation;
+import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.BufferSubscriber;
+import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.DrainableSubscriber;
+import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.ConnectionEvent;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.NeutrinoOutbound;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.OperationAggregator;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePoller;
+import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
@@ -21,9 +31,9 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     private final BufferPool bufferPool;
 
     /**
-     * Helper object for work request aggregation.
+     * Helper object for aggregating operations.
      */
-    private final WorkRequestAggregator aggregator;
+    private final OperationAggregator aggregator;
 
     /**
      * Helper object used to poll completion queues.
@@ -33,16 +43,30 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     public SendAgent(SharedResources sharedResources) {
         super(ConnectionEvent.QUEUE_READY, ConnectionEvent.SEND_READY);
         bufferPool = sharedResources.bufferPool();
-        aggregator = new WorkRequestAggregator(MAX_BATCH_SIZE);
+        aggregator = OperationAggregator.create(MAX_BATCH_SIZE);
         queuePoller = new QueuePoller(MAX_BATCH_SIZE);
     }
 
     @Override
-    public Mono<Void> send(InternalConnection connection, Publisher<ByteBuf> data) {
+    public Mono<Void> send(InternalConnection connection, Publisher<SendOperation> operations) {
+        return subscribeTo(connection, operations);
+    }
+
+    @Override
+    public Mono<Void> write(InternalConnection connection, Publisher<WriteOperation> operations) {
+        return subscribeTo(connection, operations);
+    }
+
+    @Override
+    public Mono<Void> read(InternalConnection connection, Publisher<ReadOperation> operation) {
+        return subscribeTo(connection, operation);
+    }
+
+    private static Mono<Void> subscribeTo(InternalConnection connection, Publisher<? extends Operation> operations) {
         return Mono.defer(() -> {
-            var subscriber = new BufferSubscriber(bufferPool);
-            connection.addPublisher(subscriber);
-            data.subscribe(subscriber);
+            var subscriber = new OperationSubscriber();
+            connection.addSubscriber(subscriber);
+            operations.subscribe(subscriber);
             return subscriber.onDispose();
         });
     }
@@ -50,13 +74,18 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     @Override
     protected void processConnection(InternalConnection connection, ConnectionEvent event) {
         switch (event) {
+
+            // The queue has free slots
             case QUEUE_READY:
                 onQueueReady(connection);
                 break;
+
+            // A work request was processed
             case SEND_READY:
                 onSendReady(connection);
                 break;
-            case RECEIVE_READY:
+
+            // We did not subscribe for other events
             default:
                 throw new IllegalStateException("Unexpected value: " + event);
         }
@@ -88,7 +117,7 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         var state = connection.getState();
 
         // Return early if no publisher is registered
-        var currentPublishers = connection.getPublishers();
+        var currentPublishers = connection.getSubscribers();
         if (currentPublishers.length == 0 && state.getPending() == 0) {
             return;
         }
@@ -102,7 +131,7 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
         // Iterate over all publishers and post their buffers in form of send work requests
         // onto the queue pair's send work request queue.
-        for (BufferSubscriber publisher : currentPublishers) {
+        for (DrainableSubscriber<Operation, Operation> publisher : currentPublishers) {
 
             // Calculate the next batch size
             if (freeSlots == 0) {
@@ -111,8 +140,8 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
             // Remove the current publisher if it has completed
             if (publisher.hasCompleted()) {
-                connection.removePublisher(publisher);
-                publisher.onRemove();
+                connection.removeSubscriber(publisher);
+//                publisher.onRemove();
                 continue;
             }
 
@@ -139,11 +168,41 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     private void handleSendCompletion(WorkCompletion workCompletion) {
         var id = workCompletion.getId();
         var status = workCompletion.getStatus();
+        var opCode = workCompletion.getOpCode();
         if (status != WorkCompletion.Status.SUCCESS) {
-            log.error("Send work completion {} failed with status {}: {}", (int) id, status, workCompletion.getStatusMessage());
+            log.error("Send work completion [{}, {}] failed with status {}: {}", workCompletion.getOpCode(), (int) id, status, workCompletion.getStatusMessage());
         }
 
-        bufferPool.release((int) id);
+        switch (opCode) {
+            case SEND:
+                bufferPool.release((int) id);
+                break;
+            case RDMA_READ:
+                break;
+            case RDMA_WRITE:
+                break;
+            case FETCH_ADD:
+                break;
+            case COMP_SWAP:
+                break;
+        }
+    }
+
+    public final BufferPool.PooledByteBuf copyOf(ByteBuf buffer) {
+        var target = bufferPool.leaseNext();
+
+        // Remember number of bytes to send
+        var messageSize = buffer.readableBytes();
+
+        // Copy bytes into send buffer
+        target.writeBytes(buffer);
+        buffer.release();
+
+        return target;
+    }
+
+    public final BufferPool.PooledByteBuf leaseBuffer() {
+        return bufferPool.leaseNext();
     }
 
     @Override

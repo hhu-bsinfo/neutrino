@@ -1,10 +1,12 @@
-package de.hhu.bsinfo.neutrino.api.network.impl.util;
+package de.hhu.bsinfo.neutrino.api.network.impl.subscriber;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.SendOperation;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.Drainable;
 import io.netty.buffer.ByteBuf;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.reactivestreams.Subscription;
-import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Mono;
@@ -13,7 +15,7 @@ import reactor.core.publisher.MonoProcessor;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
-public class BufferSubscriber extends BaseSubscriber<ByteBuf> {
+public class BufferSubscriber extends DrainableSubscriber<ByteBuf, Operation> {
 
     private enum Status {
         NONE, SUBSCRIBE, CANCEL, ERROR, COMPLETE
@@ -37,9 +39,9 @@ public class BufferSubscriber extends BaseSubscriber<ByteBuf> {
     private final BufferPool bufferPool;
 
     /**
-     * Outgoing buffers prepared for network operations.
+     * Buffered operations.
      */
-    private final ManyToOneConcurrentArrayQueue<BufferPool.IndexedByteBuf> buffers = new ManyToOneConcurrentArrayQueue<>(100);
+    private final ManyToOneConcurrentArrayQueue<Operation> operations = new ManyToOneConcurrentArrayQueue<>(100);
 
     public BufferSubscriber(BufferPool bufferPool) {
         this.bufferPool = bufferPool;
@@ -51,7 +53,7 @@ public class BufferSubscriber extends BaseSubscriber<ByteBuf> {
 
     @Override
     protected void hookOnSubscribe(Subscription subscription) {
-        subscription.request(buffers.capacity());
+        subscription.request(operations.capacity());
     }
 
     @Override
@@ -65,7 +67,9 @@ public class BufferSubscriber extends BaseSubscriber<ByteBuf> {
         target.writeBytes(buffer);
         buffer.release();
 
-        if (!buffers.offer(target)) {
+        var operation = new SendOperation(target);
+
+        if (!operations.offer(operation)) {
             throw Exceptions.failWithOverflow();
         }
     }
@@ -84,11 +88,19 @@ public class BufferSubscriber extends BaseSubscriber<ByteBuf> {
         onDispose.onComplete();
     }
 
+    @Override
     public boolean hasCompleted() {
-        return status == Status.COMPLETE && buffers.isEmpty();
+        return status == Status.COMPLETE && operations.isEmpty();
     }
 
-    public int drain(Consumer<BufferPool.IndexedByteBuf> consumer, int limit) {
-        return buffers.drain(consumer, limit);
+    @Override
+    public int drain(Consumer<Operation> consumer) {
+
+        return operations.drain(consumer);
+    }
+
+    @Override
+    public int drain(Consumer<Operation> consumer, int limit) {
+        return operations.drain(consumer, limit);
     }
 }

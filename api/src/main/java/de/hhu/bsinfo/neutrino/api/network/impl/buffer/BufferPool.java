@@ -9,7 +9,6 @@ import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @ThreadSafe
@@ -27,21 +26,21 @@ public class BufferPool {
 
     private final String name;
 
-    private final IndexedByteBuf[] indexedBuffers;
+    private final PooledByteBuf[] indexedBuffers;
 
     private final AtomicIntegerStack stack;
 
-    private BufferPool(final IndexedByteBuf[] indexedBuffers, final AtomicIntegerStack stack, final String name) {
+    private BufferPool(final PooledByteBuf[] indexedBuffers, final AtomicIntegerStack stack, final String name) {
         this.indexedBuffers = indexedBuffers;
         this.stack = stack;
         this.name = name;
     }
 
     public static BufferPool create(String name, int mtu, int count, BufferRegistrator registrator) {
-        var buffers = new IndexedByteBuf[count];
+        var buffers = new PooledByteBuf[count];
         var stack = new AtomicIntegerStack();
         for (int i = 0; i < buffers.length; i++) {
-            buffers[i] = new IndexedByteBuf(i, UnpooledByteBufAllocator.DEFAULT, mtu, mtu, registrator);
+            buffers[i] = new PooledByteBuf(i, UnpooledByteBufAllocator.DEFAULT, mtu, mtu, registrator);
             stack.push(i);
         }
 
@@ -53,7 +52,7 @@ public class BufferPool {
         return bufferPool;
     }
 
-    public IndexedByteBuf leaseNext() {
+    public PooledByteBuf leaseNext() {
         int index;
         long then = System.currentTimeMillis();
         while ((index = stack.pop()) == -1) {
@@ -71,17 +70,17 @@ public class BufferPool {
         stack.push(index);
     }
 
-    public IndexedByteBuf get(int index) {
+    public PooledByteBuf get(int index) {
         return indexedBuffers[index];
     }
 
-    public static final class IndexedByteBuf extends UnpooledUnsafeDirectByteBuf {
+    public static final class PooledByteBuf extends UnpooledUnsafeDirectByteBuf {
 
         private final int index;
         private final MemoryRegion memoryRegion;
         private BufferReleaser releaser;
 
-        public IndexedByteBuf(int index, ByteBufAllocator alloc, int initialCapacity, int maxCapacity, BufferRegistrator registrator) {
+        public PooledByteBuf(int index, ByteBufAllocator alloc, int initialCapacity, int maxCapacity, BufferRegistrator registrator) {
             super(alloc, initialCapacity, maxCapacity);
             this.index = index;
             memoryRegion = registrator.wrap(memoryAddress(), capacity(), MemoryRegion.DEFAULT_ACCESS_FLAGS);

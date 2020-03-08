@@ -112,7 +112,7 @@ public class ConnectionManager {
     private InternalConnection createConnection(QueuePair queuePair, QueuePairResources queuePairResources) {
         var attributes = queuePair.queryAttributes(QueuePair.AttributeFlag.CAP);
         var state = new QueuePairState(attributes.capabilities.getMaxSendWorkRequests(), 0);
-        var buffers = new ManyToOneConcurrentArrayQueue<BufferPool.IndexedByteBuf>(attributes.capabilities.getMaxSendWorkRequests());
+        var buffers = new ManyToOneConcurrentArrayQueue<BufferPool.PooledByteBuf>(attributes.capabilities.getMaxSendWorkRequests());
         var queueDescriptor = EventFileDescriptor.create(attributes.capabilities.getMaxSendWorkRequests(), EventFileDescriptor.OpenMode.NONBLOCK);
         return InternalConnection.builder()
                 .id(connectionCounter.getAndIncrement())

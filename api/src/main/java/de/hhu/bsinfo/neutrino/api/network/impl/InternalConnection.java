@@ -2,7 +2,9 @@ package de.hhu.bsinfo.neutrino.api.network.impl;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.ReceiveAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.SendAgent;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.BufferSubscriber;
+import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
+import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.BufferSubscriber;
+import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.DrainableSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;
 import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
@@ -38,13 +40,13 @@ public @Data class InternalConnection {
     private static final AtomicReferenceFieldUpdater<InternalConnection, ReceiveAgent> RECEIVE_AGENT =
             AtomicReferenceFieldUpdater.newUpdater(InternalConnection.class, ReceiveAgent.class, "receiveAgent");
 
-    /**
-     * Publishers emitting new buffers to send.
-     */
+    @SuppressWarnings("unchecked")
     @Builder.Default
-    private volatile BufferSubscriber[] publishers = new BufferSubscriber[0];
-    private static final AtomicReferenceFieldUpdater<InternalConnection, BufferSubscriber[]> PUBLISHER =
-            AtomicReferenceFieldUpdater.newUpdater(InternalConnection.class, BufferSubscriber[].class, "publishers");
+    private volatile DrainableSubscriber<Operation, Operation>[] subscribers = new DrainableSubscriber[0];
+
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<InternalConnection, DrainableSubscriber[]> SUBSCRIBERS =
+            AtomicReferenceFieldUpdater.newUpdater(InternalConnection.class, DrainableSubscriber[].class, "subscribers");
 
     public void setSendAgent(SendAgent agent) {
         SEND_AGENT.set(this, agent);
@@ -54,24 +56,26 @@ public @Data class InternalConnection {
         RECEIVE_AGENT.set(this, agent);
     }
 
-    public void addPublisher(BufferSubscriber publisher) {
-        BufferSubscriber[] oldArray;
-        BufferSubscriber[] newArray;
+    @SuppressWarnings("rawtypes")
+    public void addSubscriber(DrainableSubscriber<Operation, Operation> subscriber) {
+        DrainableSubscriber[] oldArray;
+        DrainableSubscriber[] newArray;
 
         do {
-            oldArray = publishers;
-            newArray = ArrayUtil.add(oldArray, publisher);
-        } while (!PUBLISHER.compareAndSet(this, oldArray, newArray));
+            oldArray = subscribers;
+            newArray = ArrayUtil.add(oldArray, subscriber);
+        } while (!SUBSCRIBERS.compareAndSet(this, oldArray, newArray));
     }
 
-    public void removePublisher(BufferSubscriber publisher) {
-        BufferSubscriber[] oldArray;
-        BufferSubscriber[] newArray;
+    @SuppressWarnings("rawtypes")
+    public void removeSubscriber(DrainableSubscriber<Operation, Operation> subscriber) {
+        DrainableSubscriber[] oldArray;
+        DrainableSubscriber[] newArray;
 
         do {
-            oldArray = publishers;
-            newArray = ArrayUtil.remove(oldArray, publisher);
-        } while (!PUBLISHER.compareAndSet(this, oldArray, newArray));
+            oldArray = subscribers;
+            newArray = ArrayUtil.remove(oldArray, subscriber);
+        } while (!SUBSCRIBERS.compareAndSet(this, oldArray, newArray));
     }
 
     public int getFreeSlots() {

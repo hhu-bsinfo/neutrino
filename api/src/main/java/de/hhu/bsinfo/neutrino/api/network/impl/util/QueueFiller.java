@@ -83,7 +83,7 @@ public class QueueFiller {
         receiveQueue.postReceive(workRequestPool[0]);
     }
 
-    private static void fillScatterGatherElement(ScatterGatherElement element, BufferPool.IndexedByteBuf buffer) {
+    private static void fillScatterGatherElement(ScatterGatherElement element, BufferPool.PooledByteBuf buffer) {
         element.setAddress(buffer.memoryAddress());
         element.setLength(buffer.writableBytes());
         element.setLocalKey(buffer.getLocalKey());
