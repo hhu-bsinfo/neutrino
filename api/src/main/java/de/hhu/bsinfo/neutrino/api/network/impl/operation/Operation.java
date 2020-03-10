@@ -9,5 +9,5 @@ public interface Operation {
     /**
      * Transfers this operation into a SendWorkRequest.
      */
-    void transfer(SendWorkRequest request, ScatterGatherElement element);
+    void transfer(int id, SendWorkRequest request, ScatterGatherElement element);
 }

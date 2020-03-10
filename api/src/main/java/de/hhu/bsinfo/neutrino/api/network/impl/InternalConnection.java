@@ -2,8 +2,7 @@ package de.hhu.bsinfo.neutrino.api.network.impl;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.ReceiveAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.SendAgent;
-import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
-import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.DrainableSubscriber;
+import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;
 import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
@@ -39,13 +38,10 @@ public @Data class InternalConnection {
     private static final AtomicReferenceFieldUpdater<InternalConnection, ReceiveAgent> RECEIVE_AGENT =
             AtomicReferenceFieldUpdater.newUpdater(InternalConnection.class, ReceiveAgent.class, "receiveAgent");
 
-    @SuppressWarnings("unchecked")
     @Builder.Default
-    private volatile DrainableSubscriber<Operation, Operation>[] subscribers = new DrainableSubscriber[0];
-
-    @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<InternalConnection, DrainableSubscriber[]> SUBSCRIBERS =
-            AtomicReferenceFieldUpdater.newUpdater(InternalConnection.class, DrainableSubscriber[].class, "subscribers");
+    private volatile OperationSubscriber[] subscribers = new OperationSubscriber[0];
+    private static final AtomicReferenceFieldUpdater<InternalConnection, OperationSubscriber[]> SUBSCRIBERS =
+            AtomicReferenceFieldUpdater.newUpdater(InternalConnection.class, OperationSubscriber[].class, "subscribers");
 
     public void setSendAgent(SendAgent agent) {
         SEND_AGENT.set(this, agent);
@@ -55,10 +51,9 @@ public @Data class InternalConnection {
         RECEIVE_AGENT.set(this, agent);
     }
 
-    @SuppressWarnings("rawtypes")
-    public void addSubscriber(DrainableSubscriber<Operation, Operation> subscriber) {
-        DrainableSubscriber[] oldArray;
-        DrainableSubscriber[] newArray;
+    public void addSubscriber(OperationSubscriber subscriber) {
+        OperationSubscriber[] oldArray;
+        OperationSubscriber[] newArray;
 
         do {
             oldArray = subscribers;
@@ -66,10 +61,9 @@ public @Data class InternalConnection {
         } while (!SUBSCRIBERS.compareAndSet(this, oldArray, newArray));
     }
 
-    @SuppressWarnings("rawtypes")
-    public void removeSubscriber(DrainableSubscriber<Operation, Operation> subscriber) {
-        DrainableSubscriber[] oldArray;
-        DrainableSubscriber[] newArray;
+    public void removeSubscriber(OperationSubscriber subscriber) {
+        OperationSubscriber[] oldArray;
+        OperationSubscriber[] newArray;
 
         do {
             oldArray = subscribers;

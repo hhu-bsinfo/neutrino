@@ -1,9 +1,9 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.operation;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.Identifier;
 import de.hhu.bsinfo.neutrino.verbs.ScatterGatherElement;
 import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
-import io.netty.buffer.ByteBuf;
 import lombok.Value;
 
 public final @Value class SendOperation implements Operation {
@@ -11,7 +11,7 @@ public final @Value class SendOperation implements Operation {
     private final BufferPool.PooledByteBuf data;
 
     @Override
-    public void transfer(SendWorkRequest request, ScatterGatherElement element) {
+    public void transfer(int id, SendWorkRequest request, ScatterGatherElement element) {
 
         // Set scatter-gather element if there is data to send
         if (data != null) {
@@ -31,7 +31,7 @@ public final @Value class SendOperation implements Operation {
         }
 
         // Set work request metadata
-        request.setId(data.getIndex());
+        request.setId(Identifier.create(id, data.getIndex()));
         request.setOpCode(SendWorkRequest.OpCode.SEND);
         request.setSendFlags(SendWorkRequest.SendFlag.SIGNALED);
     }

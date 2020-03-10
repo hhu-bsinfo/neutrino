@@ -11,6 +11,8 @@ public final class OperationAggregator implements Consumer<Operation> {
 
     private int index;
 
+    private int currentId;
+
     private SendWorkRequest currentWorkRequest;
 
     private SendWorkRequest previousWorkRequest;
@@ -38,7 +40,7 @@ public final class OperationAggregator implements Consumer<Operation> {
         currentElement.clear();
 
         // Transfer the operation into our send work request and scatter-gather element
-        operation.transfer(currentWorkRequest, currentElement);
+        operation.transfer(currentId, currentWorkRequest, currentElement);
 
         // Link work requests
         if (previousWorkRequest != null) {
@@ -50,11 +52,16 @@ public final class OperationAggregator implements Consumer<Operation> {
         index++;
     }
 
+    public void setCurrentId(int id) {
+        currentId = id;
+    }
+
     public void reset() {
         currentWorkRequest = null;
         previousWorkRequest = null;
         currentElement = null;
         index = 0;
+        currentId = 0;
     }
 
     public int commit(QueuePair queuePair) {

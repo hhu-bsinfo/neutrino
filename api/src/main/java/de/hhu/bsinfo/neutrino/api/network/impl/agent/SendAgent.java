@@ -7,17 +7,17 @@ import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.ReadOperation;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.SendOperation;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.WriteOperation;
-import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.DrainableSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.ConnectionEvent;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.NeutrinoOutbound;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.OperationAggregator;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePoller;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.io.IOException;
 
 @Slf4j
 public class SendAgent extends EpollAgent implements NeutrinoOutbound {
@@ -38,6 +38,8 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
      * Helper object used to poll completion queues.
      */
     private final QueuePoller queuePoller;
+
+    private final Int2ObjectHashMap<OperationSubscriber> subscribers = new Int2ObjectHashMap<>();
 
     public SendAgent(SharedResources sharedResources) {
         super(ConnectionEvent.QUEUE_READY, ConnectionEvent.SEND_READY);
@@ -61,12 +63,13 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         return subscribeTo(connection, operation);
     }
 
-    private static Mono<Void> subscribeTo(InternalConnection connection, Publisher<? extends Operation> operations) {
+    private Mono<Void> subscribeTo(InternalConnection connection, Publisher<? extends Operation> operations) {
         return Mono.defer(() -> {
             var subscriber = new OperationSubscriber();
+            subscribers.put(subscriber.getId(), subscriber);
             connection.addSubscriber(subscriber);
             operations.subscribe(subscriber);
-            return subscriber.onDispose();
+            return subscriber.then();
         });
     }
 
@@ -88,6 +91,11 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
             default:
                 throw new IllegalStateException("Unexpected value: " + event);
         }
+    }
+
+    @Override
+    protected void onConnection(InternalConnection connection) {
+
     }
 
     private void onSendReady(InternalConnection connection) {
@@ -112,9 +120,9 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
     private void onQueueReady(InternalConnection connection) {
 
-        // Return early if no publisher is registered
-        var currentPublishers = connection.getSubscribers();
-        if (currentPublishers.length == 0) {
+        // Return early if no subscriber is registered
+        var currentSubscribers = connection.getSubscribers();
+        if (currentSubscribers.length == 0) {
             return;
         }
 
@@ -125,29 +133,31 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         // Reset the aggregator
         aggregator.reset();
 
-        // Iterate over all publishers and post their buffers in form of send work requests
+        // Iterate over all publishers and post their operations in form of send work requests
         // onto the queue pair's send work request queue.
-        for (DrainableSubscriber<Operation, Operation> publisher : currentPublishers) {
+        for (OperationSubscriber subscriber : currentSubscribers) {
 
-            // Calculate the next batch size
+            // Break out of loop if there is no space left
             if (freeSlots == 0) {
                 break;
             }
 
             // Remove the current publisher if it has completed
-            if (publisher.hasCompleted()) {
-                connection.removeSubscriber(publisher);
-                publisher.onRemove();
+            if (subscriber.hasCompleted()) {
+                connection.removeSubscriber(subscriber);
                 continue;
             }
 
-            // Drain the current publishers buffer queue
-            var bufferCount = publisher.drain(aggregator, Math.min(freeSlots, MAX_BATCH_SIZE));
-            freeSlots -= bufferCount;
+            // Drain the current subscriber's operation queue
+            aggregator.setCurrentId(subscriber.getId());
+            var operationCount = subscriber.drain(aggregator, Math.min(freeSlots, MAX_BATCH_SIZE));
+            freeSlots -= operationCount;
 
-            // Request more buffers
-            if (bufferCount > 0) {
-                publisher.request(bufferCount);
+            subscriber.incrementPending(operationCount);
+
+            // Request more operations
+            if (operationCount > 0) {
+                subscriber.request(operationCount);
             }
         }
 
@@ -162,16 +172,19 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
     }
 
     private void handleSendCompletion(WorkCompletion workCompletion) {
+
         var id = workCompletion.getId();
+        var subscriber = subscribers.get(Identifier.getRequestId(id));
+
         var status = workCompletion.getStatus();
-        var opCode = workCompletion.getOpCode();
         if (status != WorkCompletion.Status.SUCCESS) {
-            log.error("Send work completion [{}, {}] failed with status {}: {}", workCompletion.getOpCode(), (int) id, status, workCompletion.getStatusMessage());
+            subscriber.signalError(new IOException(workCompletion.getStatusMessage()));
         }
 
+        var opCode = workCompletion.getOpCode();
         switch (opCode) {
             case SEND:
-                bufferPool.release((int) id);
+                bufferPool.release(Identifier.getBufferId(id));
                 break;
             case RDMA_READ:
                 break;
@@ -181,6 +194,15 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
                 break;
             case COMP_SWAP:
                 break;
+        }
+
+        // Decrement the subscriber's counter
+        subscriber.decrementPending(1);
+
+        // Check if all requests were processed
+        if (subscriber.hasCompleted() && !subscriber.hasPending()) {
+            subscriber.signalCompletion();
+            subscribers.remove(subscriber.getId());
         }
     }
 

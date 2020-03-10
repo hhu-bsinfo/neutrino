@@ -80,4 +80,6 @@ public abstract class EpollAgent implements Agent {
      * Called every time a connection becomes ready (readable/writeable).
      */
     protected abstract void processConnection(InternalConnection connection, ConnectionEvent event);
+
+    protected abstract void onConnection(InternalConnection connection);
 }

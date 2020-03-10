@@ -114,6 +114,9 @@ public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
         }
     }
 
+    @Override
+    protected void onConnection(InternalConnection connection) { /* No-Op */ }
+
     private void handleWorkCompletion(WorkCompletion workCompletion) {
 
         // Get work completion id and status

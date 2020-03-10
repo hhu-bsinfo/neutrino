@@ -8,7 +8,7 @@ public final @Value class AtomicOperation implements Operation {
 
 
     @Override
-    public void transfer(SendWorkRequest request, ScatterGatherElement element) {
+    public void transfer(int id, SendWorkRequest request, ScatterGatherElement element) {
 
     }
 }

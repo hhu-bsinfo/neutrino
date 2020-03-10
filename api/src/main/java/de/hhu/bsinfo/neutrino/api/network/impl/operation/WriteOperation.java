@@ -1,6 +1,7 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.operation;
 
 import de.hhu.bsinfo.neutrino.api.network.RemoteHandle;
+import de.hhu.bsinfo.neutrino.api.network.impl.util.Identifier;
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.verbs.ScatterGatherElement;
 import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
@@ -13,14 +14,14 @@ public final @Value class WriteOperation implements Operation {
     private final RemoteHandle handle;
 
     @Override
-    public void transfer(SendWorkRequest request, ScatterGatherElement element) {
+    public void transfer(int id, SendWorkRequest request, ScatterGatherElement element) {
         element.setAddress(buffer.memoryAddress() + buffer.readerIndex());
         element.setLength(buffer.readableBytes());
         element.setLocalKey(buffer.localKey());
 
         // TODO(krakowski)
         //  Encode operation type and identifier within work request id
-        request.setId(0);
+        request.setId(Identifier.create(id, 0));
         request.setScatterGatherElement(element);
         request.setOpCode(SendWorkRequest.OpCode.RDMA_WRITE);
         request.setSendFlags(SendWorkRequest.SendFlag.SIGNALED);
