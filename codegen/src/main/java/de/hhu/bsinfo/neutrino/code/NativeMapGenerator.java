@@ -15,7 +15,9 @@ public class NativeMapGenerator {
 
         String structInfo = String.format("NativeMapping::StructInfo %s_struct_info {\n\tsizeof(%s),\n\tsizeof(%s_member_infos) / sizeof(NativeMapping::MemberInfo),\n\t%s_member_infos\n};", structName, structName, structName, structName);
 
-        return memberInfos + "\n\n" + structInfo + "\n";
+        String structInfosEntry = String.format("{\"%s\", &%s_struct_info},", structName, structName);
+
+        return memberInfos + "\n\n" + structInfo + "\n\n" + structInfosEntry + "\n";
     }
 
 }

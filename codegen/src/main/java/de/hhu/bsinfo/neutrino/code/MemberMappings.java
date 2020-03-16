@@ -32,6 +32,7 @@ public class MemberMappings {
         TYPE_MAPPINGS.put("uint64_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
         TYPE_MAPPINGS.put("__be64", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
         TYPE_MAPPINGS.put("size_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
+        TYPE_MAPPINGS.put("socklen_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
 
         TYPE_MAPPINGS.put("pthread_mutex_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
         TYPE_MAPPINGS.put("pthread_cond_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));

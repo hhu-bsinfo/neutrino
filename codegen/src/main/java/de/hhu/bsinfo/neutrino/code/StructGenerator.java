@@ -17,7 +17,7 @@ public class StructGenerator {
 
     public static void main(String... args) throws Exception {
 
-        String content = Files.readString(Paths.get("/usr/include/infiniband/verbs.h"));
+        String content = Files.readString(Paths.get("/usr/include/rdma/rdma_cma.h"));
 
         var structs = getStructs(content);
 

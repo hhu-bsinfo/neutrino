@@ -1,8 +1,16 @@
 #include <neutrino/NativeMapping.hpp>
 #include <infiniband/verbs.h>
+#include <rdma/rdma_cma.h>
 #include <sys/epoll.h>
 
 #define GET_MEMBER_INFO(structName, memberName) NativeMapping::MemberInfo{#memberName, offsetof(structName, memberName)}
+
+
+/***************************************************************************************/
+/*                                                                                     */
+/*                                Infiniband Verbs                                     */
+/*                                                                                     */
+/***************************************************************************************/
 
 NativeMapping::MemberInfo ibv_device_attr_member_infos[] = {
     GET_MEMBER_INFO(ibv_device_attr, fw_ver),
@@ -899,7 +907,11 @@ NativeMapping::StructInfo epoll_event_struct_infos {
         epoll_event_member_infos
 };
 
-// Benchmark
+/***************************************************************************************/
+/*                                                                                     */
+/*                                  Benchmark                                          */
+/*                                                                                     */
+/***************************************************************************************/
 
 struct complex_t {
     double real;
@@ -917,8 +929,181 @@ NativeMapping::StructInfo complex_t_struct_infos {
         complex_t_member_infos
 };
 
+/***************************************************************************************/
+/*                                                                                     */
+/*                          RDMA Communication Manager                                 */
+/*                                                                                     */
+/***************************************************************************************/
+
+NativeMapping::MemberInfo rdma_route_member_infos[] = {
+	GET_MEMBER_INFO(rdma_route, addr),
+	GET_MEMBER_INFO(rdma_route, path_rec),
+	GET_MEMBER_INFO(rdma_route, num_paths)
+};
+
+NativeMapping::StructInfo rdma_route_struct_info {
+	sizeof(rdma_route),
+	sizeof(rdma_route_member_infos) / sizeof(NativeMapping::MemberInfo),
+	rdma_route_member_infos
+};
+
+NativeMapping::MemberInfo rdma_ud_param_member_infos[] = {
+        GET_MEMBER_INFO(rdma_ud_param, private_data),
+        GET_MEMBER_INFO(rdma_ud_param, private_data_len),
+        GET_MEMBER_INFO(rdma_ud_param, ah_attr),
+        GET_MEMBER_INFO(rdma_ud_param, qp_num),
+        GET_MEMBER_INFO(rdma_ud_param, qkey)
+};
+
+NativeMapping::StructInfo rdma_ud_param_struct_info {
+        sizeof(rdma_ud_param),
+        sizeof(rdma_ud_param_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_ud_param_member_infos
+};
+
+NativeMapping::MemberInfo rdma_conn_param_member_infos[] = {
+        GET_MEMBER_INFO(rdma_conn_param, private_data),
+        GET_MEMBER_INFO(rdma_conn_param, private_data_len),
+        GET_MEMBER_INFO(rdma_conn_param, responder_resources),
+        GET_MEMBER_INFO(rdma_conn_param, initiator_depth),
+        GET_MEMBER_INFO(rdma_conn_param, flow_control),
+        GET_MEMBER_INFO(rdma_conn_param, retry_count),
+        GET_MEMBER_INFO(rdma_conn_param, rnr_retry_count),
+        GET_MEMBER_INFO(rdma_conn_param, srq),
+        GET_MEMBER_INFO(rdma_conn_param, qp_num)
+};
+
+NativeMapping::StructInfo rdma_conn_param_struct_info {
+        sizeof(rdma_conn_param),
+        sizeof(rdma_conn_param_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_conn_param_member_infos
+};
+
+NativeMapping::MemberInfo rdma_cm_join_mc_attr_ex_member_infos[] = {
+        GET_MEMBER_INFO(rdma_cm_join_mc_attr_ex, comp_mask),
+        GET_MEMBER_INFO(rdma_cm_join_mc_attr_ex, join_flags),
+        GET_MEMBER_INFO(rdma_cm_join_mc_attr_ex, addr)
+};
+
+NativeMapping::StructInfo rdma_cm_join_mc_attr_ex_struct_info {
+        sizeof(rdma_cm_join_mc_attr_ex),
+        sizeof(rdma_cm_join_mc_attr_ex_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_cm_join_mc_attr_ex_member_infos
+};
+
+NativeMapping::MemberInfo rdma_cm_id_member_infos[] = {
+        GET_MEMBER_INFO(rdma_cm_id, verbs),
+        GET_MEMBER_INFO(rdma_cm_id, channel),
+        GET_MEMBER_INFO(rdma_cm_id, context),
+        GET_MEMBER_INFO(rdma_cm_id, qp),
+        GET_MEMBER_INFO(rdma_cm_id, route),
+        GET_MEMBER_INFO(rdma_cm_id, ps),
+        GET_MEMBER_INFO(rdma_cm_id, port_num),
+        GET_MEMBER_INFO(rdma_cm_id, event),
+        GET_MEMBER_INFO(rdma_cm_id, send_cq_channel),
+        GET_MEMBER_INFO(rdma_cm_id, send_cq),
+        GET_MEMBER_INFO(rdma_cm_id, recv_cq_channel),
+        GET_MEMBER_INFO(rdma_cm_id, recv_cq),
+        GET_MEMBER_INFO(rdma_cm_id, srq),
+        GET_MEMBER_INFO(rdma_cm_id, pd),
+        GET_MEMBER_INFO(rdma_cm_id, qp_type)
+};
+
+NativeMapping::StructInfo rdma_cm_id_struct_info {
+        sizeof(rdma_cm_id),
+        sizeof(rdma_cm_id_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_cm_id_member_infos
+};
+
+NativeMapping::MemberInfo rdma_ib_addr_member_infos[] = {
+        GET_MEMBER_INFO(rdma_ib_addr, sgid),
+        GET_MEMBER_INFO(rdma_ib_addr, dgid),
+        GET_MEMBER_INFO(rdma_ib_addr, pkey)
+};
+
+NativeMapping::StructInfo rdma_ib_addr_struct_info {
+        sizeof(rdma_ib_addr),
+        sizeof(rdma_ib_addr_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_ib_addr_member_infos
+};
+
+NativeMapping::MemberInfo rdma_cm_event_member_infos[] = {
+        GET_MEMBER_INFO(rdma_cm_event, id),
+        GET_MEMBER_INFO(rdma_cm_event, listen_id),
+        GET_MEMBER_INFO(rdma_cm_event, event),
+        GET_MEMBER_INFO(rdma_cm_event, status),
+        GET_MEMBER_INFO(rdma_cm_event, param.conn),
+        GET_MEMBER_INFO(rdma_cm_event, param.ud)
+};
+
+NativeMapping::StructInfo rdma_cm_event_struct_info {
+        sizeof(rdma_cm_event),
+        sizeof(rdma_cm_event_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_cm_event_member_infos
+};
+
+NativeMapping::MemberInfo rdma_addrinfo_member_infos[] = {
+        GET_MEMBER_INFO(rdma_addrinfo, ai_flags),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_family),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_qp_type),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_port_space),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_src_len),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_dst_len),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_src_addr),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_dst_addr),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_src_canonname),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_dst_canonname),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_route_len),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_route),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_connect_len),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_connect),
+        GET_MEMBER_INFO(rdma_addrinfo, ai_next)
+};
+
+NativeMapping::StructInfo rdma_addrinfo_struct_info {
+        sizeof(rdma_addrinfo),
+        sizeof(rdma_addrinfo_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_addrinfo_member_infos
+};
+
+NativeMapping::MemberInfo rdma_event_channel_member_infos[] = {
+        GET_MEMBER_INFO(rdma_event_channel, fd)
+};
+
+NativeMapping::StructInfo rdma_event_channel_struct_info {
+        sizeof(rdma_event_channel),
+        sizeof(rdma_event_channel_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_event_channel_member_infos
+};
+
+NativeMapping::MemberInfo rdma_addr_member_infos[] = {
+        GET_MEMBER_INFO(rdma_addr, src_addr),
+        GET_MEMBER_INFO(rdma_addr, src_sin),
+        GET_MEMBER_INFO(rdma_addr, src_sin6),
+        GET_MEMBER_INFO(rdma_addr, src_storage),
+        GET_MEMBER_INFO(rdma_addr, dst_addr),
+        GET_MEMBER_INFO(rdma_addr, dst_sin),
+        GET_MEMBER_INFO(rdma_addr, dst_sin6),
+        GET_MEMBER_INFO(rdma_addr, dst_storage),
+        GET_MEMBER_INFO(rdma_addr, addr.ibaddr)
+};
+
+NativeMapping::StructInfo rdma_addr_struct_info {
+        sizeof(rdma_addr),
+        sizeof(rdma_addr_member_infos) / sizeof(NativeMapping::MemberInfo),
+        rdma_addr_member_infos
+};
+
+/***************************************************************************************/
+/*                                                                                     */
+/*                            Struct Information                                       */
+/*                                                                                     */
+/***************************************************************************************/
+
 
 std::unordered_map<std::string, NativeMapping::StructInfo*> NativeMapping::structInfos {
+
+    // libibverbs
     {"ibv_device_attr", &ibv_device_attr_struct_info},
     {"ibv_port_attr", &ibv_port_attr_struct_info},
     {"ibv_async_event", &ibv_async_event_struct_info},
@@ -974,8 +1159,24 @@ std::unordered_map<std::string, NativeMapping::StructInfo*> NativeMapping::struc
     {"ibv_rx_hash_conf", &ibv_rx_hash_conf_struct_info},
     {"ibv_data_buf", &ibv_data_buf_struct_info},
     {"ibv_open_qp_attr", &ibv_qp_open_attr_struct_info},
+
+    // epoll
     {"epoll_data_t", &epoll_data_t_struct_infos},
     {"epoll_event", &epoll_event_struct_infos},
+
+    // librdmacm
+    {"rdma_route", &rdma_route_struct_info},
+    {"rdma_ud_param", &rdma_ud_param_struct_info},
+    {"rdma_conn_param", &rdma_conn_param_struct_info},
+    {"rdma_cm_join_mc_attr_ex", &rdma_cm_join_mc_attr_ex_struct_info},
+    {"rdma_cm_id", &rdma_cm_id_struct_info},
+    {"rdma_ib_addr", &rdma_ib_addr_struct_info},
+    {"rdma_cm_event", &rdma_cm_event_struct_info},
+    {"rdma_addrinfo", &rdma_addrinfo_struct_info},
+    {"rdma_event_channel", &rdma_event_channel_struct_info},
+    {"rdma_addr", &rdma_addr_struct_info},
+
+    // benchmark
     {"complex_t", &complex_t_struct_infos}
 };
 
