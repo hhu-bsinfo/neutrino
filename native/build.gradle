@@ -16,6 +16,7 @@ library {
 
     binaries.configureEach {
         linkTask.get().linkerArgs.add('-libverbs')
+        linkTask.get().linkerArgs.add('-lrdmacm')
         compileDebugCpp.compilerArgs.add('-std=c++11')
         compileReleaseCpp.compilerArgs.add('-std=c++11')
     }

@@ -56,7 +56,6 @@ idea {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     // Spring Boot starter with Actuator support
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -64,17 +63,32 @@ dependencies {
     // Spring Boot picocli starter
     implementation 'info.picocli:picocli-spring-boot-starter:4.0.4'
 
+    // Neutrino API
     implementation project(':api')
+
+    // Neutrino RSocket binding
     implementation project(':rsocket')
+
+    // RSocket core library and rpc extension
     implementation 'io.rsocket:rsocket-core:1.0.0-RC5'
     implementation('io.rsocket.rpc:rsocket-rpc-core:0.2.17') {
         exclude group: 'org.slf4j', module: ''
     }
 
+    // Apache Arrow
+    implementation 'org.apache.arrow:arrow-vector:0.16.0'
+    implementation 'org.apache.arrow:arrow-memory:0.16.0'
+
+    // Google Protobuf
     implementation 'com.google.protobuf:protobuf-java:3.10.0'
+
+    // Netty Buffer
     implementation 'io.netty:netty-buffer:4.1.43.Final'
 
-    testImplementation 'com.greghaskins:spectrum:1.2.0'
+    // Java Faker
+    implementation 'com.github.javafaker:javafaker:1.0.2'
+
+    // AssertJ
     testImplementation 'org.assertj:assertj-core:3.12.2'
 
     // Lombok

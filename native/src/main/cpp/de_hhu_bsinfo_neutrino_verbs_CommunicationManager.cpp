@@ -8,7 +8,8 @@
  * Signature: (Ljava/lang/String;Ljava/lang/String;J)V
  */
 JNIEXPORT void JNICALL Java_de_hhu_bsinfo_neutrino_verbs_CommunicationManager_getAddressInfo0 (JNIEnv *env, jclass clazz, jstring host, jstring port, jlong hints, jlong result) {
-    auto hostChars = env->GetStringUTFChars(host, nullptr);
+
+    auto hostChars = host != nullptr ? env->GetStringUTFChars(host, nullptr) : nullptr;
     auto portChars = env->GetStringUTFChars(port, nullptr);
 
     rdma_addrinfo *handle;
@@ -19,7 +20,7 @@ JNIEXPORT void JNICALL Java_de_hhu_bsinfo_neutrino_verbs_CommunicationManager_ge
             &handle
     );
 
-    env->ReleaseStringUTFChars(host, hostChars);
+    if (host != nullptr) { env->ReleaseStringUTFChars(host, hostChars); }
     env->ReleaseStringUTFChars(port, portChars);
 
     NativeCall::setResult(NativeCall::castHandle<NativeCall::Result>(result), status, handle);

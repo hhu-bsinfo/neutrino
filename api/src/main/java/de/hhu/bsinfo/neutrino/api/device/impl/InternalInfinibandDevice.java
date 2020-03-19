@@ -80,4 +80,9 @@ public class InternalInfinibandDevice implements InfinibandDevice {
     public AsyncEvent getAsyncEvent() {
         return context.getAsyncEvent();
     }
+
+    @Override
+    public ProtectionDomain getProtectionDomain() {
+        return protectionDomain;
+    }
 }

@@ -1,6 +1,8 @@
 package io.rsocket.transport.neutrino.socket;
 
+import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.network.Connection;
+import de.hhu.bsinfo.neutrino.api.network.LocalHandle;
 import de.hhu.bsinfo.neutrino.api.network.NetworkService;
 import de.hhu.bsinfo.neutrino.api.network.RemoteHandle;
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
@@ -53,12 +55,16 @@ public final class InfinibandSocket implements RSocket {
         return delegate.metadataPush(payload);
     }
 
-    public Mono<Void> read(Buffer local, RemoteHandle remote) {
-        return networkService.read(connection, local, remote);
+    public Mono<Void> read(LocalHandle localHandle, RemoteHandle remoteHandle) {
+        return networkService.read(connection, localHandle, remoteHandle);
     }
 
-    public Mono<Void> write(Buffer local, RemoteHandle remote) {
-        return networkService.write(connection, local, remote);
+    public Mono<Void> write(LocalHandle localHandle, RemoteHandle remoteHandle) {
+        return networkService.write(connection, localHandle, remoteHandle);
+    }
+
+    public InfinibandDevice getDevice() {
+        return networkService.getDevice();
     }
 
     @Override

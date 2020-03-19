@@ -6,6 +6,7 @@ import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;
 import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
+import de.hhu.bsinfo.neutrino.verbs.Endpoint;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 import lombok.Builder;
 import lombok.Data;

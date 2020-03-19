@@ -47,6 +47,7 @@ public abstract class RSocketDemo implements Runnable {
 
     @Override
     public void run() {
+        onStart();
         if (isServer) {
             startServer();
         } else {
@@ -130,4 +131,16 @@ public abstract class RSocketDemo implements Runnable {
     protected abstract AbstractRSocket getServerHandler();
 
     protected abstract void onClientReady(InfinibandSocket socket);
+
+    protected void onStart() {
+        // no-op
+    }
+
+    protected final boolean isServer() {
+        return isServer;
+    }
+
+    protected final boolean isClient() {
+        return !isServer;
+    }
 }

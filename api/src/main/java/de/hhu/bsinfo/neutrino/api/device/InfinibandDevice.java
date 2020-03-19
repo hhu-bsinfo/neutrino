@@ -2,15 +2,7 @@ package de.hhu.bsinfo.neutrino.api.device;
 
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
-import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.AsyncEvent;
-import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
-import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
-import de.hhu.bsinfo.neutrino.verbs.DeviceAttributes;
-import de.hhu.bsinfo.neutrino.verbs.MemoryRegion;
-import de.hhu.bsinfo.neutrino.verbs.PortAttributes;
-import de.hhu.bsinfo.neutrino.verbs.QueuePair;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
+import de.hhu.bsinfo.neutrino.verbs.*;
 import org.jetbrains.annotations.Nullable;
 
 public interface InfinibandDevice {
@@ -60,4 +52,9 @@ public interface InfinibandDevice {
      * The {@link AsyncEvent} needs to be acknowledged and released.
      */
     AsyncEvent getAsyncEvent();
+
+    /**
+     * The protection domain used by this Infiniband device.
+     */
+    ProtectionDomain getProtectionDomain();
 }

@@ -1,6 +1,7 @@
 package de.hhu.bsinfo.neutrino.example.command.rsocket;
 
 import de.hhu.bsinfo.neutrino.api.Neutrino;
+import de.hhu.bsinfo.neutrino.api.network.LocalHandle;
 import de.hhu.bsinfo.neutrino.api.network.RemoteHandle;
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.example.util.Result;
@@ -19,6 +20,7 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -50,16 +52,17 @@ public class ReadDemo extends RSocketDemo {
 
         // Process response
         var data = response.sliceData();
-        var handle = new RemoteHandle(data.readLong(), data.readInt());
+        var remoteHandle = new RemoteHandle(data.readLong(), data.readInt());
         data.release();
         response.release();
 
         log.info("Reading from remote at virtual address 0x{} with remote key 0x{}",
-                Long.toHexString(handle.getAddress()), handle.getKey());
+                Long.toHexString(remoteHandle.getAddress()), remoteHandle.getKey());
 
         // Allocate local buffer and read data from remote
-        var buffer = neutrino.allocate(BUFFER_SIZE).block();
-        infinibandSocket.read(buffer, handle).block();
+        var buffer = Objects.requireNonNull(neutrino.allocate(BUFFER_SIZE).block());
+        var localHandle = new LocalHandle(buffer.memoryAddress() + buffer.writerIndex(), buffer.writableBytes(), buffer.localKey());
+        infinibandSocket.read(localHandle, remoteHandle).block();
 
         log.info("Waiting for read operation to finish");
         while (buffer.getByte(0) == 0) {

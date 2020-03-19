@@ -11,7 +11,6 @@ import de.hhu.bsinfo.neutrino.api.network.impl.operation.ReadOperation;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.SendOperation;
 import de.hhu.bsinfo.neutrino.api.network.impl.operation.WriteOperation;
 import de.hhu.bsinfo.neutrino.api.util.BaseService;
-import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
 import io.netty.buffer.ByteBuf;
@@ -22,7 +21,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Objects;
+import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -191,7 +190,7 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
     }
 
     @Override
-    public Mono<Void> write(Connection connection, Buffer buffer, RemoteHandle handle) {
+    public Mono<Void> write(Connection connection, LocalHandle localHandle, RemoteHandle remoteHandle) {
 
         // Retrieve actual connection
         var internalConnection = connectionManager.get(connection);
@@ -200,14 +199,15 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
         var agent = internalConnection.getSendAgent();
 
         // Create write operation
-        var operation = new WriteOperation(buffer, handle);
+        var operation = new WriteOperation(localHandle, remoteHandle);
 
         // Queue write operation within the associated agent
         return agent.write(internalConnection, Mono.just(operation));
     }
 
     @Override
-    public Mono<Void> read(Connection connection, Buffer buffer, RemoteHandle handle) {
+    public Mono<Void> read(Connection connection, LocalHandle localHandle, RemoteHandle remoteHandle) {
+
         // Retrieve actual connection
         var internalConnection = connectionManager.get(connection);
 
@@ -215,9 +215,28 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
         var agent = internalConnection.getSendAgent();
 
         // Create write operation
-        var operation = new ReadOperation(buffer, handle);
+        var operation = new ReadOperation(localHandle, remoteHandle);
 
         // Queue write operation within the associated agent
         return agent.read(internalConnection, Mono.just(operation));
+    }
+
+    @Override
+    public Flux<Connection> listen(InetSocketAddress serverAddress) {
+        // TODO(krakowski):
+        //  Use RDMA Communication Manager to listen for new connections
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    @Override
+    public Mono<Connection> connect(InetSocketAddress serverAddress) {
+        // TODO(krakowski):
+        //  Use RDMA Communication Manager to establish connection with server
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    @Override
+    public InfinibandDevice getDevice() {
+        return device;
     }
 }

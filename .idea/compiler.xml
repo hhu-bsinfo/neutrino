@@ -8,7 +8,7 @@
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.10/625fc0055674dff70dbc76efa36d0f2c89b04a24/lombok-1.18.10.jar" />
         </processorPath>
-        <module name="neutrino.rsocket.main" />
+        <module name="Projekte.neutrino.rsocket.main" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -18,6 +18,17 @@
       <module name="bsinfo-neutrino-neutrino_test" target="11" />
       <module name="core_main" target="11" />
       <module name="core_test" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.api.main" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.api.test" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.benchmark.jmh" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.benchmark.main" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.benchmark.test" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.codegen.main" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.codegen.test" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.core.main" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.core.test" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.example.main" target="11" />
+      <module name="de.hhu.bsinfo.neutrino.example.test" target="11" />
       <module name="neutrino-benchmark_jmh" target="11" />
       <module name="neutrino-benchmark_main" target="11" />
       <module name="neutrino-benchmark_test" target="11" />
@@ -46,6 +57,8 @@
       <module name="neutrino.rsocket-transport-neutrino.test" target="11" />
       <module name="neutrino.rsocket.main" target="11" />
       <module name="neutrino.rsocket.test" target="11" />
+      <module name="Projekte.neutrino.rsocket.main" target="11" />
+      <module name="Projekte.neutrino.rsocket.test" target="11" />
       <module name="rsocket-core_jmh" target="11" />
       <module name="rsocket-core_main" target="11" />
       <module name="rsocket-core_test" target="11" />
