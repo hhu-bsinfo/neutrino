@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.ej-technologies.com/images/product_banners/jprofiler_small.png"><img src="https://www.ej-technologies.com/images/product_banners/jprofiler_large.png"></a>
+  <a href="https://www.ej-technologies.com/products/jprofiler/overview.html"><img src="https://www.ej-technologies.com/images/product_banners/jprofiler_large.png"></a>
 </p>
 
 Developed by the [operating systems group](https://www.cs.hhu.de/en/research-groups/operating-systems.html) of the department of computer science of the [Heinrich Heine University Düsseldorf](https://www.hhu.de), neutrino aims at providing comfortable and efficient access to InfiniBand hardware in Java.
