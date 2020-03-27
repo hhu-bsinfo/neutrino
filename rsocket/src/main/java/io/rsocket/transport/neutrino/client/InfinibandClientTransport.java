@@ -30,6 +30,7 @@ public final class InfinibandClientTransport implements ClientTransport {
                 .map(con -> {
                     connection = con;
                     var duplexConnection = new InfinibandDuplexConnection(con, networkService);
+                    log.debug("Created new duplex connection");
                     return new FragmentationDuplexConnection(
                             duplexConnection,
                             ByteBufAllocator.DEFAULT,

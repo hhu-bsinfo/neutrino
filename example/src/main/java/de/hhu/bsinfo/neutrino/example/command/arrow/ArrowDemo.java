@@ -1,6 +1,7 @@
-package de.hhu.bsinfo.neutrino.example.command.rsocket;
+package de.hhu.bsinfo.neutrino.example.command.arrow;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
+import de.hhu.bsinfo.neutrino.example.command.reactive.ReactiveDemo;
 import de.hhu.bsinfo.neutrino.example.proto.FieldMeta;
 import de.hhu.bsinfo.neutrino.example.proto.VectorMeta;
 import de.hhu.bsinfo.neutrino.example.util.PhoneBook;
@@ -17,9 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import picocli.CommandLine;
 import reactor.core.publisher.Mono;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -28,7 +29,7 @@ import java.util.Objects;
         description = "Demonstrates the interaction between Apache Arrow and Neutrino.%n",
         showDefaultValues = true,
         separator = " ")
-public class ArrowDemo extends RSocketDemo {
+public class ArrowDemo extends ReactiveDemo {
 
     private static final int DEFAULT_ROW_COUNT = 100000;
 
@@ -84,7 +85,10 @@ public class ArrowDemo extends RSocketDemo {
     }
 
     @Override
-    protected void onClientReady(InfinibandSocket socket) {
+    protected void onClientReady(List<InfinibandSocket> sockets) {
+
+        var socket = sockets.get(0);
+
         try {
 
             // Request info from server
@@ -146,6 +150,11 @@ public class ArrowDemo extends RSocketDemo {
         } catch (IOException e) {
             log.error("Error", e);
         }
+    }
+
+    @Override
+    protected ReactiveDemo.MessageMode getMessageMode() {
+        return MessageMode.RSOCKET;
     }
 
     private static class ClientHandler extends AbstractRSocket {

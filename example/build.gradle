@@ -75,6 +75,9 @@ dependencies {
         exclude group: 'org.slf4j', module: ''
     }
 
+    // Micrometer JMX exporter
+    implementation 'io.micrometer:micrometer-registry-jmx'
+
     // Apache Arrow
     implementation 'org.apache.arrow:arrow-vector:0.16.0'
     implementation 'org.apache.arrow:arrow-memory:0.16.0'

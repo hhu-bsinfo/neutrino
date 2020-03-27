@@ -1,12 +1,9 @@
-package de.hhu.bsinfo.neutrino.api.event;
+package de.hhu.bsinfo.neutrino.api.network.impl.event;
 
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.agrona.concurrent.DynamicCompositeAgent;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class EventLoopGroupTest {
 

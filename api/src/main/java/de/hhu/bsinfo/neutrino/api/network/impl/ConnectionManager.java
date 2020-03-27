@@ -5,6 +5,7 @@ import de.hhu.bsinfo.neutrino.api.device.InfinibandDeviceConfig;
 import de.hhu.bsinfo.neutrino.api.network.Connection;
 import de.hhu.bsinfo.neutrino.api.network.Negotiator;
 import de.hhu.bsinfo.neutrino.api.network.NetworkConfiguration;
+import de.hhu.bsinfo.neutrino.api.network.impl.agent.AgentResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;
@@ -34,7 +35,7 @@ public class ConnectionManager {
     private final SharedResources sharedResources;
 
     // TODO(krakowski):
-    //  let connections array grow
+    //  let connections array grow dynamically
     private final InternalConnection[] connections = new InternalConnection[MAX_CONNECTIONS];
 
     public ConnectionManager(SharedResources sharedResources) {
@@ -44,16 +45,20 @@ public class ConnectionManager {
         this.sharedResources = sharedResources;
     }
 
-    public InternalConnection connect(Negotiator negotiator, Mtu mtu) {
+    public InternalConnection connect(Negotiator negotiator, Mtu mtu, SharedReceiveQueue receiveQueue, AgentResources sendResources, AgentResources receiveResources) {
+
+
+        var sendProtectionDomain = sendResources.protectionDomain();
+        var receiveProtectionDomain = receiveResources.protectionDomain();
 
         // Create resources for new queue pair
         var queuePairResources = QueuePairResources.create(device, networkConfig);
 
         // Create initial attributes
-        var initialAttributes = createInitialAttributes(queuePairResources);
+        var initialAttributes = createInitialAttributes(queuePairResources, receiveQueue);
 
         // Create queue pair
-        var queuePair = createQueuePair(initialAttributes);
+        var queuePair = createQueuePair(initialAttributes, sendProtectionDomain);
 
         // Create new connection
         var connection = createConnection(queuePair, queuePairResources);
@@ -79,7 +84,7 @@ public class ConnectionManager {
         return Objects.requireNonNull(connections[id], "Connection does not exit");
     }
 
-    private QueuePair.InitialAttributes createInitialAttributes(QueuePairResources queuePairResources) {
+    private QueuePair.InitialAttributes createInitialAttributes(QueuePairResources queuePairResources, SharedReceiveQueue receiveQueue) {
         return new QueuePair.InitialAttributes.Builder(
                 QueuePair.Type.RC,
                 queuePairResources.getSendCompletionQueue(),
@@ -88,11 +93,11 @@ public class ConnectionManager {
                 networkConfig.getQueuePairSize(),
                 networkConfig.getMaxScatterGatherElements(),
                 networkConfig.getMaxScatterGatherElements()
-        ).withSharedReceiveQueue(sharedResources.sharedReceiveQueue()).build();
+        ).withSharedReceiveQueue(receiveQueue).build();
     }
 
-    private QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes) {
-        var queuePair = device.createQueuePair(initialAttributes);
+    private QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes, ProtectionDomain protectionDomain) {
+        var queuePair = protectionDomain.createQueuePair(initialAttributes);
         queuePair.modify(new QueuePair.Attributes.Builder()
                 .withState(QueuePair.State.INIT)
                 .withPartitionKeyIndex((short) 0)
@@ -100,12 +105,6 @@ public class ConnectionManager {
                 .withAccessFlags(AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_WRITE, AccessFlag.REMOTE_READ));
 
         return queuePair;
-    }
-
-    private BufferPool createBufferPool(QueuePair queuePair) {
-        var attributes = queuePair.queryAttributes(QueuePair.AttributeFlag.CAP);
-        var maxMtu = device.getPortAttributes().getMaxMtu().getMtuValue();
-        return BufferPool.create("send", maxMtu, attributes.capabilities.getMaxSendWorkRequests(), device::wrapRegion);
     }
 
     private InternalConnection createConnection(QueuePair queuePair, QueuePairResources queuePairResources) {

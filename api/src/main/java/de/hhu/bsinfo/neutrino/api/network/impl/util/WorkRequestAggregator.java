@@ -7,7 +7,7 @@ import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
 
 import java.util.function.Consumer;
 
-public class WorkRequestAggregator implements Consumer<BufferPool.PooledByteBuf> {
+public class WorkRequestAggregator implements Consumer<BufferPool.PooledBuffer> {
 
     private int index;
 
@@ -35,7 +35,7 @@ public class WorkRequestAggregator implements Consumer<BufferPool.PooledByteBuf>
     }
 
     @Override
-    public void accept(BufferPool.PooledByteBuf data) {
+    public void accept(BufferPool.PooledBuffer data) {
         currentWorkRequest = workRequestPool[index];
         currentElement = scatterGatherPool[index];
 
@@ -50,7 +50,7 @@ public class WorkRequestAggregator implements Consumer<BufferPool.PooledByteBuf>
         currentElement.setLength(messageSize);
         currentElement.setLocalKey(data.getLocalKey());
 
-        currentWorkRequest.setId(data.getIndex());
+        currentWorkRequest.setId(data.getIdentifier());
         currentWorkRequest.setListHandle(currentElement.getHandle());
         currentWorkRequest.setListLength(1);
 

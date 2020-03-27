@@ -64,15 +64,17 @@ public class EpollWatchList<T, S> {
         // Wait for events
         epoll.wait(events, timeout);
 
-        events.forEach(events.getLength(), event -> {
+        // Iterate over all events
+        var length = events.getLength();
+        for (int i = 0; i < length; i++) {
 
             // Get event data
-            var data = event.getData();
+            var data = events.get(i).getData();
 
             // Reset the notifier if it was triggered
             if (data == NOTIFIER_DATA) {
                 notifier.reset();
-                return;
+                continue;
             }
 
             // Get the associated object and attachement
@@ -82,9 +84,9 @@ public class EpollWatchList<T, S> {
 
             // Perform operation on the connection
             operation.accept(object, attachement);
-        });
+        }
 
-        return events.getLength();
+        return length;
     }
 
     private static int getIndex(long data) {

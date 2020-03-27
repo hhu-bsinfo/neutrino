@@ -24,24 +24,24 @@ public class InternalNetworkConfiguration implements NetworkConfiguration {
     private int mtu = 4096;
 
     /**
-     * The shared receive queue's size.
+     * The maximum number of work requests within a queue pair.
      */
-    private int sharedReceiveQueueSize = 16383;
-
-    /**
-     * The maximum number of scatter-gather elements per work request.
-     */
-    private int maxScatterGatherElements = 10;
+    private int queuePairSize = 128;
 
     /**
      * The maximum number of completion events within a completion queue.
      */
-    private int completionQueueSize = 4194303;
+    private int completionQueueSize = 128;
 
     /**
-     * The maximum number of work requests within a queue pair.
+     * The shared receive queue's size.
      */
-    private int queuePairSize = 16351;
+    private int sharedReceiveQueueSize = 128;
+
+    /**
+     * The maximum number of scatter-gather elements per work request.
+     */
+    private int maxScatterGatherElements = 1;
 
     /**
      * The minimal delay after a message could not be received due to missing
@@ -67,18 +67,18 @@ public class InternalNetworkConfiguration implements NetworkConfiguration {
      * 17 -   3.84 milliseconds
      * 18 -   5.12 milliseconds
      * 19 -   7.68 milliseconds
-     * 20 -   10.24 milliseconds
-     * 21 -   15.36 milliseconds
-     * 22 -   20.48 milliseconds
-     * 23 -   30.72 milliseconds
-     * 24 -   40.96 milliseconds
-     * 25 -   61.44 milliseconds
-     * 26 -   81.92 milliseconds
-     * 27 -  122.88 milliseconds
-     * 28 -  163.84 milliseconds
-     * 29 -  245.76 milliseconds
-     * 30 -  327.68 milliseconds
-     * 31 -  491.52 milliseconds
+     * 20 -  10.24 milliseconds
+     * 21 -  15.36 milliseconds
+     * 22 -  20.48 milliseconds
+     * 23 -  30.72 milliseconds
+     * 24 -  40.96 milliseconds
+     * 25 -  61.44 milliseconds
+     * 26 -  81.92 milliseconds
+     * 27 - 122.88 milliseconds
+     * 28 - 163.84 milliseconds
+     * 29 - 245.76 milliseconds
+     * 30 - 327.68 milliseconds
+     * 31 - 491.52 milliseconds
      */
     private byte rnrTimer = 12;
 
@@ -143,9 +143,14 @@ public class InternalNetworkConfiguration implements NetworkConfiguration {
     private byte retryCount = 7;
 
     /**
-     * The number of buffers pooled for network operations.
+     * The number of workers for send operations.
      */
-    private int poolSize = 1024;
+    private int sendWorker = 0;
+
+    /**
+     * The number of workers for receive operations.
+     */
+    private int receiveWorker = 0;
 
     /**
      * The Infiniband device's attributes.

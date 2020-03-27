@@ -1079,7 +1079,7 @@
     <inspection_tool class="NativeMethods" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="NegatedEqualityExpression" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="NegatedIfStatementJS" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="NestedAssignment" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="NestedAssignment" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="NestedAssignmentJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="NestedConditionalExpressionJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="NestedFunctionCallJS" enabled="true" level="ERROR" enabled_by_default="true" />

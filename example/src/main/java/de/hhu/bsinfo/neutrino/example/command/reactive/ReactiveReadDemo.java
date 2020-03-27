@@ -1,28 +1,24 @@
-package de.hhu.bsinfo.neutrino.example.command.rsocket;
+package de.hhu.bsinfo.neutrino.example.command.reactive;
 
 import de.hhu.bsinfo.neutrino.api.Neutrino;
 import de.hhu.bsinfo.neutrino.api.network.LocalHandle;
 import de.hhu.bsinfo.neutrino.api.network.RemoteHandle;
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
-import de.hhu.bsinfo.neutrino.example.util.Result;
 import io.netty.buffer.Unpooled;
 import io.rsocket.AbstractRSocket;
 import io.rsocket.Payload;
 import io.rsocket.transport.neutrino.socket.InfinibandSocket;
 import io.rsocket.util.DefaultPayload;
 import lombok.extern.slf4j.Slf4j;
-import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import picocli.CommandLine;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Component
@@ -31,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
         description = "Demonstrates neutrino's rdma read operation.%n",
         showDefaultValues = true,
         separator = " ")
-public class ReadDemo extends RSocketDemo {
+public class ReactiveReadDemo extends ReactiveDemo {
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
 
@@ -41,7 +37,9 @@ public class ReadDemo extends RSocketDemo {
     private Neutrino neutrino;
 
     @Override
-    protected void onClientReady(InfinibandSocket infinibandSocket) {
+    protected void onClientReady(List<InfinibandSocket> infinibandSockets) {
+
+        var infinibandSocket = infinibandSockets.get(0);
 
         // The String we expect to read
         var expected = "Hello Infiniworld!";
@@ -64,11 +62,6 @@ public class ReadDemo extends RSocketDemo {
         var localHandle = new LocalHandle(buffer.memoryAddress() + buffer.writerIndex(), buffer.writableBytes(), buffer.localKey());
         infinibandSocket.read(localHandle, remoteHandle).block();
 
-        log.info("Waiting for read operation to finish");
-        while (buffer.getByte(0) == 0) {
-            // Wait for data to be read
-        }
-
         // Print data received through read operation
         var actual = buffer.getCharSequence(0, expected.length(), CHARSET);
         log.info("Expected : {}  |  Actual : {}", expected, actual);
@@ -76,6 +69,11 @@ public class ReadDemo extends RSocketDemo {
         // Wait until connection is closed
         infinibandSocket.dispose();
         infinibandSocket.onClose().block();
+    }
+
+    @Override
+    protected MessageMode getMessageMode() {
+        return MessageMode.RSOCKET;
     }
 
     @Override

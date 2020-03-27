@@ -4,15 +4,20 @@ import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.ConnectionEvent;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.EpollWatchList;
 import de.hhu.bsinfo.neutrino.util.Epoll;
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.QueuedPipe;
 import org.agrona.hints.ThreadHints;
 
+import java.util.Arrays;
+import java.util.function.BiConsumer;
+
+@Slf4j
 public abstract class EpollAgent implements Agent {
 
 
-    private static final int EPOLL_TIMEOUT = 500;
+    private static final int WAIT_INDEFINITELY = -1;
 
     private static final int MAX_CONNECTIONS = 1024;
 
@@ -31,22 +36,40 @@ public abstract class EpollAgent implements Agent {
      */
     private final ConnectionEvent[] events;
 
-    protected EpollAgent(ConnectionEvent... events) {
+    /**
+     * The maximum number of milliseconds epoll waits for new events.
+     */
+    private final int timeout;
+
+    /**
+     * Method reference for connection processor function.
+     */
+    private final BiConsumer<InternalConnection, ConnectionEvent> consumer = this::processConnection;
+
+    protected EpollAgent(int timeout, ConnectionEvent... events) {
         watchList = new EpollWatchList<>(MAX_CONNECTIONS);
         this.events = events.clone();
+        this.timeout = timeout;
+    }
+
+    protected EpollAgent(ConnectionEvent... events) {
+        this(WAIT_INDEFINITELY, events);
     }
 
     @Override
     public int doWork() {
 
         // Add new connections to our watch list
-        connectionPipe.drain(this::watch);
+        if (!connectionPipe.isEmpty()) {
+            connectionPipe.drain(this::watch);
+        }
 
         // Process events
-        return watchList.forEach(EPOLL_TIMEOUT, this::processConnection);
+        return watchList.forEach(timeout, consumer);
     }
 
     private void watch(InternalConnection connection) {
+        log.debug("Registering for {} on connection #{}", Arrays.toString(events), connection.getId());
         for (var event : events) {
             switch (event) {
                 case SEND_READY:
@@ -80,6 +103,4 @@ public abstract class EpollAgent implements Agent {
      * Called every time a connection becomes ready (readable/writeable).
      */
     protected abstract void processConnection(InternalConnection connection, ConnectionEvent event);
-
-    protected abstract void onConnection(InternalConnection connection);
 }

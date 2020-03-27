@@ -1,41 +1,25 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
+import de.hhu.bsinfo.neutrino.api.network.impl.NetworkMetrics;
 import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
+import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
+import de.hhu.bsinfo.neutrino.verbs.ThreadDomain;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
-import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
-import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
-import reactor.core.Exceptions;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Operators;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
 
 @Slf4j
-public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
+public class ReceiveAgent extends EpollAgent {
 
-    private static final int MAX_CHANNELS = 128;
-
-    private static final int EPOLL_TIMEOUT = 500;
-
-    private static final int POLL_COUNT = 512;
-
-    private static final AtomicLongFieldUpdater<ReceiveAgent> REQUESTED =
-            AtomicLongFieldUpdater.newUpdater(ReceiveAgent.class, "requested");
-
-    @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<ReceiveAgent, CoreSubscriber> SUBSCRIBER =
-            AtomicReferenceFieldUpdater.newUpdater(ReceiveAgent.class, CoreSubscriber.class, "subscriber");
     /**
-     * Flux emitting received buffers.
+     * This agent's resources;
      */
-    private final FluxReceive inbound = new FluxReceive();
+    private final AgentResources resources;
 
     /**
      * The shared receive queue.
@@ -48,21 +32,6 @@ public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
     private final BufferPool bufferPool;
 
     /**
-     * The number of requested messages.
-     */
-    private volatile long requested;
-
-    /**
-     * Enabled if the subscriber requested Long.MAX_VALUE elements.
-     */
-    private volatile boolean isUnbounded;
-
-    /**
-     * The subscriber.
-     */
-    private volatile CoreSubscriber<ByteBuf> subscriber;
-
-    /**
      * Helper object to fill up the receive queue.
      */
     private final QueueFiller queueFiller;
@@ -72,52 +41,96 @@ public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
      */
     private final QueuePoller queuePoller;
 
-    public ReceiveAgent(SharedResources resources) {
-        super(ConnectionEvent.RECEIVE_READY);
-        receiveQueue = resources.sharedReceiveQueue();
-        bufferPool = resources.bufferPool();
-        queuePoller = new QueuePoller(POLL_COUNT);
-        queueFiller = new QueueFiller(resources.bufferPool(), receiveQueue.queryAttributes().getMaxWorkRequests());
-        queueFiller.fillUp(receiveQueue);
-    }
+    /**
+     * Method reference to completion handler function.
+     */
+    private final BiConsumer<InternalConnection, WorkCompletion> completionHandler = this::handleWorkCompletion;
 
-    @Override
-    public Flux<ByteBuf> receive() {
-        return inbound;
+    /**
+     * The network metrics.
+     */
+    private final NetworkMetrics metrics;
+
+    public ReceiveAgent(SharedResources sharedResources) {
+        super(ConnectionEvent.RECEIVE_READY);
+
+        var device = sharedResources.device();
+        var deviceConfig = sharedResources.deviceConfig();
+        var networkConfig = sharedResources.networkConfig();
+
+        var builder = new SharedReceiveQueue.InitialAttributes.Builder(
+                networkConfig.getSharedReceiveQueueSize(),
+                networkConfig.getMaxScatterGatherElements()
+        );
+
+        var attributes = new ThreadDomain.InitialAttributes();
+        var threadDomain = device.createThreadDomain(attributes);
+
+        ProtectionDomain protectionDomain;
+        if (threadDomain == null) {
+            log.info("Thread domains are not supported. Falling back to global protection domain");
+            protectionDomain = device.getProtectionDomain();
+        } else {
+            protectionDomain = device.getProtectionDomain().allocateParentDomain(threadDomain);
+        }
+
+        metrics = sharedResources.networkMetrics();
+        receiveQueue = protectionDomain.createSharedReceiveQueue(builder.build());
+        bufferPool = new BufferPool(protectionDomain::registerMemoryRegion, receiveQueue.queryAttributes().getMaxWorkRequests() * 2, networkConfig.getMtu());
+        queuePoller = new QueuePoller(receiveQueue.queryAttributes().getMaxWorkRequests());
+        queueFiller = new QueueFiller(bufferPool, receiveQueue.queryAttributes().getMaxWorkRequests());
+        resources = AgentResources.builder()
+                .device(device)
+                .deviceConfig(deviceConfig)
+                .networkConfig(networkConfig)
+                .threadDomain(threadDomain)
+                .protectionDomain(protectionDomain)
+                .build();
+
+        queueFiller.fillUp(receiveQueue);
+        metrics.incrementReceiveRequests(receiveQueue.queryAttributes().getMaxWorkRequests());
     }
 
     @Override
     protected void processConnection(InternalConnection connection, ConnectionEvent event) {
 
+        // Check if we got the right kind of event
+        if (event != ConnectionEvent.RECEIVE_READY) {
+            throw new IllegalStateException("Unknown event");
+        }
+
         // Get the completion channel
-        var channel = connection.getResources().getReceiveCompletionChannel();
+        var resources = connection.getResources();
+        var channel = resources.getReceiveCompletionChannel();
+        var queue = resources.getReceiveCompletionQueue();
 
-        // TODO(krakowski):
-        //  Do we really need to get the completion queue when we already have it?
-        //  var queue = connection.getResources().getReceiveCompletionQueue();
-
-        // Get the completion queue
-        var queue = channel.getCompletionEvent();
+        // We can ignore the completion event, since we know
+        // the completion queue the event was generated for
+        channel.discardCompletionEvent();
 
         // Acknowledge the received event and request subsequent notifications
         queue.acknowledgeEvent();
         queue.requestNotification();
 
-        // Process the completion queue until it is empty. It is important to drain
-        // the queue until there are no more elements left. Otherwise, a race condition
-        // might occur in which no new events are generated.
-        var processed = queuePoller.drain(queue, this::handleWorkCompletion);
+        // Poll completions
+        var completions = queuePoller.poll(queue);
+        var length = completions.getLength();
+        metrics.decrementReceiveRequests(length);
 
-        // Fill up the shared receive queue with new receive work requests
-        if (processed != 0) {
-            queueFiller.fillUp(receiveQueue, processed);
+        // Fill up receive queue
+        queueFiller.fillUp(receiveQueue, length);
+        metrics.incrementReceiveRequests(length);
+
+        // Handle work completions
+        for (int i = 0; i < length; i++) {
+            handleWorkCompletion(connection, completions.get(i));
         }
     }
 
-    @Override
-    protected void onConnection(InternalConnection connection) { /* No-Op */ }
+    private void handleWorkCompletion(InternalConnection connection, WorkCompletion workCompletion) {
 
-    private void handleWorkCompletion(WorkCompletion workCompletion) {
+        // Get the subscriber
+        var subscriber = connection.getInboundSubscriber();
 
         // Get work completion id and status
         var id = workCompletion.getId();
@@ -141,6 +154,14 @@ public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
         subscriber.onNext(source);
     }
 
+    public AgentResources getResources() {
+        return resources;
+    }
+
+    public SharedReceiveQueue getReceiveQueue() {
+        return receiveQueue;
+    }
+
     @Override
     public String roleName() {
         return "receive";
@@ -153,45 +174,6 @@ public class ReceiveAgent extends EpollAgent implements  NeutrinoInbound {
 
     @Override
     public void onClose() {
-        inbound.cancel();
         log.debug("Closing");
-    }
-
-    private class FluxReceive extends Flux<ByteBuf> implements Subscription {
-
-        @Override
-        public void request(long n) {
-            if (isUnbounded) {
-                return;
-            }
-
-            if (n == Long.MAX_VALUE) {
-                isUnbounded = true;
-                requested = Long.MAX_VALUE;
-                return;
-            }
-
-            Operators.addCap(REQUESTED, ReceiveAgent.this, n);
-        }
-
-
-        @Override
-        public void cancel() {
-            if (subscriber != null) {
-                subscriber.onComplete();
-            }
-
-            log.debug("Subscription has been cancelled");
-        }
-
-        @Override
-        public void subscribe(CoreSubscriber<? super ByteBuf> subscriber) {
-            boolean result = SUBSCRIBER.compareAndSet(ReceiveAgent.this, null, subscriber);
-            if (result) {
-                subscriber.onSubscribe(this);
-            } else {
-                Operators.error(subscriber, Exceptions.duplicateOnSubscribeException());
-            }
-        }
     }
 }

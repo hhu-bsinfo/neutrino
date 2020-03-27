@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Component
-public class NetworkMetrics {
+public final class NetworkMetrics {
 
     private final AtomicLong sendRequests = new AtomicLong();
     private final Gauge sendRequestsGauge;
@@ -33,8 +33,16 @@ public class NetworkMetrics {
         sendRequests.incrementAndGet();
     }
 
+    public void incrementSendRequests(long delta) {
+        sendRequests.addAndGet(delta);
+    }
+
     public void decrementSendRequests() {
         sendRequests.decrementAndGet();
+    }
+
+    public void decrementSendRequests(long delta) {
+        sendRequests.addAndGet(-delta);
     }
 
     public long getReceiveRequests() {
@@ -45,7 +53,15 @@ public class NetworkMetrics {
         receiveRequests.incrementAndGet();
     }
 
+    public void incrementReceiveRequests(long delta) {
+        receiveRequests.addAndGet(delta);
+    }
+
     public void decrementReceiveRequests() {
         receiveRequests.decrementAndGet();
+    }
+
+    public void decrementReceiveRequests(long delta) {
+        receiveRequests.addAndGet(-delta);
     }
 }

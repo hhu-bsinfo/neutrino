@@ -32,5 +32,8 @@ infiniband:
     # The maximum number of scatter-gather elements per work request.
     maxScatterGatherElements: 1
 
-    # The number of buffers pooled for network operations.
-    poolSize: 1024
+    # The number of send workers
+    sendWorker: 1
+
+    # The number of receive workers
+    receiveWorker: 1

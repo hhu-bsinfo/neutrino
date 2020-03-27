@@ -1,93 +1,123 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.buffer;
 
-import de.hhu.bsinfo.neutrino.util.AtomicIntegerStack;
-import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.MemoryRegion;
+import de.hhu.bsinfo.neutrino.verbs.*;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.QueuedPipe;
+import org.agrona.hints.ThreadHints;
 
-import javax.annotation.concurrent.ThreadSafe;
+import java.util.function.IntConsumer;
 
 @Slf4j
-@ThreadSafe
-public class BufferPool {
+public final class BufferPool {
 
     @FunctionalInterface
     public interface BufferRegistrator {
         MemoryRegion wrap(long handle, long capacity, AccessFlag... accessFlags);
     }
 
-    @FunctionalInterface
-    public interface BufferReleaser {
-        void release(int index);
-    }
+    /**
+     * Pooled buffers stored using their identifiers as indices.
+     */
+    private final PooledBuffer[] indexedBuffers;
 
-    private final String name;
+    /**
+     * Pooled buffers.
+     */
+    private final QueuedPipe<PooledBuffer> buffers;
 
-    private final PooledByteBuf[] indexedBuffers;
+    public BufferPool(final BufferRegistrator registrator, final int count, final int size) {
+        indexedBuffers = new PooledBuffer[count];
+        buffers = new ManyToOneConcurrentArrayQueue<>(count);
 
-    private final AtomicIntegerStack stack;
-
-    private BufferPool(final PooledByteBuf[] indexedBuffers, final AtomicIntegerStack stack, final String name) {
-        this.indexedBuffers = indexedBuffers;
-        this.stack = stack;
-        this.name = name;
-    }
-
-    public static BufferPool create(String name, int mtu, int count, BufferRegistrator registrator) {
-        var buffers = new PooledByteBuf[count];
-        var stack = new AtomicIntegerStack();
-        for (int i = 0; i < buffers.length; i++) {
-            buffers[i] = new PooledByteBuf(i, UnpooledByteBufAllocator.DEFAULT, mtu, mtu, registrator);
-            stack.push(i);
+        IntConsumer releaser = this::release;
+        for (int i = 0; i < count; i++) {
+            indexedBuffers[i] = new PooledBuffer(i, size, releaser, registrator);
+            buffers.add(indexedBuffers[i]);
         }
 
-        var bufferPool = new BufferPool(buffers, stack, name);
-        for (int i = 0; i < buffers.length; i++) {
-            buffers[i].setReleaser(bufferPool::release);
+        log.debug("Created buffer poll with {} buffers of size {}B", count, size);
+    }
+
+    public PooledBuffer claim() {
+
+        // Create variable for spin-wait loop
+        PooledBuffer tmp = null;
+
+        // Busy-wait until we get an buffer
+        while ((tmp = buffers.poll()) == null) {
+            ThreadHints.onSpinWait();
         }
 
-        return bufferPool;
+        // Return the claimed buffer
+        return tmp;
     }
 
-    public PooledByteBuf leaseNext() {
-        int index;
-        long then = System.currentTimeMillis();
-        while ((index = stack.pop()) == -1) {
-            if (System.currentTimeMillis() - then > 2000) {
-                log.warn("[{}] Waiting over 2 seconds for buffer lease", name);
-                then = System.currentTimeMillis();
-            }
+    public void release(int identifier) {
+
+        // Get buffer by identifier
+        var buffer = indexedBuffers[identifier];
+
+        // Clear buffer for next usage
+        buffer.clear();
+
+        // Put buffer back into queue
+        while (!buffers.offer(buffer)) {
+            ThreadHints.onSpinWait();
         }
-        return indexedBuffers[index];
     }
 
-    public void release(int index) {
-        log.trace("[{}] Releasing buffer at index {}", name, index);
-        indexedBuffers[index].clear();
-        stack.push(index);
+    public PooledBuffer get(int identifier) {
+        return indexedBuffers[identifier];
     }
 
-    public PooledByteBuf get(int index) {
-        return indexedBuffers[index];
-    }
+    public static final class PooledBuffer extends UnpooledUnsafeDirectByteBuf {
 
-    public static final class PooledByteBuf extends UnpooledUnsafeDirectByteBuf {
+        private static final ByteBufAllocator ALLOCATOR = UnpooledByteBufAllocator.DEFAULT;
 
-        private final int index;
+        /**
+         * This pooled buffer's identifier.
+         */
+        private final int identifier;
+
+        /**
+         * This pooled buffer's memory region.
+         */
         private final MemoryRegion memoryRegion;
-        private BufferReleaser releaser;
 
-        public PooledByteBuf(int index, ByteBufAllocator alloc, int initialCapacity, int maxCapacity, BufferRegistrator registrator) {
-            super(alloc, initialCapacity, maxCapacity);
-            this.index = index;
+        /**
+         * Function for returning this pooled buffer to its pool.
+         */
+        private final IntConsumer releaser;
+
+        /**
+         * Preallocated receive work request filled with this pooled buffers information.
+         */
+        private final ReceiveWorkRequest receiveRequest;
+
+        /**
+         * Preallocated scatter-gather element filled with this buffers information.
+         */
+        private final ScatterGatherElement element;
+
+        public PooledBuffer(int identifier, int capacity, IntConsumer releaser, BufferRegistrator registrator) {
+            super(ALLOCATOR, capacity, capacity);
+            this.identifier = identifier;
+            this.releaser = releaser;
             memoryRegion = registrator.wrap(memoryAddress(), capacity(), MemoryRegion.DEFAULT_ACCESS_FLAGS);
+
+            element = new ScatterGatherElement(memoryAddress(), capacity, memoryRegion.getLocalKey());
+            receiveRequest = new ReceiveWorkRequest.Builder()
+                    .withId(identifier)
+                    .withScatterGatherElement(element)
+                    .build();
         }
 
-        public int getIndex() {
-            return index;
+        public int getIdentifier() {
+            return identifier;
         }
 
         public int getLocalKey() {
@@ -98,14 +128,23 @@ public class BufferPool {
             return memoryRegion.getRemoteKey();
         }
 
-        public void setReleaser(BufferReleaser releaser) {
-            this.releaser = releaser;
+        public ReceiveWorkRequest getReceiveRequest() {
+            return receiveRequest;
+        }
+
+        public ScatterGatherElement getElement() {
+            return element;
         }
 
         @Override
+        @SuppressWarnings("MethodDoesntCallSuperMethod")
         protected void deallocate() {
+
+            // Reset the reference count
             setRefCnt(1);
-            releaser.release(index);
+
+            // Put this buffer back into its pool
+            releaser.accept(identifier);
         }
     }
 }

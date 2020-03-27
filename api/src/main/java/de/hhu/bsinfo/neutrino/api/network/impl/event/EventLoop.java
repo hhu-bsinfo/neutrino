@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.neutrino.api.event;
+package de.hhu.bsinfo.neutrino.api.network.impl.event;
 
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
@@ -9,7 +9,7 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.hints.ThreadHints;
 
 @Slf4j
-public final class EventLoop implements AutoCloseable {
+public final class EventLoop<T extends Agent> implements AutoCloseable {
 
     /**
      * The composite agent performing work for this event loop.
@@ -26,16 +26,20 @@ public final class EventLoop implements AutoCloseable {
      */
     private final Thread thread;
 
+    private T agent;
+
     public EventLoop(String name, IdleStrategy idleStrategy) {
         compositeAgent = new DynamicCompositeAgent(name);
         runner = new AgentRunner(idleStrategy, EventLoop::errorHandler, null, compositeAgent);
         thread = AgentRunner.startOnThread(runner);
     }
 
-    public void add(Agent agent) {
+    public void add(T agent) {
         while (!compositeAgent.tryAdd(agent)) {
             ThreadHints.onSpinWait();
         }
+
+        this.agent = agent;
     }
 
     public void join(int timeout) throws InterruptedException {
@@ -44,6 +48,10 @@ public final class EventLoop implements AutoCloseable {
 
     public void join() throws InterruptedException {
         thread.join();
+    }
+
+    public T getAgent() {
+        return agent;
     }
 
     public DynamicCompositeAgent.Status status() {

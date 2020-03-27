@@ -1,6 +1,6 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.subscriber;
 
-import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
+import de.hhu.bsinfo.neutrino.api.network.operation.Operation;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.Drainable;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.reactivestreams.Subscription;

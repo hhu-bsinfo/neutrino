@@ -4,17 +4,7 @@ import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDeviceConfig;
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
-import de.hhu.bsinfo.neutrino.verbs.AccessFlag;
-import de.hhu.bsinfo.neutrino.verbs.AsyncEvent;
-import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
-import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
-import de.hhu.bsinfo.neutrino.verbs.Context;
-import de.hhu.bsinfo.neutrino.verbs.DeviceAttributes;
-import de.hhu.bsinfo.neutrino.verbs.MemoryRegion;
-import de.hhu.bsinfo.neutrino.verbs.PortAttributes;
-import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
-import de.hhu.bsinfo.neutrino.verbs.QueuePair;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
+import de.hhu.bsinfo.neutrino.verbs.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -24,9 +14,21 @@ import java.util.Objects;
 @Component
 public class InternalInfinibandDevice implements InfinibandDevice {
 
+    /**
+     * The device's context.
+     */
     private final Context context;
+
+    /**
+     * The device's port attributes.
+     */
     private final PortAttributes portAttributes;
+
+    /**
+     * The device's device attributes.
+     */
     private final DeviceAttributes deviceAttributes;
+
     private final ProtectionDomain protectionDomain;
 
     public InternalInfinibandDevice(InfinibandDeviceConfig config) {
@@ -84,5 +86,10 @@ public class InternalInfinibandDevice implements InfinibandDevice {
     @Override
     public ProtectionDomain getProtectionDomain() {
         return protectionDomain;
+    }
+
+    @Override
+    public ThreadDomain createThreadDomain(ThreadDomain.InitialAttributes attributes) {
+        return context.allocateThreadDomain(attributes);
     }
 }

@@ -1,10 +1,12 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.util;
 
+import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import org.agrona.BitUtil;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @NotThreadSafe
@@ -21,18 +23,39 @@ public class QueuePoller {
         return completions.getCapacity();
     }
 
-    public int drain(CompletionQueue completionQueue, Consumer<WorkCompletion> operation) {
+    public int drain(CompletionQueue completionQueue, InternalConnection connection, BiConsumer<InternalConnection, WorkCompletion> operation) {
+
+        // Remember how many work completions we processed in total
         var processed = 0;
-        do {
-            processed += poll(completionQueue, operation);
+
+        do { // Poll completion queue until no work completions are left
+            processed += poll(completionQueue, connection, operation);
         } while (!completions.isEmpty());
 
+        // Return number of processed work completions
         return processed;
     }
 
-    public int poll(CompletionQueue completionQueue, Consumer<WorkCompletion> operation) {
+    public int poll(CompletionQueue completionQueue, InternalConnection connection, BiConsumer<InternalConnection, WorkCompletion> operation) {
+
+        // Poll the completion queue
         completionQueue.poll(completions);
-        completions.forEach(operation);
-        return completions.getLength();
+
+        // Iterate over all work completions
+        var length = completions.getLength();
+
+        // Fill up receive queue
+
+        for (int i = 0; i < length; i++) {
+            operation.accept(connection, completions.get(i));
+        }
+
+        // Return number of processed work completions
+        return length;
+    }
+
+    public CompletionQueue.WorkCompletionArray poll(CompletionQueue completionQueue) {
+        completionQueue.poll(completions);
+        return completions;
     }
 }

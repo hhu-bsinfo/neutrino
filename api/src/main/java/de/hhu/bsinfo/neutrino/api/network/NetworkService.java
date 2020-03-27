@@ -1,6 +1,7 @@
 package de.hhu.bsinfo.neutrino.api.network;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
+import de.hhu.bsinfo.neutrino.api.network.operation.Operation;
 import de.hhu.bsinfo.neutrino.api.util.Buffer;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
 import io.netty.buffer.ByteBuf;
@@ -14,7 +15,11 @@ public interface NetworkService {
 
     Mono<Connection> connect(Negotiator negotiator, Mtu mtu);
 
+    Mono<Void> execute(Connection connection, Publisher<? extends Operation> publisher);
+
     Mono<Void> send(Connection connection, Publisher<ByteBuf> frames);
+
+    Mono<Void> sendDirect(Connection connection, Publisher<LocalHandle> publisher);
 
     Flux<ByteBuf> receive(Connection connection);
 

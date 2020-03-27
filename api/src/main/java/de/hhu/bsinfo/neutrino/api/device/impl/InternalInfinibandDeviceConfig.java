@@ -10,6 +10,14 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "infiniband.device")
 @Getter @Setter
 public class InternalInfinibandDeviceConfig implements InfinibandDeviceConfig {
+
+    /**
+     * The selected device's device number.
+     */
     private int deviceNumber;
+
+    /**
+     * The selected device's port number.
+     */
     private byte portNumber = 1;
 }

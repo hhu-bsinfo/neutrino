@@ -1,23 +1,20 @@
-package de.hhu.bsinfo.neutrino.api.network.impl;
+package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDeviceConfig;
 import de.hhu.bsinfo.neutrino.api.network.NetworkConfiguration;
-import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
-import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
-import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
-import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
+import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
+import de.hhu.bsinfo.neutrino.verbs.ThreadDomain;
 import lombok.Builder;
-import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
 @Builder
 @Accessors(fluent = true)
-public @Value class SharedResources {
+public @Value class AgentResources {
 
     /**
-     * The Infiniband device used by neutrino.
+     * The Infiniband device used by the associated agent.
      */
     InfinibandDevice device;
 
@@ -32,7 +29,12 @@ public @Value class SharedResources {
     NetworkConfiguration networkConfig;
 
     /**
-     * Network metrics.
+     * The thread domain used by the associated agent.
      */
-    NetworkMetrics networkMetrics;
+    ThreadDomain threadDomain;
+
+    /**
+     * The protection domain used by the associated agent.
+     */
+    ProtectionDomain protectionDomain;
 }

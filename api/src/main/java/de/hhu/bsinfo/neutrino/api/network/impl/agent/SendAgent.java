@@ -1,28 +1,30 @@
 package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
+import de.hhu.bsinfo.neutrino.api.network.impl.NetworkMetrics;
 import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
-import de.hhu.bsinfo.neutrino.api.network.impl.operation.Operation;
-import de.hhu.bsinfo.neutrino.api.network.impl.operation.ReadOperation;
-import de.hhu.bsinfo.neutrino.api.network.impl.operation.SendOperation;
-import de.hhu.bsinfo.neutrino.api.network.impl.operation.WriteOperation;
 import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
+import de.hhu.bsinfo.neutrino.util.BitMask;
+import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
+import de.hhu.bsinfo.neutrino.verbs.ThreadDomain;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.function.BiConsumer;
 
 @Slf4j
-public class SendAgent extends EpollAgent implements NeutrinoOutbound {
+public class SendAgent extends EpollAgent {
 
-    private static final int MAX_BATCH_SIZE = 100;
+    private static final int MAX_BATCH_SIZE = 1024;
+
+    /**
+     * This agent's resources;
+     */
+    private final AgentResources resources;
 
     /**
      * The buffer pool used by this agent.
@@ -39,38 +41,45 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
      */
     private final QueuePoller queuePoller;
 
-    private final Int2ObjectHashMap<OperationSubscriber> subscribers = new Int2ObjectHashMap<>();
+    /**
+     * Method reference to completion handler function.
+     */
+    private final BiConsumer<InternalConnection, WorkCompletion> completionHandler = this::handleWorkCompletion;
+
+    /**
+     * The network metrics.
+     */
+    private final NetworkMetrics metrics;
 
     public SendAgent(SharedResources sharedResources) {
         super(ConnectionEvent.QUEUE_READY, ConnectionEvent.SEND_READY);
-        bufferPool = sharedResources.bufferPool();
-        aggregator = OperationAggregator.create(MAX_BATCH_SIZE);
+
+        var device = sharedResources.device();
+        var deviceConfig = sharedResources.deviceConfig();
+        var networkConfig = sharedResources.networkConfig();
+
+        var attributes = new ThreadDomain.InitialAttributes();
+        var threadDomain = device.createThreadDomain(attributes);
+
+        ProtectionDomain protectionDomain;
+        if (threadDomain == null) {
+            log.info("Thread domains are not supported. Falling back to global protection domain");
+            protectionDomain = device.getProtectionDomain();
+        } else {
+            protectionDomain = device.getProtectionDomain().allocateParentDomain(threadDomain);
+        }
+
+        metrics = sharedResources.networkMetrics();
         queuePoller = new QueuePoller(MAX_BATCH_SIZE);
-    }
-
-    @Override
-    public Mono<Void> send(InternalConnection connection, Publisher<SendOperation> operations) {
-        return subscribeTo(connection, operations);
-    }
-
-    @Override
-    public Mono<Void> write(InternalConnection connection, Publisher<WriteOperation> operations) {
-        return subscribeTo(connection, operations);
-    }
-
-    @Override
-    public Mono<Void> read(InternalConnection connection, Publisher<ReadOperation> operation) {
-        return subscribeTo(connection, operation);
-    }
-
-    private Mono<Void> subscribeTo(InternalConnection connection, Publisher<? extends Operation> operations) {
-        return Mono.defer(() -> {
-            var subscriber = new OperationSubscriber();
-            subscribers.put(subscriber.getId(), subscriber);
-            connection.addSubscriber(subscriber);
-            operations.subscribe(subscriber);
-            return subscriber.then();
-        });
+        bufferPool = new BufferPool(device::wrapRegion, networkConfig.getQueuePairSize(), networkConfig.getMtu());
+        aggregator = OperationAggregator.create(MAX_BATCH_SIZE);
+        resources = AgentResources.builder()
+                .device(device)
+                .deviceConfig(deviceConfig)
+                .networkConfig(networkConfig)
+                .threadDomain(threadDomain)
+                .protectionDomain(protectionDomain)
+                .build();
     }
 
     @Override
@@ -93,11 +102,6 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         }
     }
 
-    @Override
-    protected void onConnection(InternalConnection connection) {
-
-    }
-
     private void onSendReady(InternalConnection connection) {
 
         // Get connection resources
@@ -105,14 +109,19 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
         // Get the completion queue on which the event occured
         var channel = resources.getSendCompletionChannel();
-        var queue = channel.getCompletionEvent();
+        var queue = resources.getSendCompletionQueue();
+
+        // We can ignore the completion event, since we know
+        // the completion queue the event was generated for
+        channel.discardCompletionEvent();
 
         // Acknowledge the event and request further notifications
         queue.acknowledgeEvent();
         queue.requestNotification();
 
         // Drain the completion queue
-        var processed = queuePoller.drain(queue, this::handleSendCompletion);
+        var processed = queuePoller.drain(queue, connection, completionHandler);
+        metrics.decrementSendRequests(processed);
 
         // Increment free slots
         connection.incrementFreeSlots(processed);
@@ -138,19 +147,19 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         for (OperationSubscriber subscriber : currentSubscribers) {
 
             // Break out of loop if there is no space left
-            if (freeSlots == 0) {
+            if (freeSlots == 0 || aggregator.remaining() == 0) {
                 break;
             }
 
             // Remove the current publisher if it has completed
             if (subscriber.hasCompleted()) {
-                connection.removeSubscriber(subscriber);
+                connection.onCompletion(subscriber);
                 continue;
             }
 
             // Drain the current subscriber's operation queue
-            aggregator.setCurrentId(subscriber.getId());
-            var operationCount = subscriber.drain(aggregator, Math.min(freeSlots, MAX_BATCH_SIZE));
+            aggregator.setCurrentIdentifier(subscriber.getId());
+            var operationCount = subscriber.drain(aggregator, Math.min(freeSlots, aggregator.remaining()));
             freeSlots -= operationCount;
 
             subscriber.incrementPending(operationCount);
@@ -163,7 +172,8 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
 
         // Post the aggregated work requests to the queue pair
         var queuePair = connection.getQueuePair();
-        var postedWorkRequests = aggregator.commit(queuePair);
+        var postedRequests = aggregator.commit(queuePair);
+        metrics.incrementSendRequests(postedRequests);
 
         // Write back free slots
         if (freeSlots > 0) {
@@ -171,28 +181,35 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         }
     }
 
-    private void handleSendCompletion(WorkCompletion workCompletion) {
+    private void handleWorkCompletion(InternalConnection connection, WorkCompletion workCompletion) {
 
-        var id = workCompletion.getId();
-        var subscriber = subscribers.get(Identifier.getRequestId(id));
+        // Get the associated subscriber
+        var identifier = workCompletion.getId();
+        var subscriber = connection.getOutboundSubscriber(identifier);
 
+        // Check work completion status
         var status = workCompletion.getStatus();
         if (status != WorkCompletion.Status.SUCCESS) {
             subscriber.signalError(new IOException(workCompletion.getStatusMessage()));
         }
 
+        // Handle work completion
         var opCode = workCompletion.getOpCode();
         switch (opCode) {
             case SEND:
-                bufferPool.release(Identifier.getBufferId(id));
+                onSendCompletion(identifier);
                 break;
             case RDMA_READ:
+                onReadCompletion(identifier);
                 break;
             case RDMA_WRITE:
+                onWriteCompletion(identifier);
                 break;
             case FETCH_ADD:
+                onFetchCompletion(identifier);
                 break;
             case COMP_SWAP:
+                onSwapCompletion(identifier);
                 break;
         }
 
@@ -202,15 +219,44 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         // Check if all requests were processed
         if (subscriber.hasCompleted() && !subscriber.hasPending()) {
             subscriber.signalCompletion();
-            subscribers.remove(subscriber.getId());
+            connection.remove(subscriber);
         }
     }
 
-    public final BufferPool.PooledByteBuf copyOf(ByteBuf buffer) {
-        var target = bufferPool.leaseNext();
+    private void onSendCompletion(long identifier) {
 
-        // Remember number of bytes to send
-        var messageSize = buffer.readableBytes();
+        // Extract flags from identifier
+        var flags = Identifier.getFlags(identifier);
+
+        // Direct send operations do not need special handling
+        if (BitMask.isSet(flags, RequestFlag.DIRECT)) {
+            return;
+        }
+
+        // Release the used buffer using the buffer index encoded
+        // within the identifier's attachement
+        var attachement = Identifier.getAttachement(identifier);
+        bufferPool.release(attachement);
+    }
+
+    private void onReadCompletion(long identifier) {
+        // Nothing to do
+    }
+
+    private void onWriteCompletion(long identifier) {
+        // Nothing to do
+    }
+
+    private void onFetchCompletion(long identifier) {
+        // Nothing to do
+    }
+
+    private void onSwapCompletion(long identifier) {
+        // Nothing to do
+    }
+
+    public final BufferPool.PooledBuffer copyOf(ByteBuf buffer) {
+        var target = bufferPool.claim();
 
         // Copy bytes into send buffer
         target.writeBytes(buffer);
@@ -219,8 +265,8 @@ public class SendAgent extends EpollAgent implements NeutrinoOutbound {
         return target;
     }
 
-    public final BufferPool.PooledByteBuf leaseBuffer() {
-        return bufferPool.leaseNext();
+    public AgentResources getResources() {
+        return resources;
     }
 
     @Override

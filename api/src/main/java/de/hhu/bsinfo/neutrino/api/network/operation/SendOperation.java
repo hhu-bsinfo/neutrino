@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.neutrino.api.network.impl.operation;
+package de.hhu.bsinfo.neutrino.api.network.operation;
 
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.Identifier;
@@ -6,12 +6,16 @@ import de.hhu.bsinfo.neutrino.verbs.ScatterGatherElement;
 import de.hhu.bsinfo.neutrino.verbs.SendWorkRequest;
 import lombok.Value;
 
-public final @Value class SendOperation implements Operation {
+public @Value class SendOperation implements Operation {
 
-    private final BufferPool.PooledByteBuf data;
+    private static final SendWorkRequest.SendFlag[] DEFAULT_SEND_FLAGS = { SendWorkRequest.SendFlag.SIGNALED };
+
+    private static final short IDENTIFIER_FLAGS = 0;
+
+    BufferPool.PooledBuffer data;
 
     @Override
-    public void transfer(int id, SendWorkRequest request, ScatterGatherElement element) {
+    public void transfer(int context, SendWorkRequest request, ScatterGatherElement element) {
 
         // Set scatter-gather element if there is data to send
         if (data != null) {
@@ -31,8 +35,8 @@ public final @Value class SendOperation implements Operation {
         }
 
         // Set work request metadata
-        request.setId(Identifier.create(id, data.getIndex()));
+        request.setId(Identifier.create(context, IDENTIFIER_FLAGS));
         request.setOpCode(SendWorkRequest.OpCode.SEND);
-        request.setSendFlags(SendWorkRequest.SendFlag.SIGNALED);
+        request.setSendFlags(DEFAULT_SEND_FLAGS);
     }
 }

@@ -127,7 +127,12 @@ public interface NetworkConfiguration {
     byte getTimeout();
 
     /**
-     * The number of buffers pooled for network operations.
+     * The number of workers for send operations.
      */
-    int getPoolSize();
+    int getSendWorker();
+
+    /**
+     * The number of workers for receive operations.
+     */
+    int getReceiveWorker();
 }

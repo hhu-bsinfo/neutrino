@@ -5,7 +5,7 @@ import java.util.Arrays;
 public enum ConnectionEvent {
     RECEIVE_READY (0x1),
     SEND_READY    (0x2),
-    QUEUE_READY   (0x4);
+    QUEUE_READY   (0x3);
 
     private final int value;
 

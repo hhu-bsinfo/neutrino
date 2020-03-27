@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.neutrino.example.command.rsocket;
+package de.hhu.bsinfo.neutrino.example.command.grpc;
 
 import com.google.protobuf.ByteString;
 import de.hhu.bsinfo.neutrino.api.Neutrino;
@@ -142,11 +142,10 @@ public class GrpcDemo implements Runnable {
         log.info("Waiting for incoming connections on port {}", port);
 
         // Create a server socket to exchange queue pair information with the client
-        try (var serverSocket = new ServerSocket(port);
-             var socket = serverSocket.accept()) {
+        try (var serverSocket = new ServerSocket(port)) {
 
             // Create RSocket infiniband server transport using neutrino
-            var transport = new InfinibandServerTransport(networkService, address -> connect(socket, address));
+            var transport = new InfinibandServerTransport(networkService, serverSocket);
 
             // Create gRPC service server
             var echoServer = new EchoServiceServer(new EchoServiceImpl(), Optional.empty(), Optional.empty());

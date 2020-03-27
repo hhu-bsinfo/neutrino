@@ -57,4 +57,9 @@ public interface InfinibandDevice {
      * The protection domain used by this Infiniband device.
      */
     ProtectionDomain getProtectionDomain();
+
+    /**
+     * Creates a new thread domain.
+     */
+    ThreadDomain createThreadDomain(ThreadDomain.InitialAttributes attributes);
 }
