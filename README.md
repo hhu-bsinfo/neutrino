@@ -14,16 +14,16 @@
 
 Developed by the [operating systems group](https://www.cs.hhu.de/en/research-groups/operating-systems.html) of the department of computer science of the [Heinrich Heine University Düsseldorf](https://www.hhu.de), neutrino aims at providing comfortable and efficient access to InfiniBand hardware in Java.
 
-## :construction: Notice
+## :construction: &nbsp; Notice
 
 neutrino is a research project under development. We do not recommend using the system in a production environment. Expect to encounter bugs. However, we are looking forward to bug reports and code contributions.
 
-## :wrench: Requirements
+## :wrench: &nbsp; Requirements
 
   * [OpenJDK 11](https://openjdk.java.net/projects/jdk/11/) - We recommend using [SDKMAN!](https://sdkman.io) for installation
   * [GCC 8](https://gcc.gnu.org/install/download.html)
   * [rdma-core 28.0](https://github.com/linux-rdma/rdma-core)
   
-## :scroll: License
+## :scroll: &nbsp; License
 
 This project is licensed under the GNU GPLv3 License - see the [LICENSE](LICENSE) file for details.
