@@ -124,7 +124,7 @@ public class SendAgent extends EpollAgent {
         metrics.decrementSendRequests(processed);
 
         // Increment free slots
-        connection.incrementFreeSlots(processed);
+        connection.onProcessed(processed);
     }
 
     private void onQueueReady(InternalConnection connection) {
@@ -177,7 +177,7 @@ public class SendAgent extends EpollAgent {
 
         // Write back free slots
         if (freeSlots > 0) {
-            connection.incrementFreeSlots(freeSlots);
+            connection.onProcessed(freeSlots);
         }
     }
 

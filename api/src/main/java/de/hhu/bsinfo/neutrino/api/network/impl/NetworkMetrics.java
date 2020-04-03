@@ -20,7 +20,7 @@ public final class NetworkMetrics {
                 .description("The number of send work requests on the queue pair")
                 .register(meterRegistry);
 
-        receiveRequestsGauge = Gauge.builder("network.receiveRequests", sendRequests::get)
+        receiveRequestsGauge = Gauge.builder("network.receiveRequests", receiveRequests::get)
                 .description("The number of receive work requests on the shared receive queue")
                 .register(meterRegistry);
     }

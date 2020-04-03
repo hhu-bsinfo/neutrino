@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
+@SuppressWarnings("MethodDoesntCallSuperMethod")
 public final class OperationSubscriber extends BaseSubscriber<Operation> implements Drainable<Operation> {
 
     private enum Status {
@@ -36,7 +37,7 @@ public final class OperationSubscriber extends BaseSubscriber<Operation> impleme
     /**
      * Buffered operations.
      */
-    private final ManyToOneConcurrentArrayQueue<Operation> operations = new ManyToOneConcurrentArrayQueue<>(100);
+    private final ManyToOneConcurrentArrayQueue<Operation> operations = new ManyToOneConcurrentArrayQueue<>(128);
 
     /**
      * The number of pending requests this subscriber produced.

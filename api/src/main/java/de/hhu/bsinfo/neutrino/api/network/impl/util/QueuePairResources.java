@@ -24,15 +24,25 @@ public @Data class QueuePairResources {
 
     public static QueuePairResources create(InfinibandDevice device, NetworkConfiguration config) {
 
+        // Create a completion channel, a completion queue and
+        // a file descriptor for processing send operations
         var sendCompletionChannel = device.createCompletionChannel();
         var sendCompletionQueue = device.createCompletionQueue(config.getCompletionQueueSize(), sendCompletionChannel);
         var sendFileDescriptor = FileDescriptor.create(sendCompletionChannel.getFileDescriptor());
+
+        // Set send completion channel file descriptor into
+        // non-blocking mode and enable notifications
         sendFileDescriptor.setMode(FileDescriptor.OpenMode.NONBLOCK);
         sendCompletionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
 
+        // Create a completion channel, a completion queue and
+        // a file descriptor for receive operations
         var receiveCompletionChannel = device.createCompletionChannel();
         var receiveCompletionQueue = device.createCompletionQueue(config.getCompletionQueueSize(), receiveCompletionChannel);
         var receiveFileDescriptor = FileDescriptor.create(receiveCompletionChannel.getFileDescriptor());
+
+        // Set receive completion channel file descriptor into
+        // non-blocking mode and enable notifications
         receiveFileDescriptor.setMode(FileDescriptor.OpenMode.NONBLOCK);
         receiveCompletionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
 
