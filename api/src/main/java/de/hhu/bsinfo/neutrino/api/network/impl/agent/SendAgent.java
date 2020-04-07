@@ -19,6 +19,8 @@ import java.util.function.BiConsumer;
 @Slf4j
 public class SendAgent extends EpollAgent {
 
+    private static final ConnectionEvent[] INTERESTS = { ConnectionEvent.QUEUE_READY, ConnectionEvent.SEND_READY };
+
     private static final int MAX_BATCH_SIZE = 1024;
 
     /**
@@ -52,7 +54,7 @@ public class SendAgent extends EpollAgent {
     private final NetworkMetrics metrics;
 
     public SendAgent(SharedResources sharedResources) {
-        super(ConnectionEvent.QUEUE_READY, ConnectionEvent.SEND_READY);
+        super(sharedResources.networkConfig().getEpollTimeout(), INTERESTS);
 
         var device = sharedResources.device();
         var deviceConfig = sharedResources.deviceConfig();
@@ -102,6 +104,9 @@ public class SendAgent extends EpollAgent {
         }
     }
 
+    long lastLogTime = 0;
+    long messagesPerSecond = 0;
+
     private void onSendReady(InternalConnection connection) {
 
         // Get connection resources
@@ -122,6 +127,13 @@ public class SendAgent extends EpollAgent {
         // Drain the completion queue
         var processed = queuePoller.drain(queue, connection, completionHandler);
         metrics.decrementSendRequests(processed);
+
+        messagesPerSecond += processed;
+        if (System.currentTimeMillis() - lastLogTime > 1000) {
+            log.info("{} mps", messagesPerSecond);
+            messagesPerSecond = 0;
+            lastLogTime = System.currentTimeMillis();
+        }
 
         // Increment free slots
         connection.onProcessed(processed);
@@ -267,16 +279,6 @@ public class SendAgent extends EpollAgent {
 
     public AgentResources getResources() {
         return resources;
-    }
-
-    @Override
-    public void onStart() {
-        log.debug("Starting agent");
-    }
-
-    @Override
-    public void onClose() {
-        log.debug("Stopping agent");
     }
 
     @Override

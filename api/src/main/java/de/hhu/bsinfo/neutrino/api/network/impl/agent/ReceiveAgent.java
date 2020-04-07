@@ -16,6 +16,8 @@ import java.util.function.BiConsumer;
 @Slf4j
 public class ReceiveAgent extends EpollAgent {
 
+    private static final ConnectionEvent[] INTERESTS = { ConnectionEvent.RECEIVE_READY };
+
     /**
      * This agent's resources;
      */
@@ -52,7 +54,7 @@ public class ReceiveAgent extends EpollAgent {
     private final NetworkMetrics metrics;
 
     public ReceiveAgent(SharedResources sharedResources) {
-        super(ConnectionEvent.RECEIVE_READY);
+        super(sharedResources.networkConfig().getEpollTimeout(), INTERESTS);
 
         var device = sharedResources.device();
         var deviceConfig = sharedResources.deviceConfig();
@@ -165,15 +167,5 @@ public class ReceiveAgent extends EpollAgent {
     @Override
     public String roleName() {
         return "receive";
-    }
-
-    @Override
-    public void onStart() {
-        log.info("Starting agent");
-    }
-
-    @Override
-    public void onClose() {
-        log.debug("Closing");
     }
 }

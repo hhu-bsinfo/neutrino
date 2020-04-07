@@ -153,6 +153,11 @@ public class InternalNetworkConfiguration implements NetworkConfiguration {
     private int receiveWorker = 0;
 
     /**
+     * The epoll timeout.
+     */
+    private int epollTimeout = -1;
+
+    /**
      * The Infiniband device's attributes.
      */
     private final DeviceAttributes deviceAttributes;

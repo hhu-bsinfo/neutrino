@@ -57,6 +57,11 @@ public abstract class EpollAgent implements Agent {
     }
 
     @Override
+    public void onStart() {
+        log.debug("Starting with timeout value of {} milliseconds", timeout);
+    }
+
+    @Override
     public int doWork() {
 
         // Add new connections to our watch list

@@ -2,12 +2,15 @@ package de.hhu.bsinfo.neutrino.api.network.impl.util;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.network.NetworkConfiguration;
-import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
 import de.hhu.bsinfo.neutrino.util.FileDescriptor;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
+
+@Slf4j
 public @Data class QueuePairResources {
 
     private final CompletionQueue sendCompletionQueue;
@@ -32,7 +35,7 @@ public @Data class QueuePairResources {
 
         // Set send completion channel file descriptor into
         // non-blocking mode and enable notifications
-        sendFileDescriptor.setMode(FileDescriptor.OpenMode.NONBLOCK);
+        sendFileDescriptor.setFlags(FileDescriptor.OpenMode.NONBLOCK);
         sendCompletionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
 
         // Create a completion channel, a completion queue and
@@ -43,7 +46,7 @@ public @Data class QueuePairResources {
 
         // Set receive completion channel file descriptor into
         // non-blocking mode and enable notifications
-        receiveFileDescriptor.setMode(FileDescriptor.OpenMode.NONBLOCK);
+        receiveFileDescriptor.setFlags(FileDescriptor.OpenMode.NONBLOCK);
         receiveCompletionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
 
         return new QueuePairResources(

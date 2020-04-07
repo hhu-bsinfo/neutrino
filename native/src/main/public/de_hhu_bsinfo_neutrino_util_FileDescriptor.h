@@ -17,11 +17,19 @@ JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_FileDescriptor_close0
 
 /*
  * Class:     de_hhu_bsinfo_neutrino_util_FileDescriptor
- * Method:    setMode0
+ * Method:    setFlags0
  * Signature: (II)I
  */
-JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_FileDescriptor_setMode0
+JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_FileDescriptor_setFlags0
   (JNIEnv *, jclass, jint, jint);
+
+/*
+ * Class:     de_hhu_bsinfo_neutrino_util_FileDescriptor
+ * Method:    getFlags0
+ * Signature: (I)I
+ */
+JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_FileDescriptor_getFlags0
+  (JNIEnv *, jclass, jint);
 
 #ifdef __cplusplus
 }

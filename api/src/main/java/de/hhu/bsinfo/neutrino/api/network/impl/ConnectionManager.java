@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -108,11 +109,34 @@ public class ConnectionManager {
     }
 
     private InternalConnection createConnection(QueuePair queuePair, QueuePairResources queuePairResources) {
+
+        // Query queue pair attributes to set initial queue pair state
         var attributes = queuePair.queryAttributes(QueuePair.AttributeFlag.CAP);
         var state = new QueuePairState(attributes.capabilities.getMaxSendWorkRequests(), 0);
+
+        // Create event file descriptor for tracking free space on the queue pair
         var queueDescriptor = EventFileDescriptor.create(attributes.capabilities.getMaxSendWorkRequests(), EventFileDescriptor.OpenMode.NONBLOCK);
+
+        // Get the next connection id
+        var id = connectionCounter.getAndIncrement();
+
+        log.debug("Creating new connection #{}", id);
+
+        log.debug("  | eventfd - 0x{} - {}",
+                Long.toHexString(queueDescriptor.getHandle()),
+                Arrays.toString(queueDescriptor.getFlags()));
+
+        log.debug("  | sendcc  - 0x{} - {}",
+                Long.toHexString(queuePairResources.getSendFileDescriptor().getHandle()),
+                Arrays.toString(queuePairResources.getSendFileDescriptor().getFlags()));
+
+        log.debug("  | rcvcc   - 0x{} - {}",
+                Long.toHexString(queuePairResources.getReceiveFileDescriptor().getHandle()),
+                Arrays.toString(queuePairResources.getReceiveFileDescriptor().getFlags()));
+
+        // Create a new connection
         return InternalConnection.builder()
-                .id(connectionCounter.getAndIncrement())
+                .id(id)
                 .localId(device.getPortAttributes().getLocalId())
                 .portNumber(deviceConfig.getPortNumber())
                 .queuePair(queuePair)

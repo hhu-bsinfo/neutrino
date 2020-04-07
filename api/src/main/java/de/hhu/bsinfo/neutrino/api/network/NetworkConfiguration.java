@@ -135,4 +135,9 @@ public interface NetworkConfiguration {
      * The number of workers for receive operations.
      */
     int getReceiveWorker();
+
+    /**
+     * The epoll timeout.
+     */
+    int getEpollTimeout();
 }

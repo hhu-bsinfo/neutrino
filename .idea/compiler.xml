@@ -8,7 +8,7 @@
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.10/625fc0055674dff70dbc76efa36d0f2c89b04a24/lombok-1.18.10.jar" />
         </processorPath>
-        <module name="Projekte.neutrino.rsocket.main" />
+        <module name="neutrino.rsocket.main" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -38,25 +38,12 @@
       <module name="neutrino-example_test" target="11" />
       <module name="neutrino-rsocket-transport-neutrino_main" target="11" />
       <module name="neutrino-rsocket-transport-neutrino_test" target="11" />
-      <module name="neutrino.api.main" target="11" />
-      <module name="neutrino.api.test" target="11" />
-      <module name="neutrino.benchmark.jmh" target="11" />
-      <module name="neutrino.benchmark.main" target="11" />
-      <module name="neutrino.benchmark.test" target="11" />
-      <module name="neutrino.codegen.main" target="11" />
-      <module name="neutrino.codegen.test" target="11" />
-      <module name="neutrino.core.main" target="11" />
-      <module name="neutrino.core.test" target="11" />
       <module name="neutrino.engine.main" target="11" />
       <module name="neutrino.engine.test" target="11" />
-      <module name="neutrino.example.main" target="11" />
-      <module name="neutrino.example.test" target="11" />
       <module name="neutrino.neutrino.main" target="11" />
       <module name="neutrino.neutrino.test" target="11" />
       <module name="neutrino.rsocket-transport-neutrino.main" target="11" />
       <module name="neutrino.rsocket-transport-neutrino.test" target="11" />
-      <module name="neutrino.rsocket.main" target="11" />
-      <module name="neutrino.rsocket.test" target="11" />
       <module name="Projekte.neutrino.rsocket.main" target="11" />
       <module name="Projekte.neutrino.rsocket.test" target="11" />
       <module name="rsocket-core_jmh" target="11" />
