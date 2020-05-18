@@ -7,8 +7,7 @@ JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_FileDescriptor_close0 (J
 }
 
 JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_FileDescriptor_setFlags0 (JNIEnv *env, jclass clazz, jint fd, jint mode) {
-    auto flags =  fcntl(fd, F_GETFL);
-    return fcntl(fd, F_SETFL, flags | mode);
+    return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | mode);
 }
 
 JNIEXPORT jint JNICALL Java_de_hhu_bsinfo_neutrino_util_FileDescriptor_getFlags0 (JNIEnv *env, jclass clazz, jint fd) {

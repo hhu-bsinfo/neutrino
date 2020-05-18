@@ -6,6 +6,7 @@ import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import org.agrona.BitUtil;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.io.IOException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -23,7 +24,7 @@ public class QueuePoller {
         return completions.getCapacity();
     }
 
-    public int drain(CompletionQueue completionQueue, InternalConnection connection, BiConsumer<InternalConnection, WorkCompletion> operation) {
+    public int drain(CompletionQueue completionQueue, InternalConnection connection, BiConsumer<InternalConnection, WorkCompletion> operation) throws IOException {
 
         // Remember how many work completions we processed in total
         var processed = 0;
@@ -36,7 +37,7 @@ public class QueuePoller {
         return processed;
     }
 
-    public int poll(CompletionQueue completionQueue, InternalConnection connection, BiConsumer<InternalConnection, WorkCompletion> operation) {
+    public int poll(CompletionQueue completionQueue, InternalConnection connection, BiConsumer<InternalConnection, WorkCompletion> operation) throws IOException {
 
         // Poll the completion queue
         completionQueue.poll(completions);
@@ -54,7 +55,7 @@ public class QueuePoller {
         return length;
     }
 
-    public CompletionQueue.WorkCompletionArray poll(CompletionQueue completionQueue) {
+    public CompletionQueue.WorkCompletionArray poll(CompletionQueue completionQueue) throws IOException {
         completionQueue.poll(completions);
         return completions;
     }

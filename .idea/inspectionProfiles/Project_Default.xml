@@ -1529,7 +1529,7 @@
     <inspection_tool class="TimeToString" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="TodoComment" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="TooBroadScope" enabled="true" level="ERROR" enabled_by_default="false">
-      <scope name="Production" level="ERROR" enabled="true">
+      <scope name="Production" level="ERROR" enabled="false">
         <option name="m_allowConstructorAsInitializer" value="false" />
         <option name="m_onlyLookAtBlocks" value="false" />
       </scope>

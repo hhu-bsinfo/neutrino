@@ -4,18 +4,19 @@ import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.ConnectionEvent;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.EpollWatchList;
 import de.hhu.bsinfo.neutrino.util.Epoll;
+import de.hhu.bsinfo.neutrino.util.function.ThrowingBiConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.QueuedPipe;
 import org.agrona.hints.ThreadHints;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.BiConsumer;
 
 @Slf4j
 public abstract class EpollAgent implements Agent {
-
 
     private static final int WAIT_INDEFINITELY = -1;
 
@@ -44,7 +45,7 @@ public abstract class EpollAgent implements Agent {
     /**
      * Method reference for connection processor function.
      */
-    private final BiConsumer<InternalConnection, ConnectionEvent> consumer = this::processConnection;
+    private final ThrowingBiConsumer<InternalConnection, ConnectionEvent> consumer = this::processConnection;
 
     protected EpollAgent(int timeout, ConnectionEvent... events) {
         watchList = new EpollWatchList<>(MAX_CONNECTIONS);
@@ -58,11 +59,11 @@ public abstract class EpollAgent implements Agent {
 
     @Override
     public void onStart() {
-        log.debug("Starting with timeout value of {} milliseconds", timeout);
+
     }
 
     @Override
-    public int doWork() {
+    public int doWork() throws Exception {
 
         // Add new connections to our watch list
         if (!connectionPipe.isEmpty()) {
@@ -107,5 +108,5 @@ public abstract class EpollAgent implements Agent {
     /**
      * Called every time a connection becomes ready (readable/writeable).
      */
-    protected abstract void processConnection(InternalConnection connection, ConnectionEvent event);
+    protected abstract void processConnection(InternalConnection connection, ConnectionEvent event) throws IOException;
 }

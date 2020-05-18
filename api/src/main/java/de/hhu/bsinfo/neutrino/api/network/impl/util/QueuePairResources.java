@@ -8,6 +8,7 @@ import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 @Slf4j
@@ -25,7 +26,7 @@ public @Data class QueuePairResources {
 
     private final FileDescriptor receiveFileDescriptor;
 
-    public static QueuePairResources create(InfinibandDevice device, NetworkConfiguration config) {
+    public static QueuePairResources create(InfinibandDevice device, NetworkConfiguration config) throws IOException {
 
         // Create a completion channel, a completion queue and
         // a file descriptor for processing send operations
@@ -36,7 +37,7 @@ public @Data class QueuePairResources {
         // Set send completion channel file descriptor into
         // non-blocking mode and enable notifications
         sendFileDescriptor.setFlags(FileDescriptor.OpenMode.NONBLOCK);
-        sendCompletionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
+        sendCompletionQueue.requestNotification(CompletionQueue.NotificationType.ALL);
 
         // Create a completion channel, a completion queue and
         // a file descriptor for receive operations
@@ -47,7 +48,7 @@ public @Data class QueuePairResources {
         // Set receive completion channel file descriptor into
         // non-blocking mode and enable notifications
         receiveFileDescriptor.setFlags(FileDescriptor.OpenMode.NONBLOCK);
-        receiveCompletionQueue.requestNotification(CompletionQueue.ALL_EVENTS);
+        receiveCompletionQueue.requestNotification(CompletionQueue.NotificationType.ALL);
 
         return new QueuePairResources(
                 sendCompletionQueue, sendCompletionChannel, sendFileDescriptor,

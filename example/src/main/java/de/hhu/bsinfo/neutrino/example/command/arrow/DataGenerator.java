@@ -29,8 +29,8 @@ public class DataGenerator implements Runnable {
 
     @Override
     public void run() {
-        var allocator = new RootAllocator(Integer.MAX_VALUE);
-        var phoneBook = PhoneBook.create(allocator, rows);
-        phoneBook.writeTo(output);
+//        var allocator = new RootAllocator(Integer.MAX_VALUE);
+//        var phoneBook = PhoneBook.create(allocator, rows);
+//        phoneBook.writeTo(output);
     }
 }

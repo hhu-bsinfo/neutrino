@@ -2,20 +2,16 @@ package de.hhu.bsinfo.neutrino.api.network.impl;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDeviceConfig;
-import de.hhu.bsinfo.neutrino.api.network.Connection;
-import de.hhu.bsinfo.neutrino.api.network.Negotiator;
-import de.hhu.bsinfo.neutrino.api.network.NetworkConfiguration;
+import de.hhu.bsinfo.neutrino.api.network.*;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.AgentResources;
-import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;
 import de.hhu.bsinfo.neutrino.api.util.QueuePairAddress;
 import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
 import de.hhu.bsinfo.neutrino.verbs.*;
 import lombok.extern.slf4j.Slf4j;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 
-import java.net.InetSocketAddress;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,11 +42,9 @@ public class ConnectionManager {
         this.sharedResources = sharedResources;
     }
 
-    public InternalConnection connect(Negotiator negotiator, Mtu mtu, SharedReceiveQueue receiveQueue, AgentResources sendResources, AgentResources receiveResources) {
+    public InternalConnection connect(Negotiator negotiator, Mtu mtu, NetworkHandler networkHandler, SharedReceiveQueue receiveQueue, AgentResources agentResources, NetworkService networkService) throws IOException {
 
-
-        var sendProtectionDomain = sendResources.protectionDomain();
-        var receiveProtectionDomain = receiveResources.protectionDomain();
+        var sendProtectionDomain = agentResources.protectionDomain();
 
         // Create resources for new queue pair
         var queuePairResources = QueuePairResources.create(device, networkConfig);
@@ -62,7 +56,7 @@ public class ConnectionManager {
         var queuePair = createQueuePair(initialAttributes, sendProtectionDomain);
 
         // Create new connection
-        var connection = createConnection(queuePair, queuePairResources);
+        var connection = createConnection(queuePair, queuePairResources, networkHandler, networkService);
 
         // Exchange queue pair information with remote peer
         var remote = exchangeInfo(negotiator, connection);
@@ -77,8 +71,8 @@ public class ConnectionManager {
         return connection;
     }
 
-    public InternalConnection get(Connection connection) {
-        return get(connection.getId());
+    public InternalConnection get(InfinibandChannel infinibandChannel) {
+        return get(infinibandChannel.getId());
     }
 
     private InternalConnection get(int id) {
@@ -97,7 +91,7 @@ public class ConnectionManager {
         ).withSharedReceiveQueue(receiveQueue).build();
     }
 
-    private QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes, ProtectionDomain protectionDomain) {
+    private QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes, ProtectionDomain protectionDomain) throws IOException {
         var queuePair = protectionDomain.createQueuePair(initialAttributes);
         queuePair.modify(new QueuePair.Attributes.Builder()
                 .withState(QueuePair.State.INIT)
@@ -108,31 +102,19 @@ public class ConnectionManager {
         return queuePair;
     }
 
-    private InternalConnection createConnection(QueuePair queuePair, QueuePairResources queuePairResources) {
+    private InternalConnection createConnection(QueuePair queuePair, QueuePairResources queuePairResources, NetworkHandler networkHandler, NetworkService networkService) {
 
         // Query queue pair attributes to set initial queue pair state
         var attributes = queuePair.queryAttributes(QueuePair.AttributeFlag.CAP);
         var state = new QueuePairState(attributes.capabilities.getMaxSendWorkRequests(), 0);
 
         // Create event file descriptor for tracking free space on the queue pair
-        var queueDescriptor = EventFileDescriptor.create(attributes.capabilities.getMaxSendWorkRequests(), EventFileDescriptor.OpenMode.NONBLOCK);
+        var queueDescriptor = EventFileDescriptor.create(1, EventFileDescriptor.OpenMode.NONBLOCK);
 
         // Get the next connection id
         var id = connectionCounter.getAndIncrement();
 
-        log.debug("Creating new connection #{}", id);
-
-        log.debug("  | eventfd - 0x{} - {}",
-                Long.toHexString(queueDescriptor.getHandle()),
-                Arrays.toString(queueDescriptor.getFlags()));
-
-        log.debug("  | sendcc  - 0x{} - {}",
-                Long.toHexString(queuePairResources.getSendFileDescriptor().getHandle()),
-                Arrays.toString(queuePairResources.getSendFileDescriptor().getFlags()));
-
-        log.debug("  | rcvcc   - 0x{} - {}",
-                Long.toHexString(queuePairResources.getReceiveFileDescriptor().getHandle()),
-                Arrays.toString(queuePairResources.getReceiveFileDescriptor().getFlags()));
+        var channel = new InfinibandChannel(id, networkService);
 
         // Create a new connection
         return InternalConnection.builder()
@@ -143,6 +125,8 @@ public class ConnectionManager {
                 .resources(queuePairResources)
                 .state(state)
                 .queueFileDescriptor(queueDescriptor)
+                .networkHandler(networkHandler)
+                .channel(channel)
                 .build();
     }
 
@@ -153,7 +137,7 @@ public class ConnectionManager {
                 .queuePairNumber(connection.getQueuePair().getQueuePairNumber()).build());
     }
 
-    private void connect(QueuePair queuePair, QueuePairAddress remote, Mtu mtu) {
+    private void connect(QueuePair queuePair, QueuePairAddress remote, Mtu mtu) throws IOException {
         queuePair.modify(QueuePair.Attributes.Builder
                 .buildReadyToReceiveAttributesRC(remote.getQueuePairNumber(), remote.getLocalId(), remote.getPortNumber())
                 .withPathMtu(device.getPortAttributes().getMaxMtu())

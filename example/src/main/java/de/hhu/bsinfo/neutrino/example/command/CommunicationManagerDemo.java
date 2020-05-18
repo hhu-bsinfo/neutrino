@@ -7,6 +7,7 @@ import de.hhu.bsinfo.neutrino.verbs.QueuePair;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 
 @Slf4j
@@ -36,14 +37,18 @@ public class CommunicationManagerDemo implements Runnable {
 
     @Override
     public void run() {
-        if (isServer) {
-            runServer();
-        } else {
-            runClient();
+        try {
+            if (isServer) {
+                runServer();
+            } else {
+                runClient();
+            }
+        } catch (IOException e) {
+            log.error("Unexpected error", e);
         }
     }
 
-    private void runServer() {
+    private void runServer() throws IOException {
 
         // Create hints
         var hints = new AddressInfo();
@@ -75,7 +80,7 @@ public class CommunicationManagerDemo implements Runnable {
         log.info("Accepted client connection");
     }
 
-    private void runClient() {
+    private void runClient() throws IOException {
 
         // Create hints
         var hints = new AddressInfo();

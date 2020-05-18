@@ -139,16 +139,14 @@ public class WindowTest implements Callable<Void> {
 
                 Thread.sleep(1000);
 
-                if(!context.getWindow().rebind(context.getLocalBuffer(), context.getQueuePair(), i, WINDOW_SIZE, AccessFlag.REMOTE_READ, AccessFlag.ZERO_BASED)) {
-                    System.exit(1);
-                }
+                context.getWindow().rebind(context.getLocalBuffer(), context.getQueuePair(), i, WINDOW_SIZE, AccessFlag.REMOTE_READ, AccessFlag.ZERO_BASED);
             }
 
             first = false;
         }
     }
 
-    private void sendWindowKey() {
+    private void sendWindowKey() throws IOException {
         sendRemoteKeyRequest.setImmediateData(context.getWindow().getRemoteKey());
 
         context.getQueuePair().postSend(sendRemoteKeyRequest);
@@ -156,13 +154,13 @@ public class WindowTest implements Callable<Void> {
         while(poll() == 0) {}
     }
 
-    private void receiveWindowKey() {
+    private void receiveWindowKey() throws IOException {
         context.getQueuePair().postReceive(receiveRemoteKeyRequest);
 
         while(poll() == 0) {}
     }
 
-    private void readRemoteWindow() {
+    private void readRemoteWindow() throws IOException {
         readRemoteWindowRequest.rdma.setRemoteKey(remoteWindowKey);
 
         context.getQueuePair().postSend(readRemoteWindowRequest);
@@ -170,7 +168,7 @@ public class WindowTest implements Callable<Void> {
         while(poll() == 0) {}
     }
 
-    private int poll() {
+    private int poll() throws IOException {
         var completionQueue = context.getCompletionQueue();
 
         completionQueue.poll(completionArray);

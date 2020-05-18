@@ -2,12 +2,16 @@ package de.hhu.bsinfo.neutrino.api.device.impl;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDeviceConfig;
-import de.hhu.bsinfo.neutrino.api.util.Buffer;
-import de.hhu.bsinfo.neutrino.buffer.RegisteredBuffer;
+import de.hhu.bsinfo.neutrino.api.util.MemoryUtil;
+import de.hhu.bsinfo.neutrino.api.util.RegisteredBuffer;
+import de.hhu.bsinfo.neutrino.api.util.UnsafeRegisteredBuffer;
+import de.hhu.bsinfo.neutrino.util.MemoryAlignment;
 import de.hhu.bsinfo.neutrino.verbs.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 import java.util.Objects;
 
 @Slf4j
@@ -29,13 +33,16 @@ public class InternalInfinibandDevice implements InfinibandDevice {
      */
     private final DeviceAttributes deviceAttributes;
 
+    /**
+     * The protection domain used by this InfiniBand Device.
+     */
     private final ProtectionDomain protectionDomain;
 
-    public InternalInfinibandDevice(InfinibandDeviceConfig config) {
-        context = Objects.requireNonNull(Context.openDevice(config.getDeviceNumber()), "Opening device context failed");
-        deviceAttributes = Objects.requireNonNull(context.queryDevice(), "Querying device failed");
-        portAttributes = Objects.requireNonNull(context.queryPort(config.getPortNumber()), "Querying device port failed");
-        protectionDomain = Objects.requireNonNull(context.allocateProtectionDomain(), "Allocating protection domain failed");
+    public InternalInfinibandDevice(InfinibandDeviceConfig config) throws IOException {
+        context = Context.openDevice(config.getDeviceNumber());
+        deviceAttributes = context.queryDevice();
+        portAttributes = context.queryPort(config.getPortNumber());
+        protectionDomain = context.allocateProtectionDomain();
     }
 
     @Override
@@ -49,37 +56,44 @@ public class InternalInfinibandDevice implements InfinibandDevice {
     }
 
     @Override
-    public Buffer allocateMemory(int capacity) {
-        return Buffer.allocate(capacity, this::wrapRegion);
+    public RegisteredBuffer allocateMemory(int capacity) throws IOException {
+        return allocateMemory(capacity, MemoryAlignment.CACHE);
     }
 
     @Override
-    public MemoryRegion wrapRegion(long handle, long capacity, AccessFlag... accessFlags) {
-        return Objects.requireNonNull(protectionDomain.registerMemoryRegion(handle, capacity, accessFlags), "Registering memory region failed");
+    public RegisteredBuffer allocateMemory(int capacity, MemoryAlignment alignment) throws IOException {
+        var memory = MemoryUtil.allocateAligned(capacity, alignment);
+        var region = wrapRegion(memory.addressOffset(), memory.capacity(), MemoryRegion.DEFAULT_ACCESS_FLAGS);
+        return new UnsafeRegisteredBuffer(memory, region);
     }
 
     @Override
-    public QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes) {
-        return Objects.requireNonNull(protectionDomain.createQueuePair(initialAttributes), "Creating queue pair failed");
+    public MemoryRegion wrapRegion(long handle, long capacity, AccessFlag... accessFlags) throws IOException {
+        return protectionDomain.registerMemoryRegion(handle, capacity, accessFlags);
     }
 
     @Override
-    public SharedReceiveQueue createSharedReceiveQueue(SharedReceiveQueue.InitialAttributes initialAttributes) {
-        return Objects.requireNonNull(protectionDomain.createSharedReceiveQueue(initialAttributes), "Creating shared receive queue failed");
+    public QueuePair createQueuePair(QueuePair.InitialAttributes initialAttributes) throws IOException {
+        return protectionDomain.createQueuePair(initialAttributes);
     }
 
     @Override
-    public CompletionQueue createCompletionQueue(int capacity, @Nullable CompletionChannel channel) {
-        return Objects.requireNonNull(context.createCompletionQueue(capacity, channel), "Creating completion queue failed");
+    public SharedReceiveQueue createSharedReceiveQueue(SharedReceiveQueue.InitialAttributes initialAttributes) throws IOException {
+        return protectionDomain.createSharedReceiveQueue(initialAttributes);
     }
 
     @Override
-    public CompletionChannel createCompletionChannel() {
-        return Objects.requireNonNull(context.createCompletionChannel(), "Creating completion channel failed");
+    public CompletionQueue createCompletionQueue(int capacity, @Nullable CompletionChannel channel) throws IOException {
+        return context.createCompletionQueue(capacity, channel);
     }
 
     @Override
-    public AsyncEvent getAsyncEvent() {
+    public CompletionChannel createCompletionChannel() throws IOException {
+        return context.createCompletionChannel();
+    }
+
+    @Override
+    public AsyncEvent getAsyncEvent() throws IOException {
         return context.getAsyncEvent();
     }
 
@@ -89,7 +103,7 @@ public class InternalInfinibandDevice implements InfinibandDevice {
     }
 
     @Override
-    public ThreadDomain createThreadDomain(ThreadDomain.InitialAttributes attributes) {
+    public ThreadDomain createThreadDomain(ThreadDomain.InitialAttributes attributes) throws IOException {
         return context.allocateThreadDomain(attributes);
     }
 }

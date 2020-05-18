@@ -4,16 +4,17 @@ import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.api.network.impl.NetworkMetrics;
 import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
-import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
+import de.hhu.bsinfo.neutrino.api.network.impl.metrics.SendMetrics;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
 import de.hhu.bsinfo.neutrino.util.BitMask;
 import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
 import de.hhu.bsinfo.neutrino.verbs.ThreadDomain;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
-import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 
 @Slf4j
@@ -34,9 +35,9 @@ public class SendAgent extends EpollAgent {
     private final BufferPool bufferPool;
 
     /**
-     * Helper object for aggregating operations.
+     * Helper object used to process the connection's request ring buffer.
      */
-    private final OperationAggregator aggregator;
+    private final RequestProcessor requestProcessor = new RequestProcessor();
 
     /**
      * Helper object used to poll completion queues.
@@ -53,19 +54,32 @@ public class SendAgent extends EpollAgent {
      */
     private final NetworkMetrics metrics;
 
-    public SendAgent(SharedResources sharedResources) {
+    /**
+     * Metrics regarding this send agent.
+     */
+    private final SendMetrics sendMetrics;
+
+    public SendAgent(int index, SharedResources sharedResources) throws IOException {
         super(sharedResources.networkConfig().getEpollTimeout(), INTERESTS);
 
         var device = sharedResources.device();
         var deviceConfig = sharedResources.deviceConfig();
         var networkConfig = sharedResources.networkConfig();
 
+        ThreadDomain threadDomain = null;
         var attributes = new ThreadDomain.InitialAttributes();
-        var threadDomain = device.createThreadDomain(attributes);
+
+        try {
+            threadDomain = device.createThreadDomain(attributes);
+        } catch (IOException ignored) {
+        } finally {
+            if (threadDomain != null) {
+                threadDomain.close();
+            }
+        }
 
         ProtectionDomain protectionDomain;
         if (threadDomain == null) {
-            log.info("Thread domains are not supported. Falling back to global protection domain");
             protectionDomain = device.getProtectionDomain();
         } else {
             protectionDomain = device.getProtectionDomain().allocateParentDomain(threadDomain);
@@ -73,8 +87,7 @@ public class SendAgent extends EpollAgent {
 
         metrics = sharedResources.networkMetrics();
         queuePoller = new QueuePoller(MAX_BATCH_SIZE);
-        bufferPool = new BufferPool(device::wrapRegion, networkConfig.getQueuePairSize(), networkConfig.getMtu());
-        aggregator = OperationAggregator.create(MAX_BATCH_SIZE);
+        bufferPool = new BufferPool(device::wrapRegion, networkConfig.getQueuePairSize() << 8, networkConfig.getMtu());
         resources = AgentResources.builder()
                 .device(device)
                 .deviceConfig(deviceConfig)
@@ -82,10 +95,12 @@ public class SendAgent extends EpollAgent {
                 .threadDomain(threadDomain)
                 .protectionDomain(protectionDomain)
                 .build();
+
+        sendMetrics = new SendMetrics(sharedResources.meterRegistry(), index);
     }
 
     @Override
-    protected void processConnection(InternalConnection connection, ConnectionEvent event) {
+    protected void processConnection(InternalConnection connection, ConnectionEvent event) throws IOException {
         switch (event) {
 
             // The queue has free slots
@@ -104,17 +119,17 @@ public class SendAgent extends EpollAgent {
         }
     }
 
-    long lastLogTime = 0;
-    long messagesPerSecond = 0;
-
-    private void onSendReady(InternalConnection connection) {
+    private void onSendReady(InternalConnection connection) throws IOException {
 
         // Get connection resources
-        var resources = connection.getResources();
+        final var resources = connection.getResources();
+        final var state = connection.getState();
 
         // Get the completion queue on which the event occured
-        var channel = resources.getSendCompletionChannel();
-        var queue = resources.getSendCompletionQueue();
+        final var channel = resources.getSendCompletionChannel();
+        final var queue = resources.getSendCompletionQueue();
+
+//        sendMetrics.ackTime().start();
 
         // We can ignore the completion event, since we know
         // the completion queue the event was generated for
@@ -124,86 +139,53 @@ public class SendAgent extends EpollAgent {
         queue.acknowledgeEvent();
         queue.requestNotification();
 
+//        sendMetrics.ackTime().stop();
+
         // Drain the completion queue
         var processed = queuePoller.drain(queue, connection, completionHandler);
-        metrics.decrementSendRequests(processed);
+//        sendMetrics.processedRequests().increment(processed);
 
-        messagesPerSecond += processed;
-        if (System.currentTimeMillis() - lastLogTime > 1000) {
-            log.info("{} mps", messagesPerSecond);
-            messagesPerSecond = 0;
-            lastLogTime = System.currentTimeMillis();
-        }
-
-        // Increment free slots
-        connection.onProcessed(processed);
+        // Decrease pending requests
+        state.decrementPending(processed);
     }
 
-    private void onQueueReady(InternalConnection connection) {
+    private void onQueueReady(InternalConnection connection) throws IOException {
 
-        // Return early if no subscriber is registered
-        var currentSubscribers = connection.getSubscribers();
-        if (currentSubscribers.length == 0) {
+        // Return early if the queue pair has no free slots left
+        final var state = connection.getState();
+        final var remaining = state.remaining();
+        if (remaining == 0) {
             return;
         }
 
-        // Get the number of free slots. This operation
-        // will reset the counter's value.
-        var freeSlots = connection.getFreeSlots();
+        // Query the number of requests queued within this connection
+        final var requests = connection.getRequestBuffer();
 
-        // Reset the aggregator
-        aggregator.reset();
+//        sendMetrics.postTime().start();
 
-        // Iterate over all publishers and post their operations in form of send work requests
-        // onto the queue pair's send work request queue.
-        for (OperationSubscriber subscriber : currentSubscribers) {
+        // Process outstanding requests
+        requestProcessor.reset();
+        var bytes = requests.read(requestProcessor, remaining);
 
-            // Break out of loop if there is no space left
-            if (freeSlots == 0 || aggregator.remaining() == 0) {
-                break;
-            }
+        // Commit the processed requests onto the connection's queue pair
+        var commited = requestProcessor.commit(connection.getQueuePair());
 
-            // Remove the current publisher if it has completed
-            if (subscriber.hasCompleted()) {
-                connection.onCompletion(subscriber);
-                continue;
-            }
+//        sendMetrics.postTime().stop();
+//        sendMetrics.postedRequests().increment(commited);
 
-            // Drain the current subscriber's operation queue
-            aggregator.setCurrentIdentifier(subscriber.getId());
-            var operationCount = subscriber.drain(aggregator, Math.min(freeSlots, aggregator.remaining()));
-            freeSlots -= operationCount;
+        // Increment the number of pending work requests
+        state.incrementPending(commited);
 
-            subscriber.incrementPending(operationCount);
-
-            // Request more operations
-            if (operationCount > 0) {
-                subscriber.request(operationCount);
-            }
-        }
-
-        // Post the aggregated work requests to the queue pair
-        var queuePair = connection.getQueuePair();
-        var postedRequests = aggregator.commit(queuePair);
-        metrics.incrementSendRequests(postedRequests);
-
-        // Write back free slots
-        if (freeSlots > 0) {
-            connection.onProcessed(freeSlots);
-        }
+        // Release the bytes commited to the connection's queue pair
+        requests.commitRead(bytes);
     }
 
     private void handleWorkCompletion(InternalConnection connection, WorkCompletion workCompletion) {
 
         // Get the associated subscriber
         var identifier = workCompletion.getId();
-        var subscriber = connection.getOutboundSubscriber(identifier);
-
-        // Check work completion status
-        var status = workCompletion.getStatus();
-        if (status != WorkCompletion.Status.SUCCESS) {
-            subscriber.signalError(new IOException(workCompletion.getStatusMessage()));
-        }
+        var userContext = Identifier.getContext(identifier);
+        var handler = connection.getNetworkHandler();
 
         // Handle work completion
         var opCode = workCompletion.getOpCode();
@@ -225,14 +207,15 @@ public class SendAgent extends EpollAgent {
                 break;
         }
 
-        // Decrement the subscriber's counter
-        subscriber.decrementPending(1);
-
-        // Check if all requests were processed
-        if (subscriber.hasCompleted() && !subscriber.hasPending()) {
-            subscriber.signalCompletion();
-            connection.remove(subscriber);
+        // Check work completion status
+        var status = workCompletion.getStatus();
+        if (status != WorkCompletion.Status.SUCCESS) {
+            log.error("Send work request #{} ({}) failed with status {}", userContext, workCompletion.getOpCode(), status);
+            handler.onRequestFailed(connection.getChannel(), userContext);
+            return;
         }
+
+        handler.onRequestCompleted(connection.getChannel(), userContext);
     }
 
     private void onSendCompletion(long identifier) {
@@ -267,14 +250,17 @@ public class SendAgent extends EpollAgent {
         // Nothing to do
     }
 
-    public final BufferPool.PooledBuffer copyOf(ByteBuf buffer) {
-        var target = bufferPool.claim();
+    public BufferPool.PooledBuffer claim() {
+//        var start = System.nanoTime();
+        var buffer = bufferPool.claim();
+//        metrics.claimTime().record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+        return buffer;
+    }
 
-        // Copy bytes into send buffer
-        target.writeBytes(buffer);
-        buffer.release();
-
-        return target;
+    @Override
+    public void onStart() {
+        super.onStart();
+        log.debug("Using {}", bufferPool);
     }
 
     public AgentResources getResources() {

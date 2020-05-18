@@ -9,7 +9,7 @@ class EventLoopGroupTest {
 
     @Test
     public void testSimpleGroup() throws InterruptedException {
-        var group = new EventLoopGroup("test", () -> BusySpinIdleStrategy.INSTANCE);
+        var group = new EventLoopGroup<>("test", () -> BusySpinIdleStrategy.INSTANCE);
         group.waitOnStart();
 
         for (int i = 0; i < group.size(); i++) {
@@ -40,5 +40,4 @@ class EventLoopGroupTest {
             return "null";
         }
     }
-
 }

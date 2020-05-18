@@ -38,7 +38,8 @@ repositories {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    
+
+    implementation project(':api')
     implementation project(':core')
 
     implementation group: 'info.picocli', name: 'picocli', version: '0.9.5'

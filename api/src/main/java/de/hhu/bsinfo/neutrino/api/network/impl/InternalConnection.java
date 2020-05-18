@@ -1,26 +1,27 @@
 package de.hhu.bsinfo.neutrino.api.network.impl;
 
+import de.hhu.bsinfo.neutrino.api.network.InfinibandChannel;
+import de.hhu.bsinfo.neutrino.api.network.NetworkHandler;
+import de.hhu.bsinfo.neutrino.api.network.RemoteHandle;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.ReceiveAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.SendAgent;
-import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.FluxReceive;
-import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.Identifier;
-import de.hhu.bsinfo.neutrino.api.network.impl.util.OperationStore;
+import de.hhu.bsinfo.neutrino.api.network.impl.buffer.RequestBuffer;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairResources;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.QueuePairState;
+import de.hhu.bsinfo.neutrino.api.util.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
+import de.hhu.bsinfo.neutrino.util.MemoryAlignment;
 import de.hhu.bsinfo.neutrino.verbs.QueuePair;
-import io.netty.buffer.ByteBuf;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.reactivestreams.Subscriber;
+import org.agrona.DirectBuffer;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 @Slf4j
 @Builder
-public @Data class InternalConnection {
+public final @Data class InternalConnection {
 
     /**
      * This connection's unique identifier.
@@ -53,19 +54,24 @@ public @Data class InternalConnection {
     private final QueuePairState state;
 
     /**
-     * Used for signaling free slots within the send queue.
+     * Used for signaling free slots on the queue pair.
      */
     private final EventFileDescriptor queueFileDescriptor;
 
     /**
-     * Helper object containing all active operation subscribers assigned to this connection.
+     * A ring buffer used for storing requests.
      */
-    private final OperationStore operationStore = new OperationStore();
+    private final RequestBuffer requestBuffer = new RequestBuffer(128 * MemoryAlignment.PAGE.value());
 
     /**
-     * Flux emitting received buffers.
+     * The network handler associated with this connection.
      */
-    private final FluxReceive inbound = new FluxReceive();
+    private final NetworkHandler networkHandler;
+
+    /**
+     * The channel associated with this connection.
+     */
+    private final InfinibandChannel channel;
 
     /**
      * The send agent assigned to this connection.
@@ -80,7 +86,6 @@ public @Data class InternalConnection {
     private volatile ReceiveAgent receiveAgent;
     private static final AtomicReferenceFieldUpdater<InternalConnection, ReceiveAgent> RECEIVE_AGENT =
             AtomicReferenceFieldUpdater.newUpdater(InternalConnection.class, ReceiveAgent.class, "receiveAgent");
-
 
     /**
      * Assigns a send agent to this connection.
@@ -100,64 +105,26 @@ public @Data class InternalConnection {
         }
     }
 
-    /**
-     * Adds a new operation subscriber to this connection.
-     */
-    public void addSubscriber(OperationSubscriber subscriber) {
-        operationStore.addSubscriber(subscriber);
+    public void send(int id, DirectBuffer buffer, int offset, int length) {
+        Requests.appendSend(id, sendAgent.claim(), requestBuffer, buffer, offset, length);
     }
 
-    /**
-     * Called after all operations have been commited to this connection's queue pair.
-     */
-    public void onCompletion(OperationSubscriber subscriber) {
-        operationStore.onCompletion(subscriber);
+    public void read(int id, RemoteHandle handle, RegisteredBuffer buffer, int offset, int length) {
+        Requests.appendRead(id, requestBuffer, handle, buffer, offset, length);
     }
 
-    /**
-     * Removes the specified operation subscriber from this connection.
-     */
-    public void remove(OperationSubscriber subscriber) {
-        operationStore.remove(subscriber);
+    public void write(int id, RegisteredBuffer buffer, int offset, int length, RemoteHandle handle) {
+        Requests.appendWrite(id, requestBuffer, buffer, offset, length, handle);
     }
 
-    public OperationSubscriber[] getSubscribers() {
-        return operationStore.getSubscribers();
+
+    public long freeSlots() {
+        return queueFileDescriptor.read();
     }
 
-    /**
-     * Looks up an operation subscriber by its identifier.
-     */
-    public OperationSubscriber getOutboundSubscriber(long identifier) {
-        return operationStore.get(Identifier.getContext(identifier));
+    public void freeSlots(long value) {
+        queueFileDescriptor.increment(value);
     }
 
-    /**
-     * Returns the number of free slots within this connection's queue pair.
-     */
-    public int getFreeSlots() {
-        return (int) queueFileDescriptor.read();
-    }
 
-    /**
-     * Indicate that the specified number of requests have been processed.
-     */
-    public void onProcessed(int count) {
-        state.decrementPending(count);
-        queueFileDescriptor.increment(count);
-    }
-
-    /**
-     * Returns a Flux emitting inbound buffers.
-     */
-    public FluxReceive getInbound() {
-        return inbound;
-    }
-
-    /**
-     * Returns the subscriber listening for incoming data on this connection.
-     */
-    public Subscriber<ByteBuf> getInboundSubscriber() {
-        return inbound.getSubscriber();
-    }
 }

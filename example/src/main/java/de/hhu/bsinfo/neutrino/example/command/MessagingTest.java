@@ -1,6 +1,6 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
+import de.hhu.bsinfo.neutrino.struct.field.NativeLinkedList;
 import de.hhu.bsinfo.neutrino.example.util.ConnectionContext;
 import de.hhu.bsinfo.neutrino.example.util.Result;
 import de.hhu.bsinfo.neutrino.verbs.*;
@@ -194,7 +194,7 @@ public class MessagingTest implements Callable<Void> {
         LOGGER.info("Finished receiving");
     }
 
-    private void send(int amount) {
+    private void send(int amount) throws IOException {
         if(amount == 0) {
             return;
         }
@@ -208,7 +208,7 @@ public class MessagingTest implements Callable<Void> {
         context.getQueuePair().postSend(sendList);
     }
 
-    private void receive(int amount) {
+    private void receive(int amount) throws IOException {
         if(amount == 0) {
             return;
         }
@@ -222,7 +222,7 @@ public class MessagingTest implements Callable<Void> {
         context.getQueuePair().postReceive(receiveList);
     }
 
-    private int poll() {
+    private int poll() throws IOException {
         var completionQueue = context.getCompletionQueue();
 
         completionQueue.poll(completionArray);

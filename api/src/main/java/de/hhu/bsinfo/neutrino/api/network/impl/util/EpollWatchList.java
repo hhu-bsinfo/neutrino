@@ -3,6 +3,7 @@ package de.hhu.bsinfo.neutrino.api.network.impl.util;
 import de.hhu.bsinfo.neutrino.util.Epoll;
 import de.hhu.bsinfo.neutrino.util.EventFileDescriptor;
 import de.hhu.bsinfo.neutrino.util.FileDescriptor;
+import de.hhu.bsinfo.neutrino.util.function.ThrowingBiConsumer;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -59,7 +60,7 @@ public class EpollWatchList<T, S> {
         notifier.increment();
     }
 
-    public int forEach(int timeout, BiConsumer<T, S> operation) {
+    public int forEach(int timeout, ThrowingBiConsumer<T, S> operation) throws Exception {
 
         // Wait for events
         epoll.wait(events, timeout);

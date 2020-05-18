@@ -70,9 +70,7 @@ public class ExtendedConnectionContext extends BaseContext {
 
         LOGGER.info("Created queue pair");
 
-        if(!queuePair.modify(QueuePair.Attributes.Builder.buildInitAttributesRC((short) 0, (byte) 1, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE))) {
-            throw new IOException(("Unable to move queue pair into INIT state"));
-        }
+        queuePair.modify(QueuePair.Attributes.Builder.buildInitAttributesRC((short) 0, (byte) 1, AccessFlag.LOCAL_WRITE, AccessFlag.REMOTE_READ, AccessFlag.REMOTE_WRITE));
 
         LOGGER.info("Moved queue pair into INIT state");
     }
@@ -95,16 +93,12 @@ public class ExtendedConnectionContext extends BaseContext {
 
         LOGGER.info("Received connection information: {}", remoteInfo);
 
-        if(!queuePair.modify(QueuePair.Attributes.Builder.buildReadyToReceiveAttributesRC(
-                remoteInfo.getQueuePairNumber(), remoteInfo.getLocalId(), remoteInfo.getPortNumber()))) {
-            throw new IOException("Unable to move queue pair into RTR state");
-        }
+        queuePair.modify(QueuePair.Attributes.Builder.buildReadyToReceiveAttributesRC(
+                remoteInfo.getQueuePairNumber(), remoteInfo.getLocalId(), remoteInfo.getPortNumber()));
 
         LOGGER.info("Moved queue pair into RTR state");
 
-        if(!queuePair.modify(QueuePair.Attributes.Builder.buildReadyToSendAttributesRC())) {
-            throw new IOException("Unable to move queue pair into RTS state");
-        }
+        queuePair.modify(QueuePair.Attributes.Builder.buildReadyToSendAttributesRC());
 
         LOGGER.info("Moved queue pair into RTS state");
     }
@@ -121,12 +115,12 @@ public class ExtendedConnectionContext extends BaseContext {
         return completionChannel;
     }
 
-    public ExtendedQueuePair getQueuePair() {
+    public ExtendedQueuePair getQueuePair() throws IOException {
         return queuePair.toExtendedQueuePair();
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         queuePair.close();
         completionQueue.close();
         completionChannel.close();

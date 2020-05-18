@@ -172,7 +172,7 @@ public class ExtendedRdmaTest implements Callable<Void> {
         socket.close();
     }
 
-    private void performOperations(int amount) {
+    private void performOperations(int amount) throws IOException {
         if(amount == 0) {
             return;
         }
@@ -193,7 +193,7 @@ public class ExtendedRdmaTest implements Callable<Void> {
         queuePair.completeWorkRequest();
     }
 
-    private int poll() {
+    private int poll() throws IOException {
         var completionQueue = context.getCompletionQueue();
         int count = 0;
 

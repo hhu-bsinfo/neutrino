@@ -32,26 +32,13 @@ protobuf {
     protoc {
         artifact = 'com.google.protobuf:protoc:3.10.0'
     }
-    plugins {
-        rsocketRpc {
-            artifact = 'io.rsocket.rpc:rsocket-rpc-protobuf:0.2.19'
-        }
-    }
-    generateProtoTasks {
-        all()*.plugins {
-            rsocketRpc {}
-        }
-    }
 }
 
 idea {
     module {
         sourceDirs += file("src/main/proto")
-        sourceDirs += file("src/generated/main/java")
-        sourceDirs += file("src/generated/main/rsocketRpc")
 
         generatedSourceDirs += file('src/generated/main/java')
-        generatedSourceDirs += file('src/generated/main/rsocketRpc')
     }
 }
 
@@ -65,15 +52,6 @@ dependencies {
 
     // Neutrino API
     implementation project(':api')
-
-    // Neutrino RSocket binding
-    implementation project(':rsocket')
-
-    // RSocket core library and rpc extension
-    implementation 'io.rsocket:rsocket-core:1.0.0-RC5'
-    implementation('io.rsocket.rpc:rsocket-rpc-core:0.2.17') {
-        exclude group: 'org.slf4j', module: ''
-    }
 
     // Micrometer JMX exporter
     implementation 'io.micrometer:micrometer-registry-jmx'
@@ -93,6 +71,9 @@ dependencies {
 
     // AssertJ
     testImplementation 'org.assertj:assertj-core:3.12.2'
+
+    // HdrHistogram
+    implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok:1.18.10'

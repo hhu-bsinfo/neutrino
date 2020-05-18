@@ -5,6 +5,8 @@ import de.hhu.bsinfo.neutrino.verbs.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+
 public class ContextMonitorThread extends Thread {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ContextMonitorThread.class);
@@ -20,13 +22,17 @@ public class ContextMonitorThread extends Thread {
     public void run() {
         isRunning = true;
 
-        while(isRunning) {
-            AsyncEvent event = context.getAsyncEvent();
+        try {
+            while(isRunning) {
+                AsyncEvent event = context.getAsyncEvent();
 
-            if(event != null) {
-                LOGGER.debug("An AsyncEvent of type {} occurred", event.getEventType());
-                event.acknowledge();
+                if(event != null) {
+                    LOGGER.debug("An AsyncEvent of type {} occurred", event.getEventType());
+                    event.acknowledge();
+                }
             }
+        } catch (IOException e) {
+            LOGGER.error("Unexpected error", e);
         }
     }
 

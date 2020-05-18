@@ -1,6 +1,6 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.data.NativeLinkedList;
+import de.hhu.bsinfo.neutrino.struct.field.NativeLinkedList;
 import de.hhu.bsinfo.neutrino.example.util.RdmaContext;
 import de.hhu.bsinfo.neutrino.example.util.Result;
 import de.hhu.bsinfo.neutrino.verbs.*;
@@ -191,7 +191,7 @@ public class RdmaTest implements Callable<Void> {
         socket.close();
     }
 
-    private void performOperations(int amount) {
+    private void performOperations(int amount) throws IOException {
         if(amount == 0) {
             return;
         }
@@ -205,7 +205,7 @@ public class RdmaTest implements Callable<Void> {
         context.getQueuePair().postSend(sendList);
     }
 
-    private int poll() {
+    private int poll() throws IOException {
         var completionQueue = context.getCompletionQueue();
 
         completionQueue.poll(completionArray);

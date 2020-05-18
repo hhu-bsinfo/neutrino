@@ -3,14 +3,17 @@ package de.hhu.bsinfo.neutrino.api.network.impl.agent;
 import de.hhu.bsinfo.neutrino.api.network.impl.InternalConnection;
 import de.hhu.bsinfo.neutrino.api.network.impl.NetworkMetrics;
 import de.hhu.bsinfo.neutrino.api.network.impl.SharedResources;
+import de.hhu.bsinfo.neutrino.api.network.impl.buffer.ReceiveRing;
+import de.hhu.bsinfo.neutrino.api.network.impl.metrics.ReceiveMetrics;
 import de.hhu.bsinfo.neutrino.api.network.impl.util.*;
-import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
 import de.hhu.bsinfo.neutrino.verbs.ThreadDomain;
 import de.hhu.bsinfo.neutrino.verbs.WorkCompletion;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 @Slf4j
@@ -29,16 +32,6 @@ public class ReceiveAgent extends EpollAgent {
     private final SharedReceiveQueue receiveQueue;
 
     /**
-     * The buffer pool used for receiving data.
-     */
-    private final BufferPool bufferPool;
-
-    /**
-     * Helper object to fill up the receive queue.
-     */
-    private final QueueFiller queueFiller;
-
-    /**
      * Helper object used to poll completion queues.
      */
     private final QueuePoller queuePoller;
@@ -49,11 +42,21 @@ public class ReceiveAgent extends EpollAgent {
     private final BiConsumer<InternalConnection, WorkCompletion> completionHandler = this::handleWorkCompletion;
 
     /**
+     * A ring buffer which holds receive work requests and their corresponding data buffers.
+     */
+    private final ReceiveRing receiveRing;
+
+    /**
      * The network metrics.
      */
     private final NetworkMetrics metrics;
 
-    public ReceiveAgent(SharedResources sharedResources) {
+    /**
+     * Metrics regarding the receive agent.
+     */
+    private final ReceiveMetrics receiveMetrics;
+
+    public ReceiveAgent(int index, SharedResources sharedResources) throws IOException {
         super(sharedResources.networkConfig().getEpollTimeout(), INTERESTS);
 
         var device = sharedResources.device();
@@ -65,12 +68,20 @@ public class ReceiveAgent extends EpollAgent {
                 networkConfig.getMaxScatterGatherElements()
         );
 
+        ThreadDomain threadDomain = null;
         var attributes = new ThreadDomain.InitialAttributes();
-        var threadDomain = device.createThreadDomain(attributes);
+
+        try {
+            threadDomain = device.createThreadDomain(attributes);
+        } catch (IOException ignored) {
+        } finally {
+            if (threadDomain != null) {
+                threadDomain.close();
+            }
+        }
 
         ProtectionDomain protectionDomain;
         if (threadDomain == null) {
-            log.info("Thread domains are not supported. Falling back to global protection domain");
             protectionDomain = device.getProtectionDomain();
         } else {
             protectionDomain = device.getProtectionDomain().allocateParentDomain(threadDomain);
@@ -78,9 +89,10 @@ public class ReceiveAgent extends EpollAgent {
 
         metrics = sharedResources.networkMetrics();
         receiveQueue = protectionDomain.createSharedReceiveQueue(builder.build());
-        bufferPool = new BufferPool(protectionDomain::registerMemoryRegion, receiveQueue.queryAttributes().getMaxWorkRequests() * 2, networkConfig.getMtu());
-        queuePoller = new QueuePoller(receiveQueue.queryAttributes().getMaxWorkRequests());
-        queueFiller = new QueueFiller(bufferPool, receiveQueue.queryAttributes().getMaxWorkRequests());
+        var receiveQueueSize = receiveQueue.queryAttributes().getMaxWorkRequests();
+
+        receiveRing = new ReceiveRing(receiveQueueSize * 2, protectionDomain::registerMemoryRegion);
+        queuePoller = new QueuePoller(receiveQueueSize);
         resources = AgentResources.builder()
                 .device(device)
                 .deviceConfig(deviceConfig)
@@ -89,12 +101,15 @@ public class ReceiveAgent extends EpollAgent {
                 .protectionDomain(protectionDomain)
                 .build();
 
-        queueFiller.fillUp(receiveQueue);
-        metrics.incrementReceiveRequests(receiveQueue.queryAttributes().getMaxWorkRequests());
+        receiveMetrics = new ReceiveMetrics(sharedResources.meterRegistry(), index);
+
+//        receiveMetrics.refillTime().start();
+        receiveRing.post(receiveQueue, receiveQueueSize);
+//        receiveMetrics.refillTime().stop();
     }
 
     @Override
-    protected void processConnection(InternalConnection connection, ConnectionEvent event) {
+    protected void processConnection(InternalConnection connection, ConnectionEvent event) throws IOException {
 
         // Check if we got the right kind of event
         if (event != ConnectionEvent.RECEIVE_READY) {
@@ -114,14 +129,16 @@ public class ReceiveAgent extends EpollAgent {
         queue.acknowledgeEvent();
         queue.requestNotification();
 
-        // Poll completions
+        // Poll completions. We use a completion array as big as the shared receive queue.
+        // This way, we know that no completions can be left on the completion queue.
         var completions = queuePoller.poll(queue);
         var length = completions.getLength();
-        metrics.decrementReceiveRequests(length);
+//        receiveMetrics.processedRequests().increment(length);
 
-        // Fill up receive queue
-        queueFiller.fillUp(receiveQueue, length);
-        metrics.incrementReceiveRequests(length);
+        // Refill the receive queue
+//        receiveMetrics.refillTime().start();
+        receiveRing.post(receiveQueue, length);
+//        receiveMetrics.refillTime().stop();
 
         // Handle work completions
         for (int i = 0; i < length; i++) {
@@ -131,9 +148,6 @@ public class ReceiveAgent extends EpollAgent {
 
     private void handleWorkCompletion(InternalConnection connection, WorkCompletion workCompletion) {
 
-        // Get the subscriber
-        var subscriber = connection.getInboundSubscriber();
-
         // Get work completion id and status
         var id = workCompletion.getId();
         var status = workCompletion.getStatus();
@@ -141,19 +155,17 @@ public class ReceiveAgent extends EpollAgent {
         // Check if work completion was successful
         if (status != WorkCompletion.Status.SUCCESS) {
             log.error("Receive work completion {} failed with status {}: {}", (int) id, status, workCompletion.getStatusMessage());
-            bufferPool.release((int) id);
-            subscriber.onError(new RuntimeException(workCompletion.getStatusMessage()));
+            return;
         }
 
-        // Remember the number of bytes received
-        var bytesReceived = workCompletion.getByteCount();
+        // Get the network handler associated with this connection
+        var handler = connection.getNetworkHandler();
 
         // Advance receive buffer by number of bytes received
-        var source = bufferPool.get((int) workCompletion.getId());
-        source.writerIndex(source.writerIndex() + bytesReceived);
+        var source = receiveRing.get((int) workCompletion.getId());
 
-        // Publish received data
-        subscriber.onNext(source);
+        // Pass message to network handler
+        handler.onMessage(connection.getChannel(), source, 0, workCompletion.getByteCount());
     }
 
     public AgentResources getResources() {
@@ -162,6 +174,12 @@ public class ReceiveAgent extends EpollAgent {
 
     public SharedReceiveQueue getReceiveQueue() {
         return receiveQueue;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        log.debug("Using {}", receiveRing);
     }
 
     @Override

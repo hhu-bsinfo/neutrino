@@ -7,6 +7,7 @@ import de.hhu.bsinfo.neutrino.api.network.impl.buffer.BufferPool;
 import de.hhu.bsinfo.neutrino.verbs.CompletionChannel;
 import de.hhu.bsinfo.neutrino.verbs.CompletionQueue;
 import de.hhu.bsinfo.neutrino.verbs.SharedReceiveQueue;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
@@ -35,4 +36,9 @@ public @Value class SharedResources {
      * Network metrics.
      */
     NetworkMetrics networkMetrics;
+
+    /**
+     * Micrometer meter registry.
+     */
+    MeterRegistry meterRegistry;
 }

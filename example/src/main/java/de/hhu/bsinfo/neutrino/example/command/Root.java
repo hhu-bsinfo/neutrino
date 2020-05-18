@@ -1,9 +1,8 @@
 package de.hhu.bsinfo.neutrino.example.command;
 
-import de.hhu.bsinfo.neutrino.example.command.arrow.DataGenerator;
 import de.hhu.bsinfo.neutrino.example.command.arrow.ArrowDemo;
-import de.hhu.bsinfo.neutrino.example.command.grpc.GrpcDemo;
-import de.hhu.bsinfo.neutrino.example.command.reactive.ReactiveDemos;
+import de.hhu.bsinfo.neutrino.example.command.arrow.DataGenerator;
+import de.hhu.bsinfo.neutrino.example.command.bench.BenchmarkDemos;
 import org.springframework.stereotype.Component;
 import picocli.CommandLine;
 
@@ -14,8 +13,8 @@ import picocli.CommandLine;
     subcommands = {
         DeviceInfo.class, MessagingTest.class, RdmaTest.class, WindowTest.class,
         ExtendedDeviceInfo.class, ExtendedMessagingTest.class, ExtendedRdmaTest.class,
-        GrpcDemo.class, CommunicationManagerDemo.class, ArrowDemo.class, DataGenerator.class,
-        ReactiveDemos.class
+        CommunicationManagerDemo.class, ArrowDemo.class, DataGenerator.class,
+        BenchmarkDemos.class
     }
 )
 public class Root implements Runnable {

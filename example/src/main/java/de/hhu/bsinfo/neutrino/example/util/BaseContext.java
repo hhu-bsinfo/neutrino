@@ -47,7 +47,7 @@ class BaseContext implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         protectionDomain.close();
         context.close();
     }

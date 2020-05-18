@@ -1,35 +1,21 @@
 package de.hhu.bsinfo.neutrino.api.network;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
-import de.hhu.bsinfo.neutrino.api.network.operation.Operation;
-import de.hhu.bsinfo.neutrino.api.util.Buffer;
+import de.hhu.bsinfo.neutrino.api.util.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
-import io.netty.buffer.ByteBuf;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import org.agrona.DirectBuffer;
 
-import java.net.InetSocketAddress;
+import java.io.IOException;
 
 public interface NetworkService {
 
-    Mono<Connection> connect(Negotiator negotiator, Mtu mtu);
-
-    Mono<Void> execute(Connection connection, Publisher<? extends Operation> publisher);
-
-    Mono<Void> send(Connection connection, Publisher<ByteBuf> frames);
-
-    Mono<Void> sendDirect(Connection connection, Publisher<LocalHandle> publisher);
-
-    Flux<ByteBuf> receive(Connection connection);
-
-    Mono<Void> write(Connection connection, LocalHandle localHandle, RemoteHandle handle);
-
-    Mono<Void> read(Connection connection, LocalHandle localHandle, RemoteHandle handle);
-
-    Mono<Connection> connect(InetSocketAddress serverAddress);
-
-    Flux<Connection> listen(InetSocketAddress bindAddress);
-
     InfinibandDevice getDevice();
+
+    InfinibandChannel connect(Negotiator negotiator, NetworkHandler handler, Mtu mtu) throws IOException;
+
+    void send(InfinibandChannel channel, int id, DirectBuffer buffer, int offset, int length);
+
+    void read(InfinibandChannel channel, int id, RemoteHandle handle, RegisteredBuffer buffer, int offset, int length);
+
+    void write(InfinibandChannel channel, int id, RegisteredBuffer buffer, int offset, int length, RemoteHandle handle);
 }

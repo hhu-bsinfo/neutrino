@@ -2,28 +2,24 @@ package de.hhu.bsinfo.neutrino.api.network.impl;
 
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDevice;
 import de.hhu.bsinfo.neutrino.api.device.InfinibandDeviceConfig;
-import de.hhu.bsinfo.neutrino.api.network.impl.event.EventLoopGroup;
 import de.hhu.bsinfo.neutrino.api.network.*;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.ReceiveAgent;
 import de.hhu.bsinfo.neutrino.api.network.impl.agent.SendAgent;
-import de.hhu.bsinfo.neutrino.api.network.impl.subscriber.OperationSubscriber;
-import de.hhu.bsinfo.neutrino.api.network.operation.*;
+import de.hhu.bsinfo.neutrino.api.network.impl.event.EventLoopGroup;
 import de.hhu.bsinfo.neutrino.api.util.BaseService;
+import de.hhu.bsinfo.neutrino.api.util.RegisteredBuffer;
 import de.hhu.bsinfo.neutrino.verbs.Mtu;
-import de.hhu.bsinfo.neutrino.verbs.ProtectionDomain;
 import de.hhu.bsinfo.neutrino.verbs.ThreadDomain;
-import io.netty.buffer.ByteBuf;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.reactivestreams.Publisher;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.security.Provider;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -64,12 +60,12 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
      */
     private final EventLoopGroup<ReceiveAgent> receiveGroup;
 
-    public InternalNetworkService(InfinibandDevice device, InfinibandDeviceConfig deviceConfig, NetworkMetrics metrics, NetworkConfiguration networkConfig) {
+    public InternalNetworkService(InfinibandDevice device, InfinibandDeviceConfig deviceConfig, NetworkConfiguration networkConfig, MeterRegistry meterRegistry) throws IOException {
         super(networkConfig);
 
         this.device = device;
         this.deviceConfig = deviceConfig;
-        this.metrics = metrics;
+        this.metrics = new NetworkMetrics(meterRegistry);
 
         // Calculate how many workers should be created
         var availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -82,12 +78,27 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
         sendGroup = new EventLoopGroup<>("send", sendWorkerCount, () -> BusySpinIdleStrategy.INSTANCE);
         receiveGroup = new EventLoopGroup<>("receive", receiveWorkerCount, () -> BusySpinIdleStrategy.INSTANCE);
 
+        // Check if Thread Domains are supported
+        ThreadDomain threadDomain = null;
+        var attributes = new ThreadDomain.InitialAttributes();
+
+        try {
+            threadDomain = device.createThreadDomain(attributes);
+        } catch (IOException e) {
+            log.warn("Thread domains are not supported, falling back to global protection domain!");
+        } finally {
+            if (threadDomain != null) {
+                threadDomain.close();
+            }
+        }
+
         // Create shared resources for other network components
         sharedResources = SharedResources.builder()
                 .device(device)
                 .deviceConfig(deviceConfig)
                 .networkConfig(networkConfig)
                 .networkMetrics(metrics)
+                .meterRegistry(meterRegistry)
                 .build();
 
         // Initialize connection manager
@@ -95,7 +106,7 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
     }
 
     @Override
-    protected void onStart() {
+    protected void onStart() throws Exception {
 
         // Wait on event loop groups to start
         log.debug("Waiting on event loops to start");
@@ -104,12 +115,12 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
 
         // Register receive agents within event loop group
         for (int i = 0; i < receiveGroup.size(); i++) {
-            receiveGroup.next().add(new ReceiveAgent(sharedResources));
+            receiveGroup.next().add(new ReceiveAgent(i, sharedResources));
         }
 
         // Register receive agent within event loop group
         for (int i = 0; i < sendGroup.size(); i++) {
-            sendGroup.next().add(new SendAgent(sharedResources));
+            sendGroup.next().add(new SendAgent(i, sharedResources));
         }
     }
 
@@ -118,144 +129,77 @@ public class InternalNetworkService extends BaseService<NetworkConfiguration> im
         log.info("Schutting down");
     }
 
-    @Override
-    public Mono<Connection> connect(Negotiator negotiator, Mtu mtu) {
-        return Mono.fromCallable(() -> {
-
-            // Get next send and receive agent
-            var sendAgent = sendGroup.next().getAgent();
-            var receiveAgent = receiveGroup.next().getAgent();
-
-            var sendResources = sendAgent.getResources();
-            var receiveResources = receiveAgent.getResources();
-
-            // Connect to the remote
-            var connection = connectionManager.connect(negotiator, mtu, receiveAgent.getReceiveQueue(), sendResources, receiveResources);
-
-            // Assign send agent to connection
-            connection.setSendAgent(sendAgent);
-            sendAgent.add(connection);
-
-            // Assign receive agent to connection
-            connection.setReceiveAgent(receiveAgent);
-            receiveAgent.add(connection);
-
-            // Return connection handle
-            return new Connection(connection.getId());
-        });
-    }
-
-    @Override
-    public Mono<Void> execute(Connection connection, Publisher<? extends Operation> publisher) {
-
-        // Retrieve actual connection
-        var internalConnection = connectionManager.get(connection);
-
-        return execute(internalConnection, publisher);
-    }
-
-    @Override
-    public Mono<Void> send(Connection connection, Publisher<ByteBuf> frames) {
-
-        // Retrieve actual connection
-        var internalConnection = connectionManager.get(connection);
-
-        // Get associated send agent
-        var agent = internalConnection.getSendAgent();
-
-        // Send a single buffer
-        if (frames instanceof Mono) {
-            return execute(internalConnection, ((Mono<ByteBuf>) frames).map(agent::copyOf).map(SendOperation::new));
-        }
-
-        // Send a stream of buffers
-        return execute(internalConnection, ((Flux<ByteBuf>) frames).map(agent::copyOf).map(SendOperation::new));
-    }
-
-    @Override
-    public Mono<Void> sendDirect(Connection connection, Publisher<LocalHandle> publisher) {
-
-        // Retrieve actual connection
-        var internalConnection = connectionManager.get(connection);
-
-        // Send single message
-        if (publisher instanceof Mono) {
-            return execute(internalConnection, ((Mono<LocalHandle>) publisher).map(DirectSendOperation::new));
-        }
-
-        // Send stream of messages
-        return execute(internalConnection, ((Flux<LocalHandle>) publisher).map(DirectSendOperation::new));
-    }
-
-    @Override
-    public Flux<ByteBuf> receive(Connection connection) {
-
-        // Retrieve actual connection
-        var internalConnection = connectionManager.get(connection);
-
-        // Receive frames using agent
-        return internalConnection.getInbound();
-    }
-
-    @Override
-    public Mono<Void> write(Connection connection, LocalHandle localHandle, RemoteHandle remoteHandle) {
-
-        // Retrieve actual connection
-        var internalConnection = connectionManager.get(connection);
-
-        // Create write operation
-        var operation = new WriteOperation(localHandle, remoteHandle);
-
-        // Queue write operation within the associated agent
-        return execute(internalConnection, Mono.just(operation));
-    }
-
-    @Override
-    public Mono<Void> read(Connection connection, LocalHandle localHandle, RemoteHandle remoteHandle) {
-
-        // Retrieve actual connection
-        var internalConnection = connectionManager.get(connection);
-
-        // Create write operation
-        var operation = new ReadOperation(localHandle, remoteHandle);
-
-        // Queue write operation within the associated agent
-        return execute(internalConnection, Mono.just(operation));
-    }
-
-    private Mono<Void> execute(InternalConnection connection, Publisher<? extends Operation> publisher) {
-        return Mono.defer(() -> {
-
-            // Create a subscriber for operations
-            var subscriber = new OperationSubscriber();
-
-            // Add the subscriber to the connection
-            connection.addSubscriber(subscriber);
-
-            // Subscribe to the publisher's operations using our subscriber
-            publisher.subscribe(subscriber);
-
-            // Return a publisher which completes after all operations were acknowledged
-            return subscriber.then();
-        });
-    }
-
-    @Override
-    public Flux<Connection> listen(InetSocketAddress serverAddress) {
+    public InfinibandChannel listen(InetSocketAddress serverAddress) {
         // TODO(krakowski):
         //  Use RDMA Communication Manager to listen for new connections
         throw new UnsupportedOperationException("not implemented");
     }
 
-    @Override
-    public Mono<Connection> connect(InetSocketAddress serverAddress) {
+    public InfinibandChannel connect(InetSocketAddress serverAddress) {
         // TODO(krakowski):
         //  Use RDMA Communication Manager to establish connection with server
         throw new UnsupportedOperationException("not implemented");
     }
 
+    public void send(InfinibandChannel channel, int id, DirectBuffer buffer, int offset, int length) {
+
+        // Retrieve the actual connection
+        var internalConnection = connectionManager.get(channel);
+
+        // Send the data using the actual connection
+        internalConnection.send(id, buffer, offset, length);
+    }
+
+    @Override
+    public void read(InfinibandChannel channel, int id, RemoteHandle handle, RegisteredBuffer buffer, int offset, int length) {
+
+        // Retrieve the actual connection
+        var internalConnection = connectionManager.get(channel);
+
+        // Send the data using the actual connection
+        internalConnection.read(id, handle, buffer, offset, length);
+    }
+
+    @Override
+    public void write(InfinibandChannel channel, int id, RegisteredBuffer buffer, int offset, int length, RemoteHandle handle) {
+
+        // Retrieve the actual connection
+        var internalConnection = connectionManager.get(channel);
+
+        // Send the data using the actual connection
+        internalConnection.write(id, buffer, offset, length, handle);
+    }
+
     @Override
     public InfinibandDevice getDevice() {
         return device;
+    }
+
+    @Override
+    public InfinibandChannel connect(Negotiator negotiator, NetworkHandler networkHandler, Mtu mtu) throws IOException {
+        // Get next send and receive agent
+        var sendAgent = sendGroup.next().getAgent();
+        var receiveAgent = receiveGroup.next().getAgent();
+
+        // Connect to the remote
+        var connection = connectionManager.connect(
+                negotiator,
+                mtu,
+                networkHandler,
+                receiveAgent.getReceiveQueue(),
+                sendAgent.getResources(),
+                this
+        );
+
+        // Assign send agent to connection
+        connection.setSendAgent(sendAgent);
+        sendAgent.add(connection);
+
+        // Assign receive agent to connection
+        connection.setReceiveAgent(receiveAgent);
+        receiveAgent.add(connection);
+
+        // Return channel
+        return connection.getChannel();
     }
 }

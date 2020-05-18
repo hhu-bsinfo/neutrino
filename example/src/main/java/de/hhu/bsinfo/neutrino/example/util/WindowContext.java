@@ -69,10 +69,9 @@ public class WindowContext extends RdmaContext {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         window.close();
         readBuffer.close();
-
         super.close();
     }
 }

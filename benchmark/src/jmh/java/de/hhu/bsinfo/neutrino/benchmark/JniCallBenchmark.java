@@ -1,12 +1,12 @@
 package de.hhu.bsinfo.neutrino.benchmark;
 
-import de.hhu.bsinfo.neutrino.bench.ComplexNumber;
 import de.hhu.bsinfo.neutrino.bench.JniCall;
-import de.hhu.bsinfo.neutrino.bench.NativeComplexNumber;
 import de.hhu.bsinfo.neutrino.buffer.LocalBuffer;
+import de.hhu.bsinfo.neutrino.util.MemoryAlignment;
+import de.hhu.bsinfo.neutrino.util.MemoryUtil;
 import de.hhu.bsinfo.neutrino.util.NativeLibrary;
+import org.agrona.concurrent.AtomicBuffer;
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.infra.Blackhole;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
@@ -28,7 +28,7 @@ public class JniCallBenchmark {
 
         public byte[] byteArray;
         public ByteBuffer directByteBuffer;
-        public LocalBuffer localBuffer;
+        public AtomicBuffer atomicBuffer;
 
 
         @Setup(Level.Trial)
@@ -39,8 +39,8 @@ public class JniCallBenchmark {
             directByteBuffer = ByteBuffer.allocateDirect(bufferSize);
             directByteBuffer.put(byteArray, 0, byteArray.length);
 
-            localBuffer = LocalBuffer.allocate(bufferSize);
-            localBuffer.put(0, byteArray, 0, byteArray.length);
+            atomicBuffer = MemoryUtil.allocateAligned(bufferSize, MemoryAlignment.CACHE);
+            atomicBuffer.setMemory(0, atomicBuffer.capacity(), (byte) 0);
         }
     }
 
@@ -51,7 +51,7 @@ public class JniCallBenchmark {
 
     @Benchmark
     public byte checkSumLocalBuffer(Objects objects) {
-        return JniCall.checkSumLocalBuffer(objects.localBuffer);
+        return JniCall.checkSumLocalBuffer(objects.atomicBuffer);
     }
 
     @Benchmark
