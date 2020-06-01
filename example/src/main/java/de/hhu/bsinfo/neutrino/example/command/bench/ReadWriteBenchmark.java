@@ -227,7 +227,6 @@ public class ReadWriteBenchmark extends BenchmarkDemo {
             this.iterations = iterations;
         }
 
-        @SneakyThrows
         @Override
         public void run() {
             log.info("Starting with buffer {}", buffer);
@@ -265,13 +264,17 @@ public class ReadWriteBenchmark extends BenchmarkDemo {
 
                 // First channel is responsible for writing results
                 if (channel.getId() == 0) {
-                    writer.append(String.format(Locale.US, "%d,%s,%d,%d,%.4f\n",
-                            buffer.capacity(),
-                            "One Connection",
-                            globalCount,
-                            iteration,
-                            duration / 1_000_000.0
-                    ));
+                    try {
+                        writer.append(String.format(Locale.US, "%d,%s,%d,%d,%.4f\n",
+                                buffer.capacity(),
+                                "One Connection",
+                                globalCount,
+                                iteration,
+                                duration / 1_000_000.0
+                        ));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

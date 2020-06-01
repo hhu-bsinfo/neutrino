@@ -172,7 +172,6 @@ public class ThroughputBenchmark extends BenchmarkDemo {
             durations = new long[iterations];
         }
 
-        @SneakyThrows
         @Override
         public void run() {
 
@@ -207,12 +206,16 @@ public class ThroughputBenchmark extends BenchmarkDemo {
 
                 // First channel is responsible for writing results
                 if (channel.getId() == 0) {
-                    writer.append(String.format(Locale.US, "%d,%d,%d,%.4f\n",
-                            data.capacity(),
-                            totalMessages,
-                            iteration,
-                            duration / 1_000_000.0
-                    ));
+                    try {
+                        writer.append(String.format(Locale.US, "%d,%d,%d,%.4f\n",
+                                data.capacity(),
+                                totalMessages,
+                                iteration,
+                                duration / 1_000_000.0
+                        ));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
