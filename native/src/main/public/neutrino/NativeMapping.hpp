@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <cstdint>
+#include <string>
 #include <infiniband/verbs.h>
 
 class NativeMapping {

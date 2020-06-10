@@ -3,6 +3,7 @@ package de.hhu.bsinfo.neutrino.example.command;
 import de.hhu.bsinfo.neutrino.example.command.arrow.ArrowDemo;
 import de.hhu.bsinfo.neutrino.example.command.arrow.DataGenerator;
 import de.hhu.bsinfo.neutrino.example.command.bench.BenchmarkDemos;
+import de.hhu.bsinfo.neutrino.example.command.panama.PanamaDemo;
 import org.springframework.stereotype.Component;
 import picocli.CommandLine;
 
@@ -14,7 +15,7 @@ import picocli.CommandLine;
         DeviceInfo.class, MessagingTest.class, RdmaTest.class, WindowTest.class,
         ExtendedDeviceInfo.class, ExtendedMessagingTest.class, ExtendedRdmaTest.class,
         CommunicationManagerDemo.class, ArrowDemo.class, DataGenerator.class,
-        BenchmarkDemos.class
+        BenchmarkDemos.class, PanamaDemo.class
     }
 )
 public class Root implements Runnable {

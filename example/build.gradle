@@ -9,6 +9,8 @@ plugins {
     // Spring Boot Plugins
     id 'org.springframework.boot' version '2.3.0.RELEASE'
     id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+
+    id "io.github.krakowski.jextract" version "0.1.0"
 }
 
 compileJava {
@@ -16,6 +18,8 @@ compileJava {
     targetCompatibility = '15'
     options.encoding = 'UTF-8'
 }
+
+jextract.enabled = false
 
 bootJar {
     archiveFileName = 'neutrino.jar'

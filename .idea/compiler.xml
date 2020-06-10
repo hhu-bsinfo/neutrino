@@ -8,65 +8,14 @@
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.12/48e4e5d60309ebd833bc528dcf77668eab3cd72c/lombok-1.18.12.jar" />
         </processorPath>
+        <module name="neutrino.core.main" />
+        <module name="neutrino.example.test" />
         <module name="neutrino.example.main" />
+        <module name="neutrino.api.test" />
+        <module name="neutrino.api.main" />
+        <module name="neutrino.core.test" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="api_main" target="11" />
-      <module name="api_test" target="11" />
-      <module name="bsinfo-neutrino-neutrino_main" target="11" />
-      <module name="bsinfo-neutrino-neutrino_test" target="11" />
-      <module name="core_main" target="11" />
-      <module name="core_test" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.api.main" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.api.test" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.benchmark.jmh" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.benchmark.main" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.benchmark.test" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.codegen.main" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.codegen.test" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.core.main" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.core.test" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.example.main" target="11" />
-      <module name="de.hhu.bsinfo.neutrino.example.test" target="11" />
-      <module name="neutrino-benchmark_jmh" target="11" />
-      <module name="neutrino-benchmark_main" target="11" />
-      <module name="neutrino-benchmark_test" target="11" />
-      <module name="neutrino-codegen_main" target="11" />
-      <module name="neutrino-codegen_test" target="11" />
-      <module name="neutrino-example_main" target="11" />
-      <module name="neutrino-example_test" target="11" />
-      <module name="neutrino-rsocket-transport-neutrino_main" target="11" />
-      <module name="neutrino-rsocket-transport-neutrino_test" target="11" />
-      <module name="neutrino.engine.main" target="11" />
-      <module name="neutrino.engine.test" target="11" />
-      <module name="neutrino.neutrino.main" target="11" />
-      <module name="neutrino.neutrino.test" target="11" />
-      <module name="neutrino.rsocket-transport-neutrino.main" target="11" />
-      <module name="neutrino.rsocket-transport-neutrino.test" target="11" />
-      <module name="neutrino.rsocket.main" target="11" />
-      <module name="neutrino.rsocket.test" target="11" />
-      <module name="Projekte.neutrino.rsocket.main" target="11" />
-      <module name="Projekte.neutrino.rsocket.test" target="11" />
-      <module name="rsocket-core_jmh" target="11" />
-      <module name="rsocket-core_main" target="11" />
-      <module name="rsocket-core_test" target="11" />
-      <module name="rsocket-examples_main" target="11" />
-      <module name="rsocket-examples_test" target="11" />
-      <module name="rsocket-load-balancer_main" target="11" />
-      <module name="rsocket-load-balancer_test" target="11" />
-      <module name="rsocket-micrometer_main" target="11" />
-      <module name="rsocket-micrometer_test" target="11" />
-      <module name="rsocket-test_main" target="11" />
-      <module name="rsocket-test_test" target="11" />
-      <module name="rsocket-transport-local_main" target="11" />
-      <module name="rsocket-transport-local_test" target="11" />
-      <module name="rsocket-transport-netty_main" target="11" />
-      <module name="rsocket-transport-netty_test" target="11" />
-      <module name="rsocket-transport-neutrino_main" target="11" />
-      <module name="rsocket-transport-neutrino_test" target="11" />
-      <module name="rsocket_main" target="11" />
-      <module name="rsocket_test" target="11" />
-    </bytecodeTargetLevel>
+    <bytecodeTargetLevel target="15" />
   </component>
 </project>
