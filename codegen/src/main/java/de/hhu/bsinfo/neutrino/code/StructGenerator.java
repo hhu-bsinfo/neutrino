@@ -1,5 +1,6 @@
 package de.hhu.bsinfo.neutrino.code;
 
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import java.nio.file.Files;
@@ -12,25 +13,27 @@ import java.util.regex.Pattern;
 
 public class StructGenerator {
 
+    private static final ClassName IBVERBS_CLASS = ClassName.get("org.linux.rdma", "ibverbs_h");
+
     private static final Pattern STRUCT_PATTERN = Pattern.compile("struct\\s+(\\w+)\\s+\\{\\s+(.*?)\\s+^};", Pattern.MULTILINE | Pattern.DOTALL);
     private static final Pattern STRUCT_MEMBER_PATTERN = Pattern.compile("(?<special>enum|struct)?\\s*(?<type>\\w+)\\s+(?<pointer>\\**)(?<name>\\w+)(?<size>\\[\\d*])?;", Pattern.MULTILINE);
 
     public static void main(String... args) throws Exception {
-
-        String content = Files.readString(Paths.get("/usr/include/rdma/rdma_cma.h"));
-
+        String content = Files.readString(Paths.get("/usr/include/infiniband/verbs.h"));
         var structs = getStructs(content);
-
         structs.forEach((key, value) -> {
             System.out.println(generateClass(key, value));
-            System.out.println(NativeMapGenerator.generate(key, value));
         });
+
+//        System.out.print("\n\n\n\n");
+//
+//        structs.keySet().forEach(key -> System.out.println(key + " "));
+//        structs.values().forEach(value -> value.forEach(member -> System.out.println(member.getName() + " ")));
     }
 
     private static Map<String, List<StructMember>> getStructs(final String fileContent) {
         var matcher = STRUCT_PATTERN.matcher(fileContent);
         var map = new HashMap<String, List<StructMember>>();
-
         while (matcher.find()) {
             var memberMatcher = STRUCT_MEMBER_PATTERN.matcher(matcher.group(2));
             var memberList = new ArrayList<StructMember>();
@@ -49,10 +52,9 @@ public class StructGenerator {
     }
 
     private static String generateClass(String structName, List<StructMember> members) {
-
         TypeSpec typeSpec = StructDefinition.generate(structName, members);
-
         JavaFile javaFile = JavaFile.builder("de.hhu.bsinfo.neutrino.generated", typeSpec)
+            .addStaticImport(IBVERBS_CLASS, "*")
             .build();
 
         return javaFile.toString();
