@@ -3,6 +3,8 @@ package de.hhu.bsinfo.neutrino.code;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
+import jdk.incubator.jextract.JextractTask;
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -24,11 +26,6 @@ public class StructGenerator {
         structs.forEach((key, value) -> {
             System.out.println(generateClass(key, value));
         });
-
-//        System.out.print("\n\n\n\n");
-//
-//        structs.keySet().forEach(key -> System.out.println(key + " "));
-//        structs.values().forEach(value -> value.forEach(member -> System.out.println(member.getName() + " ")));
     }
 
     private static Map<String, List<StructMember>> getStructs(final String fileContent) {

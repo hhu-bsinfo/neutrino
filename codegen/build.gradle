@@ -10,6 +10,12 @@ compileJava {
 
 mainClassName = 'de.hhu.bsinfo.neutrino.code.StructGenerator'
 
+
+compileJava.options.compilerArgs += [ '--add-modules', 'jdk.incubator.jextract' ]
+project.application.applicationDefaultJvmArgs += [
+        '--add-modules', 'jdk.incubator.jextract'
+]
+
 group = 'de.hhu.bsinfo'
 version = getProperty('projectVersion')
 

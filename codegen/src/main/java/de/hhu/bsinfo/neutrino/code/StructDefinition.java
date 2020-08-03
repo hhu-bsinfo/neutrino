@@ -39,7 +39,7 @@ public class StructDefinition {
         return MethodSpec.methodBuilder(String.format("get%s", capitalize(member.getName())))
             .addModifiers(Modifier.PUBLIC)
             .returns(typeInfo.getActualType())
-            .addStatement("return C$L.$L$$get()", structName, member.getName())
+            .addStatement("return C$L.$L$$get(memoryAddress())", structName, member.getName())
             .build();
     }
 
