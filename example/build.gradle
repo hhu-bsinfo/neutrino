@@ -8,8 +8,8 @@ plugins {
 }
 
 compileJava {
-    sourceCompatibility = '15'
-    targetCompatibility = '15'
+    sourceCompatibility = '16'
+    targetCompatibility = '16'
     options.encoding = 'UTF-8'
 }
 
@@ -27,6 +27,8 @@ dependencies {
 
     // Neutrino API
     implementation project(':core')
+
+    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.13.3'
 
     // AssertJ
     testImplementation 'org.assertj:assertj-core:3.12.2'
