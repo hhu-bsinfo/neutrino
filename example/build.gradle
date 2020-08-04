@@ -1,15 +1,9 @@
 plugins {
     // Base Plugins
-    id 'java'
+    id 'application'
     id 'idea'
 
-    // Google Protobuf Plugin
-    id "com.google.protobuf" version "0.8.10"
-
-    // Spring Boot Plugins
-    id 'org.springframework.boot' version '2.3.0.RELEASE'
-    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
-
+    // Jextract Plugin
     id "io.github.krakowski.jextract" version "0.1.0"
 }
 
@@ -19,59 +13,20 @@ compileJava {
     options.encoding = 'UTF-8'
 }
 
-jextract.enabled = false
+mainClassName = 'de.hhu.bsinfo.neutrino.example.App'
 
-bootJar {
-    archiveFileName = 'neutrino.jar'
-}
+jextract.enabled = false
 
 group = 'de.hhu.bsinfo'
 version = getProperty('projectVersion')
 
-repositories {
-    mavenCentral()
-}
-
-protobuf {
-    protoc {
-        artifact = 'com.google.protobuf:protoc:3.10.0'
-    }
-}
-
-idea {
-    module {
-        sourceDirs += file("src/main/proto")
-
-        generatedSourceDirs += file('src/generated/main/java')
-    }
-}
-
 dependencies {
 
-    // Spring Boot starter with Actuator support
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
     // Spring Boot picocli starter
-    implementation 'info.picocli:picocli-spring-boot-starter:4.0.4'
+    implementation 'info.picocli:picocli:4.5.0'
 
     // Neutrino API
-    implementation project(':api')
-
-    // Micrometer JMX exporter
-    implementation 'io.micrometer:micrometer-registry-jmx'
-
-    // Apache Arrow
-    implementation 'org.apache.arrow:arrow-vector:0.16.0'
-    implementation 'org.apache.arrow:arrow-memory:0.16.0'
-
-    // Google Protobuf
-    implementation 'com.google.protobuf:protobuf-java:3.10.0'
-
-    // Netty Buffer
-    implementation 'io.netty:netty-buffer:4.1.43.Final'
-
-    // Java Faker
-    implementation 'com.github.javafaker:javafaker:1.0.2'
+    implementation project(':core')
 
     // AssertJ
     testImplementation 'org.assertj:assertj-core:3.12.2'
