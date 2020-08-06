@@ -3,7 +3,6 @@ package de.hhu.bsinfo.neutrino.code;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-import jdk.incubator.jextract.JextractTask;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;

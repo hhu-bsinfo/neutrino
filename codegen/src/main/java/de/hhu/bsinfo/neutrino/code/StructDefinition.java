@@ -9,19 +9,19 @@ import java.util.stream.Collectors;
 
 public class StructDefinition {
 
-    private static final ClassName STRUCT_CLASS = ClassName.get("de.hhu.bsinfo.neutrino.verbs.panama", "Struct");
+    private static final ClassName STRUCT_CLASS = ClassName.get("de.hhu.bsinfo.neutrino.verbs.panama.util", "Struct");
     private static final ClassName MEMORYADDRESS_CLASS = ClassName.get("jdk.incubator.foreign", "MemoryAddress");
 
     public static TypeSpec generate(String structName, List<StructMember> members) {
         MethodSpec primaryConstructor = MethodSpec.constructorBuilder()
             .addModifiers(Modifier.PUBLIC)
-            .addCode("super(C$L::allocate);\n", structName)
+            .addCode("super($L.allocate());\n", structName)
             .build();
 
         MethodSpec secondaryConstructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(MEMORYADDRESS_CLASS, "address")
-                .addCode("super(C$L.$$LAYOUT, address);\n", structName)
+                .addCode("super(address, $L.$$LAYOUT());\n", structName)
                 .build();
 
         return TypeSpec.classBuilder(structName)
@@ -39,7 +39,7 @@ public class StructDefinition {
         return MethodSpec.methodBuilder(String.format("get%s", capitalize(member.getName())))
             .addModifiers(Modifier.PUBLIC)
             .returns(typeInfo.getActualType())
-            .addStatement("return C$L.$L$$get(memoryAddress())", structName, member.getName())
+            .addStatement("return $L.$L$$get(segment())", structName, member.getName())
             .build();
     }
 
@@ -48,7 +48,7 @@ public class StructDefinition {
         return MethodSpec.methodBuilder(String.format("set%s", capitalize(member.getName())))
             .addModifiers(Modifier.PUBLIC)
             .addParameter(typeInfo.getActualType(), "value", Modifier.FINAL)
-            .addStatement("C$L.$L$$set(value)", structName, member.getName())
+            .addStatement("$L.$L$$set(segment(), value)", structName, member.getName())
             .build();
     }
 
