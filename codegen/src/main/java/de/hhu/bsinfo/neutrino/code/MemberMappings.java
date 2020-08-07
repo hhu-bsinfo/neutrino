@@ -1,6 +1,9 @@
 package de.hhu.bsinfo.neutrino.code;
 
 import com.squareup.javapoet.ClassName;
+import jdk.incubator.foreign.MemoryAddress;
+import jdk.incubator.foreign.MemorySegment;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +14,6 @@ public class MemberMappings {
     private static final ClassName NATIVE_INTEGER_CLASS = ClassName.get("de.hhu.bsinfo.neutrino.data", "NativeInteger");
     private static final ClassName NATIVE_LONG_CLASS = ClassName.get("de.hhu.bsinfo.neutrino.data", "NativeLong");
     private static final ClassName NATIVE_STRING_CLASS = ClassName.get("de.hhu.bsinfo.neutrino.data", "NativeString");
-
 
     private static final Map<String, TypeInfo> TYPE_MAPPINGS = new HashMap<>();
 
@@ -38,11 +40,14 @@ public class MemberMappings {
         TYPE_MAPPINGS.put("pthread_cond_t", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
 
         TYPE_MAPPINGS.put("ibv_gid", new TypeInfo(NATIVE_LONG_CLASS, long.class, "longField"));
+
+        TYPE_MAPPINGS.put("pointer", new TypeInfo(NATIVE_LONG_CLASS, MemoryAddress.class, "longField"));
+        TYPE_MAPPINGS.put("struct", new TypeInfo(NATIVE_LONG_CLASS, MemorySegment.class, "longField"));
     }
 
     public static TypeInfo resolve(StructMember member) {
         if (member.isPointer()) {
-            return TYPE_MAPPINGS.get("long");
+            return TYPE_MAPPINGS.get("pointer");
         }
 
         if (member.isEnum()) {
@@ -50,7 +55,7 @@ public class MemberMappings {
         }
 
         if (member.isStruct()) {
-            return TYPE_MAPPINGS.get("long");
+            return TYPE_MAPPINGS.get("struct");
         }
 
         if ("char".equals(member.getType()) && member.isPointer()) {
