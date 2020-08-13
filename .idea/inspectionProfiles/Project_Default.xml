@@ -89,7 +89,6 @@
     <inspection_tool class="AndroidLintGetInstance" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintGetLocales" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintGifUsage" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="AndroidLintGoogleAppIndexingWarning" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintGradleCompatible" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintGradleDependency" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintGradleDeprecated" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -154,7 +153,6 @@
     <inspection_tool class="AndroidLintMenuTitle" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintMergeMarker" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintMergeRootFrame" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="AndroidLintMinSdkTooLow" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintMipmapIcons" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintMissingApplicationIcon" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintMissingBackupPin" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -211,7 +209,6 @@
     <inspection_tool class="AndroidLintRecycle" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintRecyclerView" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintReferenceType" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="AndroidLintRegistered" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintRelativeOverlap" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintRequiredSize" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintResAuto" enabled="false" level="ERROR" enabled_by_default="false" />
@@ -270,7 +267,6 @@
     <inspection_tool class="AndroidLintUnknownId" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnknownIdInLayout" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnlocalizedSms" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="AndroidLintUnpackedNativeCode" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnprotectedSMSBroadcastReceiver" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnsafeDynamicallyLoadedCode" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintUnsafeNativeCodeLocation" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -717,7 +713,7 @@
     <inspection_tool class="ConstantOnLHSOfComparisonJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstantOnRHSOfComparison" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="ConstantOnRHSOfComparisonJS" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="ConstantOnWrongSideOfComparison" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="ConstantOnWrongSideOfComparison" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="ConstantStringIntern" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstantValueVariableUse" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ConstraintValidatorCreator" enabled="false" level="ERROR" enabled_by_default="false" />
@@ -1881,34 +1877,6 @@
     <inspection_tool class="NestingDepthJS" enabled="true" level="ERROR" enabled_by_default="true">
       <option name="m_limit" value="5" />
     </inspection_tool>
-    <inspection_tool class="NewClassNamingConvention" enabled="true" level="ERROR" enabled_by_default="true">
-      <extension name="AbstractClassNamingConvention" enabled="true">
-        <option name="inheritDefaultSettings" value="false" />
-        <option name="m_regex" value="[A-Z][A-Za-z\d]*|Check" />
-        <option name="m_minLength" value="5" />
-        <option name="m_maxLength" value="64" />
-      </extension>
-      <extension name="AnnotationNamingConvention" enabled="true" />
-      <extension name="ClassNamingConvention" enabled="true">
-        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
-        <option name="m_minLength" value="3" />
-        <option name="m_maxLength" value="64" />
-      </extension>
-      <extension name="EnumeratedClassNamingConvention" enabled="true">
-        <option name="inheritDefaultSettings" value="false" />
-        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
-        <option name="m_minLength" value="4" />
-        <option name="m_maxLength" value="64" />
-      </extension>
-      <extension name="InterfaceNamingConvention" enabled="true">
-        <option name="inheritDefaultSettings" value="false" />
-        <option name="m_regex" value="[A-Z][A-Za-z\d]*" />
-        <option name="m_minLength" value="6" />
-        <option name="m_maxLength" value="64" />
-      </extension>
-      <extension name="JUnitAbstractTestClassNamingConvention" enabled="true" />
-      <extension name="TypeParameterNamingConvention" enabled="true" />
-    </inspection_tool>
     <inspection_tool class="NewExceptionWithoutArguments" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="NewGroovyClassNamingConvention" enabled="false" level="ERROR" enabled_by_default="false">
       <extension name="GroovyAnnotationNamingConvention" enabled="true" />
@@ -2703,7 +2671,6 @@
     <inspection_tool class="ThreadPriority" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreadStartInConstruction" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreadStopSuspendResume" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="ThreadWithDefaultRunMethod" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreadYield" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="ThreeNegationsPerFunctionJS" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="ThreeNegationsPerMethod" enabled="false" level="ERROR" enabled_by_default="false">
