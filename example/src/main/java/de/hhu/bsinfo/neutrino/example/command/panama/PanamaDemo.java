@@ -21,8 +21,10 @@ public class PanamaDemo implements Runnable {
              var context = Verbs.openDevice(deviceList.get(0))) {
 
             var device = deviceList.get(0);
-            log.info("Opening device '{}' with node type {} and transport type {} succeded", device.name(), device.nodeType(), device.transportType());
+            var attributes = context.queryDevice();
 
+            log.info("Opening device '{}' with node type {} and transport type {} succeded", device.name(), device.nodeType(), device.transportType());
+            log.info("Firmware Version : {}", attributes.getFirmwareVersion());
         } catch (IOException e) {
             log.error(e.getMessage());
         }
