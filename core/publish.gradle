@@ -27,6 +27,16 @@ def pomConfig = {
 }
 
 publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/hhu-bsinfo/neutrino")
+            credentials {
+                username = System.getProperty('gpr.user')
+                password = System.getProperty('gpr.token')
+            }
+        }
+    }
     publications {
         mavenPublication(MavenPublication) {
 

@@ -2,8 +2,6 @@ plugins {
     id 'idea'
     id 'java-library'
     id 'maven-publish'
-    id 'com.jfrog.bintray' version '1.8.4'
-    id "com.jfrog.artifactory" version "4.13.0"
 }
 
 compileJava {
@@ -76,5 +74,3 @@ test {
 }
 
 apply from: 'publish.gradle'
-apply from: 'bintray.gradle'
-apply from: 'artifactory.gradle'

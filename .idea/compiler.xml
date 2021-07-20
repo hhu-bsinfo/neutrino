@@ -8,21 +8,25 @@
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.10/625fc0055674dff70dbc76efa36d0f2c89b04a24/lombok-1.18.10.jar" />
         </processorPath>
+        <module name="neutrino.api.test" />
+        <module name="neutrino.core.main" />
         <module name="neutrino.example.main" />
+        <module name="neutrino.core.test" />
+        <module name="neutrino.api.main" />
       </profile>
       <profile name="Gradle Imported" enabled="true">
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.10/625fc0055674dff70dbc76efa36d0f2c89b04a24/lombok-1.18.10.jar" />
         </processorPath>
+        <module name="de.hhu.bsinfo.neutrino.api.main" />
         <module name="de.hhu.bsinfo.neutrino.core.main" />
         <module name="de.hhu.bsinfo.neutrino.example.main" />
         <module name="de.hhu.bsinfo.neutrino.core.test" />
         <module name="de.hhu.bsinfo.neutrino.api.test" />
-        <module name="de.hhu.bsinfo.neutrino.api.main" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
+    <bytecodeTargetLevel target="11">
       <module name="api_main" target="11" />
       <module name="api_test" target="11" />
       <module name="bsinfo-neutrino-neutrino_main" target="11" />
