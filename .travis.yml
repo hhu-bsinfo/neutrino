@@ -11,12 +11,12 @@ addons:
 
 stages:
   - name: build
-  - name: snapshot
-    if: branch = master AND type = push
+  - name: release
+    if: tag IS present
 
 jobs:
   include:
     - stage: build
       script: ./gradlew build
-    - stage: snapshot
-      script: ./gradlew publish -Dgpr.user=${GPR_USER} -Dgpr.token=${GPR_TOKEN}
+    - stage: release
+      script: ./gradlew publish -Dgpr.user=${GPR_USER} -Dgpr.token=${GPR_TOKEN} -Drelease=true
